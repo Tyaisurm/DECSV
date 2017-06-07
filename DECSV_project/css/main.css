@@ -1,0 +1,10 @@
+﻿.win-control-buttons {
+    max-width: 40px;
+    max-height: 40px;
+    display: block;
+    -webkit-app-region: no-drag;
+}
+
+.win-control-buttons:hover{
+    background-color:darkgrey;
+}
