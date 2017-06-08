@@ -33,11 +33,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include="assets\appbar.app.png" />
+    <Content Include="assets\appbar.browser.png" />
     <Content Include="assets\appbar.close.png" />
+    <Content Include="assets\appbar.draw.marker.png" />
+    <Content Include="assets\appbar.information.circle.png" />
+    <Content Include="assets\appbar.list.gear.png" />
     <Content Include="assets\appbar.minus.png" />
+    <Content Include="assets\appbar.page.arrow.png" />
     <Content Include="assets\appbar.progress.png" />
+    <Content Include="assets\appbar.save.png" />
     <Content Include="assets\appbar.settings.png" />
     <Content Include="assets\appbar.transform.rotate.clockwise.png" />
+    <Content Include="assets\appbar.warning.png" />
+    <Content Include="assets\appbar.window.maximize.png" />
     <Content Include="assets\appbar.window.restore.png" />
     <Content Include="css\main.css">
       <SubType>Code</SubType>
@@ -62,6 +70,10 @@
     <Folder Include="Scripts\typings\node\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="js\papaparse.min.js" />
+    <Compile Include="js\textview.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="js\main.js">
       <SubType>Code</SubType>
     </Compile>

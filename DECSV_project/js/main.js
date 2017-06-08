@@ -11,14 +11,27 @@ function createImage(image_id, image_url) {
     return image;
 }
 
+function focusWindow(input) {
+    if (input) {
+        //do stuff
+    }
+    else {
+        //do stuff
+    }
+}
+
+function updateContentStyle() {
+    //modify content style depending on window size
+}
+
 window.onfocus = function () {
     console.log("focus");
-    //focusWindow(true);
+    focusWindow(true);
 }
 
 window.onblur = function () {
     console.log("blur");
-    //focusWindow(false);
+    focusWindow(false);
 }
 
 window.onresize = function () {
@@ -40,7 +53,9 @@ window.onresize = function () {
 }
 
 window.onload = function () {
-    console.log("window loaded");
+    startTV();
+
+    console.log("MAIN ONLOAD");
 
     const remote = require('electron').remote;
     const BrowserWindow = remote.BrowserWindow;
@@ -48,17 +63,19 @@ window.onload = function () {
 
     document.getElementById("win-minimize-icon").onclick = function () {
         focused_win.minimize();
-        focused_win
     }
     document.getElementById("win-maximize-restore-icon").onclick = function () {
         if (focused_win.isMaximized()) {
+            console.log("ASDASDSASADSADSAD");
             focused_win.unmaximize();
         }
         else {
+            console.log("ASDASDSASADSADSAD");
             focused_win.maximize();
         }
     }
     document.getElementById("win-close-icon").onclick = function () {
+        console.log("ASDASDSASADSADSAD");
         focused_win.close();
     }
 }

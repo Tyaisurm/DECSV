@@ -12,8 +12,8 @@ app.on('window-all-closed', function () {
 });
 app.on('ready', function () {
     mainWindow = new BrowserWindow({
-        width: 800,
-        height: 600,
+        width: 1280,
+        height: 780,
         frame: false,
         backgroundColor: '#2e2c29'
     });

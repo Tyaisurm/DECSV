@@ -1,12 +1,42 @@
-﻿.win-control-buttons {
+﻿.win-control-button {
     max-width: 40px;
     max-height: 40px;
-    display: block;
+    display: inline-block;
+}
+
+.ui-button:hover {
+    background-color: darkgrey;
+}
+
+.top-titlebar {
+    min-height: 40px;
+    max-height: 40px;
+}
+
+#titlebar-window-controls {
+    -webkit-app-region: no-drag;
+    display: inline-block;
+    float:right;
+}
+
+.disable-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.drag {
+    -webkit-app-region: drag;
+}
+
+.nodrag {
     -webkit-app-region: no-drag;
 }
-
-.win-control-buttons:hover{
-    background-color:darkgrey;
+.titlebar-elem{
+    display:inline-block;
 }
 
-
+textarea{
+    resize: none;
+}

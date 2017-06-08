@@ -10,3 +10,12 @@ allows the program to be built like a web application, and it also makes
 it possible to easily port the program to different platforms
 (Linux, Mac, Windows), thanks to the cross platform support of the
 Electron framework.
+
+Used packages/libraries/frameworks:
+> js-xlsx (Apache 2.0)
+> papaparse (MIT)
+> electron (MIT)
+   - node.js
+   - chromium
+   - v8
+> electron-data (MIT)

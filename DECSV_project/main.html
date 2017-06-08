@@ -7,43 +7,54 @@
     <title>DECSV</title>
 
     <link rel="stylesheet" href="./css/main.css">
+    <script src="./js/papaparse.min.js"></script>
     <script src="./js/main.js"></script>
+    <script src="./js/textview.js"></script>
 
 </head>
 <body>
 
     <div id="wrapper">
+        
+        <div id="titlebar" class="top-titlebar drag disable-select">
 
-        <div id="titlebar-window-controls">
-            <div id="titlebar-window-minimize">
-                <img id="win-minimize-icon" class="win-control-buttons" src="./assets/appbar.minus.png" />
+            <div id="titlebar-title" class="titlebar-elem">
+                <h1>DECSV - Document editor</h1>
             </div>
-            <div id="titlebar-window-maximize-restore">
-                <img id="win-maximize-restore-icon" class="win-control-buttons" src="./assets/appbar.app.png" />
+
+            <div id="titlebar-window-controls" class="titlebar-elem">
+                <div id="titlebar-window-minimize" class="win-control-button disable-select">
+                    <img id="win-minimize-icon" class="win-control-button ui-button disable-select" src="./assets/appbar.minus.png" />
+                </div>
+                <div id="titlebar-window-maximize-restore" class="win-control-button">
+                    <img id="win-maximize-restore-icon" class="win-control-button ui-button disable-select" src="./assets/appbar.app.png" />
+                </div>
+                <div id="titlebar-window-close" class="win-control-button">
+                    <img id="win-close-icon" class="win-control-button ui-button disable-select" src="./assets/appbar.close.png" />
+                </div>
             </div>
-            <div id="titlebar-window-close">
-                <img id="win-close-icon" class="win-control-buttons" src="./assets/appbar.close.png" />
-            </div>
+
         </div>
 
         <div id="content">
 
-            <div id="inner-content">
+            <div id="top-content">
+                <textarea id="text-area" rows="5" cols="20" readonly></textarea>
+            </div>
 
-                This is inner-content:<br />
-                1. line br <br />
-                2. line br <br />
-                3. line br <br />
-                4. line br <br />
+            <div id="bottom-content">
+                
+                <div id="open-prompt">
+                    <div id="open-file-button">
+                        <img id="open-file-icon" class="ui-button disable-select" src="./assets/appbar.page.arrow.png" />
+                    </div>
+                </div>
 
-                <br />
-
-                <button>Button 1</button>
-                <button>Button 2</button>
-                <button>Button 3</button>
-                <button>Button 4</button>
-
-                <br />
+                <div id="save-prompt">
+                    <div id="save-file-button">
+                        <img id="save-file-icon" class="ui-button disable-select" src="./assets/appbar.save.png" />
+                    </div>
+                </div>
 
             </div>
 
