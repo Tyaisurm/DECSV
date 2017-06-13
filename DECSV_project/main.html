@@ -2,20 +2,19 @@
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
     <title>DECSV</title>
 
-    <link rel="stylesheet" href="./css/main.css">
-    <script src="./js/papaparse.min.js"></script>
-    <script src="./js/main.js"></script>
+    <link rel="stylesheet" href="./css/main.css" />
+    <script src="./js/saving_file.js"></script>
     <script src="./js/textview.js"></script>
+    <script src="./js/main.js"></script>
+    
 
 </head>
 <body>
-
-    <div id="wrapper">
-        
+        <header>
         <div id="titlebar" class="top-titlebar drag disable-select">
 
             <div id="titlebar-title" class="titlebar-elem">
@@ -35,15 +34,12 @@
             </div>
 
         </div>
+            </header>
 
         <div id="content">
 
             <div id="top-content">
-                <textarea id="text-area" rows="5" cols="20" readonly></textarea>
-            </div>
 
-            <div id="bottom-content">
-                
                 <div id="open-prompt">
                     <div id="open-file-button">
                         <img id="open-file-icon" class="ui-button disable-select" src="./assets/appbar.page.arrow.png" />
@@ -58,9 +54,25 @@
 
             </div>
 
-        </div>
+            <div id="bottom-content">
+                <section>
+                    <h3>Section 0 (survey details):</h3>
+                    <textarea id="text-area-0" rows="8" cols="60" readonly></textarea>
+                    <h3>Section A questions:</h3>
+                    <textarea id="text-area-A" rows="20" cols="60" readonly></textarea>
+                    <h3>Section B questions:</h3>
+                    <textarea id="text-area-B" rows="20" cols="60" readonly></textarea>
+                    <h3>Section C questions:</h3>
+                    <textarea id="text-area-C" rows="20" cols="60" readonly></textarea>
+                </section>
+                <section>
+                    <button id="testbutton"><p>PRESS ME :3</p></button>
+                    <h3>Keywords list:</h3>
+                    <textarea id="chosen keyword" rows="8" cols="60" readonly></textarea>
+                </section>
+            </div>
 
-    </div>
+        </div>
 
 
 </body>

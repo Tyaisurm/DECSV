@@ -8,7 +8,10 @@
     "name": "h17263"
   },
   "dependencies": {
-    "electron": "1.6.10"
+    "electron": "1.6.10",
+    "electron-data": "2.1.0",
+    "xlsx": "0.10.5",
+    "jquery": "3.2.1"
   },
   "licence": "MIT"
 }

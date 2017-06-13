@@ -70,7 +70,9 @@
     <Folder Include="Scripts\typings\node\" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="js\papaparse.min.js" />
+    <Compile Include="js\saving_file.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="js\textview.js">
       <SubType>Code</SubType>
     </Compile>

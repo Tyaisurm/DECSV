@@ -12,10 +12,10 @@ it possible to easily port the program to different platforms
 Electron framework.
 
 Used packages/libraries/frameworks:
-> js-xlsx (Apache 2.0)
-> papaparse (MIT)
 > electron (MIT)
    - node.js
    - chromium
    - v8
-> electron-data (MIT)
+> electron-data (MIT License)
+> js-xlsx (xlsx) (Apache License 2.0)
+> jquery (MIT License)

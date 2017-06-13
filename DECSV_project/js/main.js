@@ -1,4 +1,6 @@
-﻿function updateImageUrl(image_id, new_image_url) {
+﻿/* This is the main js-file. most of the window/style related stuff happens here */
+
+function updateImageUrl(image_id, new_image_url) {
     var image = document.getElementById(image_id);
     if (image)
         image.src = new_image_url;
@@ -41,18 +43,44 @@ window.onresize = function () {
     const BrowserWindow = remote.BrowserWindow;
     const focused_win = BrowserWindow.getFocusedWindow();
 
-    if (focused_win.isMaximized() && document.getElementById("win-maximize-restore-icon").src != "./assets/appbar.window.restore.png") {
+    if (focused_win.isMaximized() && document.getElementById("win-maximize-restore-icon").src !== "./assets/appbar.window.restore.png") {
         document.getElementById("win-maximize-restore-icon").src = "./assets/appbar.window.restore.png";
     }
-    else if (!focused_win.isMaximized() && document.getElementById("win-maximize-restore-icon").src != "./assets/appbar.app.png") {
+    else if (!focused_win.isMaximized() && document.getElementById("win-maximize-restore-icon").src !== "./assets/appbar.app.png") {
         document.getElementById("win-maximize-restore-icon").src = "./assets/appbar.app.png";
     }
     else {
-        //
+        //something
     }
 }
 
 window.onload = function () {
+
+    //////////////////////////////////////////////////////////////////////
+    function getHighlightedWords() {
+        var text = "";
+        var activeEl = document.activeElement;
+        var activeElTagName = activeEl ? activeEl.tagName.toLowerCase() : null;
+        if (
+            (activeElTagName == "textarea") || (activeElTagName == "input" &&
+                /^(?:text|search|password|tel|url)$/i.test(activeEl.type)) &&
+            (typeof activeEl.selectionStart == "number")
+        ) {
+            text = activeEl.value.slice(activeEl.selectionStart, activeEl.selectionEnd);
+        } else if (window.getSelection) {
+            text = window.getSelection().toString();
+        }
+        if (text.length !== 0) {
+            console.log("TÄMÄ ON VALITTU: "+text);
+        }
+        else {
+            //
+        }
+    }
+    document.onmouseup = document.onkeyup = document.onselectionchange = function () {
+        getHighlightedWords();
+    };
+    //////////////////////////////////////////////////////////////////////
     startTV();
 
     console.log("MAIN ONLOAD");

@@ -11,18 +11,21 @@ app.on('window-all-closed', function () {
     }
 });
 app.on('ready', function () {
+    console.log("ready!");
     mainWindow = new BrowserWindow({
         width: 1280,
         height: 780,
         frame: false,
         backgroundColor: '#2e2c29'
     });
+    console.log("made new window!!");
     var url = require('url').format({
         protocol: 'file',
         slashes: true,
         pathname: require('path').join(__dirname, 'main.html')
     });
     mainWindow.loadURL(url);
+    mainWindow.webContents.openDevTools();
     mainWindow.on('closed', function () {
         mainWindow = null;
     });
