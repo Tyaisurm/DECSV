@@ -16,7 +16,7 @@ app.on('ready', function () {
         width: 1280,
         height: 780,
         frame: false,
-        backgroundColor: '#2e2c29'
+        backgroundColor: '#999999'
     });
     console.log("made new window!!");
     var url = require('url').format({

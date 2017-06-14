@@ -1,10 +1,12 @@
 ﻿/* This script file handles most of the file-related tasks like opening and saving
     Also, parsing of the .csv files into arrays and other related functions happen here */
-
+/*
 const remote = require('electron').remote;
 const dialog = remote.dialog;
 const fs = require('fs');
 const XLSX = require('xlsx');
+*/
+
 
 /* Function that is called from the <main.js> */
 function startTV() {
@@ -69,7 +71,7 @@ function readFile(files, encoding) {
     if (file_ext === 'xlsx' || file_ext === 'xls') {
         var csv_sheet = XLSX.utils.sheet_to_csv(worksheet);
         console.log("EXCEL TO CSV");
-        console.log(csv_sheet);
+        console.log(JSON.stringify(csv_sheet));
 
         /* xlsx-js continue... THIS IS UNFINISED */
 

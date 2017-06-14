@@ -19,13 +19,13 @@ app.on('ready', function () {
         width: 1280,
         height: 780,
         frame: false,
-        backgroundColor: '#2e2c29'
+        backgroundColor: '#999999'
     });
     console.log("made new window!!");
     let url = require('url').format({
         protocol: 'file',
         slashes: true,
-        pathname: require('path').join(__dirname, 'main.html')
+        pathname: require('path').join(__dirname, 'start.html')
     });
     mainWindow.loadURL(url);
     mainWindow.webContents.openDevTools();

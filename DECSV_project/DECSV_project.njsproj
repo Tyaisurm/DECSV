@@ -50,6 +50,9 @@
     <Content Include="css\main.css">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="start.html">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="tsconfig.json">
       <SubType>Code</SubType>
     </Content>
@@ -70,6 +73,9 @@
     <Folder Include="Scripts\typings\node\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="js\requires.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="js\saving_file.js">
       <SubType>Code</SubType>
     </Compile>
