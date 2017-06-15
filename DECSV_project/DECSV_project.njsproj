@@ -12,7 +12,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>090aa109-d59a-4a81-9aaf-b67ba0b2ec55</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>app.ts</StartupFile>
+    <StartupFile>app.js</StartupFile>
     <StartWebBrowser>False</StartWebBrowser>
     <SearchPath>
     </SearchPath>
@@ -32,33 +32,68 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="assets\appbar.app.png" />
-    <Content Include="assets\appbar.browser.png" />
-    <Content Include="assets\appbar.close.png" />
-    <Content Include="assets\appbar.draw.marker.png" />
-    <Content Include="assets\appbar.information.circle.png" />
-    <Content Include="assets\appbar.list.gear.png" />
-    <Content Include="assets\appbar.minus.png" />
-    <Content Include="assets\appbar.page.arrow.png" />
-    <Content Include="assets\appbar.progress.png" />
-    <Content Include="assets\appbar.save.png" />
-    <Content Include="assets\appbar.settings.png" />
-    <Content Include="assets\appbar.transform.rotate.clockwise.png" />
-    <Content Include="assets\appbar.warning.png" />
-    <Content Include="assets\appbar.window.maximize.png" />
-    <Content Include="assets\appbar.window.restore.png" />
-    <Content Include="css\main.css">
+    <Content Include="assets\css\about.css">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="start.html">
+    <Content Include="assets\css\final.css">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\css\global.css">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\css\sections.css">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\css\start.css">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\html\sections\about.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\html\sections\final.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\html\sections\section_a.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\html\sections\section_b.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\html\sections\section_c.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\html\sections\start.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\translations\en-US.json">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\ui_icons\appbar.app.png" />
+    <Content Include="assets\ui_icons\appbar.browser.png" />
+    <Content Include="assets\ui_icons\appbar.close.png" />
+    <Content Include="assets\ui_icons\appbar.draw.marker.png" />
+    <Content Include="assets\ui_icons\appbar.information.circle.png" />
+    <Content Include="assets\ui_icons\appbar.list.gear.png" />
+    <Content Include="assets\ui_icons\appbar.minus.png" />
+    <Content Include="assets\ui_icons\appbar.page.arrow.png" />
+    <Content Include="assets\ui_icons\appbar.progress.png" />
+    <Content Include="assets\ui_icons\appbar.save.png" />
+    <Content Include="assets\ui_icons\appbar.settings.png" />
+    <Content Include="assets\ui_icons\appbar.transform.rotate.clockwise.png" />
+    <Content Include="assets\ui_icons\appbar.warning.png" />
+    <Content Include="assets\ui_icons\appbar.window.maximize.png" />
+    <Content Include="assets\ui_icons\appbar.window.restore.png" />
+    <Content Include="assets\css\main_old.css">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\html\index.html">
       <SubType>Code</SubType>
     </Content>
     <Content Include="tsconfig.json">
       <SubType>Code</SubType>
     </Content>
-    <TypeScriptCompile Include="app.ts" />
     <Content Include="package.json" />
-    <Content Include="main.html">
+    <Content Include="assets\html\main_old.html">
       <SubType>Code</SubType>
     </Content>
     <Content Include="README.md" />
@@ -66,23 +101,34 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="assets\" />
-    <Folder Include="js\" />
-    <Folder Include="css\" />
+    <Folder Include="assets\html\" />
+    <Folder Include="assets\html\sections\" />
+    <Folder Include="assets\ui_icons\" />
+    <Folder Include="assets\js\" />
+    <Folder Include="assets\css\" />
+    <Folder Include="assets\translations\" />
     <Folder Include="Scripts\" />
     <Folder Include="Scripts\typings\" />
     <Folder Include="Scripts\typings\node\" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="js\requires.js">
+    <Compile Include="app.js" />
+    <Compile Include="assets\js\importing.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="js\saving_file.js">
+    <Compile Include="assets\translations\i18n.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="js\textview.js">
+    <Compile Include="assets\js\requires_old.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="js\main.js">
+    <Compile Include="assets\js\saving_file_old.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="assets\js\textview_old.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="assets\js\main_old.js">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

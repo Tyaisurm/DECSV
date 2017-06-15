@@ -19,3 +19,4 @@ Used packages/libraries/frameworks:
 > electron-data (MIT License)
 > js-xlsx (xlsx) (Apache License 2.0)
 > jquery (MIT License)
+> electron-log (MIT License)

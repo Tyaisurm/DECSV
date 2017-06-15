@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+    <script> const logger = require('electron-log');</script>
+    <script>window.$ = require('jquery');</script>
+    <script>window.i18n = new (require('../translations/i18n'));</script>
+
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/about.css">
+    <link rel="stylesheet" href="../css/start.css">
+    <link rel="stylesheet" href="../css/sections.css">
+    <link rel="stylesheet" href="../css/final.css">
+
+    <link rel="import" href="./sections/start.html">
+    <link rel="import" href="./sections/section_a.html">
+    <link rel="import" href="./sections/section_b.html">
+    <link rel="import" href="./sections/section_c.html">
+    <link rel="import" href="./sections/final.html">
+    <link rel="import" href="./sections/about.html">
+
+</head>
+<body>
+    
+    <main class="content"></main>
+
+    <script>require('../js/importing');</script>
+</body>
+</html>

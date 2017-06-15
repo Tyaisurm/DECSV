@@ -1,17 +1,26 @@
 {
   "name": "decsv_project",
   "productName": "DECSV",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Document editor for CSV-files to download, edit, save and upload them.",
   "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": "https: //github.com/Tyaisurm/DECSV",
+  "keywords": [
+    "Electron",
+    "DECSV"
+  ],
   "author": {
     "name": "h17263"
   },
+  "licence": "MIT",
   "dependencies": {
     "electron": "1.6.10",
     "electron-data": "2.1.0",
     "xlsx": "0.10.5",
-    "jquery": "3.2.1"
-  },
-  "licence": "MIT"
+    "jquery": "3.2.1",
+    "electron-log": "2.2.6"
+  }
 }
