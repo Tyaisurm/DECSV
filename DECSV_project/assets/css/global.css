@@ -1,1 +1,47 @@
-﻿
+﻿* {
+    box-sizing: border-box;
+}
+
+html {
+    height: 100%;
+    font-family: 'BlinkMacSystemFont', 'Lucida Grande', 'Segoe UI', Ubuntu, Cantarell, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow: hidden; /* Prevents rubber-band scrolling of the whole "page" */
+    background-color: #fff; /* To cover OSes with no default background color */
+}
+
+body {
+    margin: 0;
+    height: 100%;
+    display: flex;
+}
+
+
+/* Utilities ---------------------------- */
+
+.u-avoid-clicks {
+    pointer-events: none;
+}
+
+
+.no-display {
+    display: none;
+}
+
+
+/* Content ------------------ */
+
+.content {
+    flex: 1;
+   /*position: relative;
+    overflow: hidden;
+    visibility: hidden;
+    opacity: 0;
+       */
+}
+
+    .content.is-shown {
+        visibility: visible;
+        opacity: 1;
+    }

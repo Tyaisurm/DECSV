@@ -14,6 +14,7 @@ function i18n() {
     }
     else {
         logger.warn("No desired language found for user's locale. Using fallback-translation...");
+        logger.info("Using translation for locale 'en-US'.");
         loadedLanguage = require(path.join(__dirname, 'en-US.json'));
     }
 }
