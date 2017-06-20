@@ -7,6 +7,7 @@
     overflow-x: hidden;
     overflow-y: auto;
     color: var(--color-accent);
+
     /* Hide */
     pointer-events: none;
     visibility: hidden;
@@ -22,3 +23,18 @@
         transform: translateX(0);
         transition: visibility 0s 0s linear, opacity .36s ease-out, transform .36s ease-out;
     }
+
+.text-content{
+    background-color:blanchedalmond;
+    overflow-wrap:normal;
+    overflow-x:auto;
+    padding: 1rem;
+    margin-left:2rem;
+    margin-top:2rem;
+    margin-bottom:2rem;
+    margin-right:30rem;
+}
+
+.about{
+
+}

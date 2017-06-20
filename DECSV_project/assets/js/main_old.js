@@ -43,11 +43,11 @@ window.onresize = function () {
     const BrowserWindow = remote.BrowserWindow;
     const focused_win = BrowserWindow.getFocusedWindow();
 
-    if (focused_win.isMaximized() && document.getElementById("win-maximize-restore-icon").src !== "./assets/appbar.window.restore.png") {
-        document.getElementById("win-maximize-restore-icon").src = "./assets/appbar.window.restore.png";
+    if (focused_win.isMaximized() && document.getElementById("win-maximize-restore-icon").src !== "../ui_icons/appbar.window.restore.png") {
+        document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.window.restore.png";
     }
-    else if (!focused_win.isMaximized() && document.getElementById("win-maximize-restore-icon").src !== "./assets/appbar.app.png") {
-        document.getElementById("win-maximize-restore-icon").src = "./assets/appbar.app.png";
+    else if (!focused_win.isMaximized() && document.getElementById("win-maximize-restore-icon").src !== "../ui_icons/appbar.app.png") {
+        document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.app.png";
     }
     else {
         //something

@@ -12,9 +12,10 @@ html {
 }
 
 body {
-    margin: 0;
+    margin: 5px;
     height: 100%;
     display: flex;
+    flex-direction:column;
 }
 
 
@@ -29,19 +30,35 @@ body {
     display: none;
 }
 
+.disable-select {
+    -webkit-user-select: none;
+}
+
+.drag {
+    -webkit-app-region: drag;
+}
+
+.no-drag {
+    -webkit-app-region: no-drag;
+}
+
 
 /* Content ------------------ */
 
 .content {
     flex: 1;
-   /*position: relative;
+   position: relative;
     overflow: hidden;
     visibility: hidden;
     opacity: 0;
-       */
+       
 }
 
     .content.is-shown {
         visibility: visible;
         opacity: 1;
     }
+
+.ui-button:hover {
+    background-color: darkgrey;
+}

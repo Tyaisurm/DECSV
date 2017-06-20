@@ -1,0 +1,13 @@
+﻿.win-control-button {
+    max-width: 40px;
+    max-height: 40px;
+    display: inline-block;
+
+}
+
+#titlebar-window-controls {
+    display: inline-block;
+    float: right;
+    max-height: 40px;
+    max-height: 40px;
+}

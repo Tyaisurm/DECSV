@@ -1,0 +1,17 @@
+﻿.ui-prompt{
+    /*
+    position:absolute;
+    */
+    border:1px solid black;
+    padding: 1rem;
+    display:flex;
+    max-width:25rem;
+    /*
+    cursor:pointer;
+    */
+}
+.ui-prompt h2{
+    overflow:hidden;
+    overflow-wrap:normal;
+}
+

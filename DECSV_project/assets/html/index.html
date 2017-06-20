@@ -10,11 +10,13 @@
 
     <link rel="stylesheet" href="../css/global.css">
     <link rel="stylesheet" href="../css/about.css">
-    <link rel="stylesheet" href="../css/start.css">
+    <link rel="stylesheet" href="../css/titlebar.css">
     <link rel="stylesheet" href="../css/sections.css">
-    <link rel="stylesheet" href="../css/final.css">
+    <link rel="stylesheet" href="../css/ui_controls.css">
+    <link rel="stylesheet" href="../css/debug_colors.css">
 
     <link rel="import" href="./sections/start.html">
+    <link rel="import" href="./sections/aside.html">
     <link rel="import" href="./sections/section_a.html">
     <link rel="import" href="./sections/section_b.html">
     <link rel="import" href="./sections/section_c.html">
@@ -23,9 +25,24 @@
 
 </head>
 <body>
-    
-    <main class="content"></main>
+    <header id="top-titlebar"class="drag disable-select">
+        
+        <div id="titlebar-window-controls" class="no-drag">
+            <div id="titlebar-window-minimize" class="win-control-button disable-select ">
+                <img draggable="false" id="win-minimize-icon" class="win-control-button ui-button disable-select" src="../ui_icons/appbar.minus.png" />
+            </div>
+            <div id="titlebar-window-maximize-restore" class="win-control-button">
+                <img draggable="false" id="win-maximize-restore-icon" class="win-control-button ui-button disable-select" src="../ui_icons/appbar.app.png" />
+            </div>
+            <div id="titlebar-window-close" class="win-control-button">
+                <img draggable="false" id="win-close-icon" class="win-control-button ui-button disable-select" src="../ui_icons/appbar.close.png" />
+            </div>
+        </div>
 
+    </header>
+    
+    <main class="content is-shown"></main>
     <script>require('../js/importing');</script>
+    <script>require('../js/init');</script>
 </body>
 </html>

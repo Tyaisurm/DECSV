@@ -35,7 +35,10 @@
     <Content Include="assets\css\about.css">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\css\final.css">
+    <Content Include="assets\css\debug_colors.css">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\css\ui_controls.css">
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\css\global.css">
@@ -44,10 +47,13 @@
     <Content Include="assets\css\sections.css">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\css\start.css">
+    <Content Include="assets\css\titlebar.css">
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\html\sections\about.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\html\sections\aside.html">
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\html\sections\final.html">
@@ -72,11 +78,16 @@
     <Content Include="assets\ui_icons\appbar.browser.png" />
     <Content Include="assets\ui_icons\appbar.close.png" />
     <Content Include="assets\ui_icons\appbar.draw.marker.png" />
+    <Content Include="assets\ui_icons\appbar.home.variant.enter.png" />
     <Content Include="assets\ui_icons\appbar.information.circle.png" />
     <Content Include="assets\ui_icons\appbar.list.gear.png" />
     <Content Include="assets\ui_icons\appbar.minus.png" />
+    <Content Include="assets\ui_icons\appbar.navigate.next.png" />
+    <Content Include="assets\ui_icons\appbar.navigate.previous.png" />
     <Content Include="assets\ui_icons\appbar.page.arrow.png" />
     <Content Include="assets\ui_icons\appbar.progress.png" />
+    <Content Include="assets\ui_icons\appbar.question.png" />
+    <Content Include="assets\ui_icons\appbar.reset.png" />
     <Content Include="assets\ui_icons\appbar.save.png" />
     <Content Include="assets\ui_icons\appbar.settings.png" />
     <Content Include="assets\ui_icons\appbar.transform.rotate.clockwise.png" />
@@ -93,7 +104,7 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="package.json" />
-    <Content Include="assets\html\main_old.html">
+    <Content Include="assets\html\index_old.html">
       <SubType>Code</SubType>
     </Content>
     <Content Include="README.md" />
@@ -113,7 +124,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="app.js" />
+    <Compile Include="assets\js\init.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="assets\js\importing.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="assets\js\fileIO_old.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="assets\js\startscreen.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\translations\i18n.js">

@@ -4,7 +4,7 @@ const logger = require('electron-log');
 const BrowserWindow = electron.BrowserWindow; 
 const path = require('path');
 const url = require('url');
-let mainWindow;
+let mainWindow = null;
 
 function createWin() {
     mainWindow = new BrowserWindow({
@@ -17,7 +17,7 @@ function createWin() {
     let win_url = url.format({
         protocol: 'file',
         slashes: true,
-        pathname: path.join(__dirname, '/assets/html/index.html')
+        pathname: path.join(__dirname, './assets/html/index.html')
     });
     mainWindow.loadURL(win_url);
 

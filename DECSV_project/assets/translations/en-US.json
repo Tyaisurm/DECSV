@@ -1,3 +1,6 @@
 ﻿{
-  "term-in-program": "Translation"
+  "term-in-program": "Translation",
+  "open-files": "Open new file",
+  "open-portal": "Link to the portal",
+  "A2B-prompt":"Move to section B"
 }

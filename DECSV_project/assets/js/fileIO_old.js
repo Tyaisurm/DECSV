@@ -1,58 +1,8 @@
-﻿/* This script file handles most of the file-related tasks like opening and saving
-    Also, parsing of the .csv files into arrays and other related functions happen here */
-/*
-const remote = require('electron').remote;
+﻿const remote = require('electron').remote;
 const dialog = remote.dialog;
 const fs = require('fs');
 const XLSX = require('xlsx');
-*/
 
-
-/* Function that is called from the <main.js> */
-function startTV() {
-
-    /* setting listener for open file -button */
-    document.getElementById('open-file-icon').onclick = function () {
-        console.log("OPEN CLICKED");
-        var options = {
-            title: "Open file",
-            //defaultPath: THIS MUST BE SET!
-            filters: [
-                { name: 'Spreadsheet', extensions: ['csv','xls', 'xlsx'] }
-            ],
-            properties: ['openFile']
-        }
-        function callback(fileNames) {
-            readFile(fileNames);
-        }
-        dialog.showOpenDialog(options, callback);
-    }
-
-    /* setting listener for save file -button */
-    document.getElementById("save-file-icon").onclick = function () {
-        console.log("SAVE CLICKED");
-        var options = {
-            title: "Save file",
-            //defaultPath: THIS MUS BE SET
-            filters: [
-                { name: 'CSV spreadsheet', extensions: ['csv'] }
-            ]
-        }
-        function callback(fileName) {
-            if (fileName === undefined) {
-                alert("You didn't save the file!");//NOT needed? meg...
-                return;
-            }
-            var content = "THIS.IS.TEST-CONTENT!:D"; //only just in case for now
-            var encoding = "utf8";
-
-            writeFile_csv(fileName, content, encoding);
-        }
-        dialog.showSaveDialog(options, callback);
-    }
-}
-
-/* Function for reading a given file. Takes in filepath and wanted encoding */
 function readFile(files, encoding) {
 
     /* check file-extension */
@@ -66,7 +16,7 @@ function readFile(files, encoding) {
     var workbook = XLSX.readFile(file);
     var first_sheet_name = workbook.SheetNames[0];
     var worksheet = workbook.Sheets[first_sheet_name];
-    
+
     /* file has .xlsx or .xls extension */
     if (file_ext === 'xlsx' || file_ext === 'xls') {
         var csv_sheet = XLSX.utils.sheet_to_csv(worksheet);
@@ -82,20 +32,28 @@ function readFile(files, encoding) {
             var re_valid = /^\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*(?:,\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*)*$/;
             var re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
             // Return NULL if input string is not well formed CSV string.
-            if (!re_valid.test(text)) return null;
-            var a = [];                     // Initialize array to receive values.
+            if (!re_valid.test(text)) {
+                return null;
+            }
+            var arr = [];                     // Initialize array to receive values.
             text.replace(re_value, // "Walk" the string using replace with callback.
                 function (m0, m1, m2, m3) {
                     // Remove backslash from \' in single quoted values.
-                    if (m1 !== undefined) a.push(m1.replace(/\\'/g, "'"));
+                    if (m1 !== undefined) arr.push(m1.replace(/\\'/g, "'"));
                     // Remove backslash from \" in double quoted values.
-                    else if (m2 !== undefined) a.push(m2.replace(/\\"/g, '"'));
-                    else if (m3 !== undefined) a.push(m3);
+                    else if (m2 !== undefined) {
+                        arr.push(m2.replace(/\\"/g, '"'));
+                    }
+                    else if (m3 !== undefined) {
+                        arr.push(m3);
+                    }
                     return ''; // Return empty string.
                 });
             // Handle special case of empty last value.
-            if (/,\s*$/.test(text)) a.push('');
-            return a;
+            if (/,\s*$/.test(text)) {
+                arr.push('');
+            }
+            return arr;
         };
 
         var headers = CSVtoArray(lines[0]);
@@ -106,17 +64,15 @@ function readFile(files, encoding) {
         var output_data = [];
         output_data[0] = headers;
         output_data[1] = contents;
-        console.log("setting data");
-        set_survey_data(output_data);//setting global variables.. oooh boy...
-        console.log(output_data);
+        //console.log("setting data");
+        //set_survey_data(output_data);//setting global variables.. oooh boy...
         window.currentFileContent = output_data;
-    }
-    else {
-        //what lies beyond this land...
+        console.log(output_data);
+
     }
 
     /* file has .csv extension */
-    if (file_ext === 'csv') {
+    else if (file_ext === 'csv') {
 
         /*Node.js fs*/
         fs.readFile(file, 'utf8', function (err, data) {
@@ -133,7 +89,7 @@ function readFile(files, encoding) {
                 var separators = ['\"\",\"\"', ',\"\"', '\"\"'];
                 var newlines = ['\r\n', '\n'];
 
-                //console.log(typeof (csv));
+                console.log(typeof (csv));
                 //var lines = csv.split("\n");
                 var lines = csv.split(new RegExp(newlines.join('|'), 'g'));
                 //console.log(JSON.stringify(lines[0]));
@@ -166,12 +122,11 @@ function readFile(files, encoding) {
 
                 return result;
             }
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>OMAN TULOSTUS");
+            //console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>OMAN TULOSTUS");
             var output_data = parseCSV2Array(data)
-            console.log("setting data");
-            set_survey_data(output_data);//setting global variables.. oooh boy...
+            //console.log("setting data");
+            //set_survey_data(output_data);//setting global variables.. oooh boy...
             window.currentFileContent = output_data;
-
             console.log(output_data);
 
             /* This function parses data for textareas that are CURRENTLY USED
@@ -182,9 +137,10 @@ function readFile(files, encoding) {
                 var data_B = parseQuizArray(data, 3, 3);
                 var data_C = parseQuizArray(data, 4, data[0].length - 1);
 
-                if (data[2] !== undefined) {
-                    console.log("HUEHUEUE"); //siirrä avainsanat listaan, ja tee niille korostukset tekstiin
+                if (data[2] === 'undefined') {
+                    console.log(HUEHUEUE);
                 };
+
 
                 var text_0 = document.getElementById("text-area-0");
                 text_0.innerHTML = data_0;
@@ -207,15 +163,15 @@ function readFile(files, encoding) {
                 return res;
             }
 
-            showQuizData(output_data);
+            //showQuizData(output_data);
 
         });
 
     }
     else {
-        //wonder what happens here... :D
+        //what lies beyond this land...
     }
-    
+
 }
 
 /* This function takes in data that is in arrays, and then parses and writes it
@@ -223,6 +179,8 @@ into new .csv files */
 function writeFile_csv(file, content, encoding) {
     //writing... Array[0-1][0-x]
     var dataArray = get_survey_data();
+
+    //PARSING DATA FROM EDIT-VIEW HAPPENS >>HERE<<
 
     /*
     //testing_KEYWORDS
@@ -236,21 +194,21 @@ function writeFile_csv(file, content, encoding) {
     console.log("Parsing content for saving...");
 
     var temp = "";
-    
+
     //parse arrays to be like .csv file's content
-    for (var i = 0; i < dataArray.length; i++){
+    for (var i = 0; i < dataArray.length; i++) {
         temp = temp + "\"";
         console.log(i);
         console.log(temp);
-        for (var j = 0; j < dataArray[i].length; j++){
+        for (var j = 0; j < dataArray[i].length; j++) {
             console.log(j);
             console.log(temp);
-            if (j===0){
-                temp = temp  + dataArray[i][j];
+            if (j === 0) {
+                temp = temp + dataArray[i][j];
             }
             else {
                 var input = dataArray[i][j];
-                temp = temp + ",\"\""+input+"\"\"";
+                temp = temp + ",\"\"" + input + "\"\"";
             }
         }
         temp = temp + "\"\r\n";
