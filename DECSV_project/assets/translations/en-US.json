@@ -2,5 +2,18 @@
   "term-in-program": "Translation",
   "open-files": "Open new file",
   "open-portal": "Link to the portal",
-  "A2B-prompt":"Move to section B"
+  "A2B-prompt": "Move to section B",
+  "B2C-prompt": "Move to section C",
+  "C2F-prompt": "Move to review section",
+  "B2A-prompt": "Return to section A",
+  "C2B-prompt": "Return to section B",
+  "F2C-prompt": "Return to section C",
+  "save-next-prompt": "Save current and move to next file in queue",
+  "about-title": "About",
+  "secAtitle": "Section A",
+  "secBtitle": "Section B",
+  "secCtitle": "Section C",
+  "secFtitle": "Review",
+  "current-keys": "Added keywords:",
+  "wait-busy-msg": "Please wait..."
 }

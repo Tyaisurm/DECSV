@@ -4,6 +4,7 @@ const logger = require('electron-log');
 const BrowserWindow = electron.BrowserWindow; 
 const path = require('path');
 const url = require('url');
+const fs = require('fs');
 let mainWindow = null;
 
 function createWin() {
@@ -39,6 +40,33 @@ app.on('window-all-closed', function () {
 });
 
 app.on('ready', function () {
+    logger.transports.file.level = "info";
+    logger.transports.console.level = "silly";
+    if (process.platform == 'win32') {
+        /*
+
+        fs.access(asdfile, (err) => {
+            if (!err) {
+                console.log("file exists!!");
+
+                return;
+            }
+            //console.log("file does not exists!");
+        });
+
+        */
+
+        //
+    }
+    else if (process.platform == 'linux') {
+        //
+    }
+    else if (process.platform == 'darwin'){
+        //
+    }
+    else {
+        //well then, you are fckd :x
+    }
     logger.info('app ready');
     createWin();
 });

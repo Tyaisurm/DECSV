@@ -10,7 +10,11 @@ function i18n() {
     logger.info("loading translation file...");
     if (fs.existsSync(path.join(__dirname, app.getLocale() + '.json'))) {
         logger.info("Using translation for locale '" + app.getLocale() + "'.");
-        loadedLanguage = require(path.join(__dirname, app.getLocale() + '.json'));
+        try {
+            loadedLanguage = require(path.join(__dirname, app.getLocale() + '.json'));
+        }catch(err){
+            logger.error("Failed to read the file '" + app.getLocale() + ".json'");
+        }
     }
     else {
         logger.warn("No desired language found for user's locale. Using fallback-translation...");
@@ -20,7 +24,12 @@ function i18n() {
 }
 
 i18n.prototype.__ = function (phrase) {
-    let translation = loadedLanguage[phrase]
+    let translation;
+    try {
+        translation = loadedLanguage[phrase]
+    } catch (err) {
+        logger.error("No language set to be used!");
+    }
     if (translation === undefined) {
         logger.error("No translation for '" + phrase + "' found in translation-file! Using placeholder '{**NO_TRANSLATION**}'");
         translation = "{**NO_TRANSLATION**}";

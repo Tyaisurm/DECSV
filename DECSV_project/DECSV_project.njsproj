@@ -5,6 +5,10 @@
     <Name>DECSV_project</Name>
     <RootNamespace>DECSV_project</RootNamespace>
     <NodeExePath>C:\Users\h17263\Documents\Visual Studio 2017\Projects\DECSV_project\DECSV_project\node_modules\electron\dist\electron.exe</NodeExePath>
+    <ScriptArguments>
+    </ScriptArguments>
+    <NodeExeArguments>
+    </NodeExeArguments>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -131,6 +135,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\js\fileIO_old.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="assets\js\save_utils.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\js\startscreen.js">

@@ -36,5 +36,6 @@
 }
 
 .about{
-
+    z-index: 9000;
+    background-color: azure;
 }

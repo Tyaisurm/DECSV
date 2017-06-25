@@ -6,6 +6,9 @@
     padding: 1rem;
     display:flex;
     max-width:25rem;
+
+    -webkit-user-select: none;
+    background-color: cadetblue;
     /*
     cursor:pointer;
     */
@@ -13,5 +16,9 @@
 .ui-prompt h2{
     overflow:hidden;
     overflow-wrap:normal;
+}
+
+.ui-button:hover {
+    background-color: azure;
 }
 

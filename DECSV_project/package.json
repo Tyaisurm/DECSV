@@ -1,7 +1,7 @@
 {
   "name": "decsv_project",
   "productName": "DECSV",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Document editor for CSV-files to download, edit, save and upload them.",
   "main": "main.js",
   "scripts": {

@@ -11,3 +11,7 @@
     max-height: 40px;
     max-height: 40px;
 }
+
+#top-titlebar{
+    z-index: 9001; /*  IT'S OVER NINE THOUSAAAAAAND!!! */
+}
