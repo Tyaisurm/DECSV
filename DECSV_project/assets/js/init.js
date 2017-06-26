@@ -76,10 +76,10 @@ window.onresize = function () {
     };
 */
 
-    // Input "0" = toggle start- view away, replace with section A (and aside) being ONLY ONE visible
-    // Input "1" = toggle sections away, replaced with ONLY start visible
-    // Input "2" = toggle to show the about section
-    // Input "3" = toggle to hide the about section
+    // Input "0" = toggle start-view away, replace with section A (and aside) being ONLY ONE visible (Clean beginning of view)
+    // Input "1" = toggle sections away, replaced with ONLY start visible (Clean start)
+    // Input "2" = toggle about section
+    //////
 function toggleViewMode(mode) {
     if (mode === 0) {
         $("#aside-section").addClass("is-shown");
@@ -101,13 +101,26 @@ function toggleViewMode(mode) {
         $("#aside-section").removeClass("is-shown");
     }
     else if (mode === 2) {
-        $("aboutDiv").addClass("is-shown");
+        $("#aboutDiv").toggleClass("is-shown");
     }
-    else if (mode === 3) {
-        $("aboutDiv").removeClass("is-shown");
+    // Input "11" = toggle A-B
+    // Input "12" = toggle B-C
+    // Input "13" = toggle C-F
+    else if (mode === 11) {
+        $("#secA").toggleClass("is-shown");
+        $("#secB").toggleClass("is-shown");
+    }
+    else if (mode === 12) {
+        $("#secB").toggleClass("is-shown");
+        $("#secC").toggleClass("is-shown");
+    }
+    else if (mode === 13) {
+        $("#secB").toggleClass("is-shown");
+        $("#secC").toggleClass("is-shown");
     }
     else {
         //
+        logger.error("Error! Invalid parameter to toggleViewMode-function");
     }
 }
 
@@ -134,6 +147,19 @@ function toggleViewMode(mode) {
         }
     }
 
+document.getElementById('titlebar-window-about').onclick = function () {
+    toggleViewMode(2);
+}
+
+/*
+document.getElementById('').onclick = function () {
+    //
+    }
+document.getElementById('').onclick = function () {
+    //
+}
+*/
+
     /* setting listener for open file -button */
     document.getElementById('open-file-prompt').onclick = function () {
         //console.log("OPEN CLICKED");
@@ -151,15 +177,16 @@ function toggleViewMode(mode) {
             
             if (fileNames !== undefined){
                 //console.log(fileNames);
-                //readFile(fileNames);
+                //readFile(fileNames); // THIS SHOULD BE TURNED ON IN ORDER TO WORK
                 toggleViewMode(0);
                 return;
             }
+            logger.warn("No file(s) chosen to be opened!");
         }
         dialog.showOpenDialog(options, callback);
     }
     document.getElementById('portal-prompt').onclick = function () {
-        console.log("HUEHHUEHUHE");
+        //console.log("HUEHHUEHUHE");
         shell.openExternal('https://www.google.com',[], function (err) {
             if (!err) {
                 //logger.error(err);
@@ -170,6 +197,36 @@ function toggleViewMode(mode) {
             logger.error("Failed to open link to the portal!");
         });
     }
+
+document.getElementById('fromA2B').onclick = function () {
+    toggleViewMode(11);
+    }
+
+document.getElementById('fromB2A').onclick = function () {
+    toggleViewMode(11);
+}
+
+document.getElementById('fromB2C').onclick = function () {
+    toggleViewMode(12);
+}
+
+document.getElementById('fromC2B').onclick = function () {
+    toggleViewMode(12);
+}
+
+document.getElementById('fromC2F').onclick = function () {
+    toggleViewMode(13);
+}
+
+document.getElementById('fromF2C').onclick = function () {
+    toggleViewMode(13);
+}
+
+/* NOT NEEDED!!!!!
+document.getElementById('save-file-prompt').onclick = function () {
+    toggleViewMode();
+}
+*/
 
 //}
 

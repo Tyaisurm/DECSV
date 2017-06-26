@@ -14,6 +14,12 @@
   "secBtitle": "Section B",
   "secCtitle": "Section C",
   "secFtitle": "Review",
+  "subID": "Submission ID:",
+  "subTIME": "Submission time",
+  "fileQtitle": "File(s) in queue:",
+  "quit-conf": "Are you sure you want to quit?",
+  "quit-conf-unsaved": "Unsaved changes! Are you sure you want to quit?",
+  "restore-conf": "Would you like to restore previous session?",
   "current-keys": "Added keywords:",
   "wait-busy-msg": "Please wait..."
 }

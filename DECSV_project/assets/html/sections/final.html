@@ -1,14 +1,26 @@
 ﻿<template class="phase-template">
     <section id="secFinal" class="textSection section">
-        <p>final. yey :D</p>
+        <h1 id="secFtitle" class="text-content-title"></h1>
 
-        <div id="fromF2C" class="nav-left"></div>
-        <div id="fromF2Save" class="nav-right">
-            <div id="save-file-prompt" class="ui-prompt ui-button">
-                <div id="save-file-button">
-                    <img draggable="false" id="save-file-icon" class="disable-select" src="../ui_icons/appbar.save.png" />
-                </div>
+        <div id="fromF2C" class="nav-left ui-prompt ui-button">
+
+            <div id="fromF2C-button">
+                <img draggable="false" id="fromF2C-nav-icon" class="disable-select" src="../ui_icons/appbar.navigate.previous.png" />
             </div>
+
+            <h2 id="fromF2Ctext"></h2>
+
         </div>
+
+        <div id="save-file-prompt" class="nav-right ui-prompt ui-button">
+
+            <div id="save-file-button">
+                <img draggable="false" id="save-file-icon" class="disable-select" src="../ui_icons/appbar.save.png" />
+            </div>
+
+            <h2 id="fromF2Savetext"></h2>
+
+        </div>
+
     </section>
 </template>

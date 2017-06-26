@@ -1,14 +1,32 @@
 ﻿<template class="phase-template">
     <section id="secC" class="textSection section">
-        <p>section c</p>
+        <h1 id="secCtitle" class="text-content-title"></h1>
 
-        <div id="secCcontent" class="text-content">
-
+        <div id="secCtext-content" class="text-content">
+            <p id="secCcontent"></p>
         </div>
 
         <footer>
-            <div id="fromC2B" class="nav-left"></div>
-            <div id="fromC2F" class="nav-right"></div>
+            <div id="fromC2B" class="nav-left ui-prompt ui-button">
+
+                <div id="fromC2B-button">
+                    <img draggable="false" id="fromC2B-nav-icon" class="disable-select" src="../ui_icons/appbar.navigate.previous.png" />
+                </div>
+
+                <h2 id="fromC2Btext"></h2>
+
+            </div>
+
+            <div id="fromC2F" class="nav-right ui-prompt ui-button">
+
+                <div id="fromC2F-button">
+                    <img draggable="false" id="fromC2F-nav-icon" class="disable-select" src="../ui_icons/appbar.navigate.next.png" />
+                </div>
+
+                <h2 id="fromC2Ftext"></h2>
+
+            </div>
+
         </footer>
     </section>
 </template>

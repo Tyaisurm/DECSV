@@ -1,6 +1,6 @@
 ﻿/* setting listener for save file -button. This hanles both saving file, and moving to next file in queue */
 document.getElementById("save-file-prompt").onclick = function () {
-    console.log("SAVE CLICKED");
+    //console.log("SAVE CLICKED");
     var options = {
         title: "Save file",
         //defaultPath: THIS MUST BE SET
@@ -9,23 +9,40 @@ document.getElementById("save-file-prompt").onclick = function () {
         ]
     }
     function callback(fileName) {
-        if (fileName === undefined) {
-            logger.info("No file(s) chosen to be opened.");
+        if (fileName !== undefined) {
+            var encoding = "utf8";
+
+            //var content = parse_content2Array();
+
+            console.log("HOOOOOOOOOOT! SAVED!");  // TEMPORARY TEXT HERE <===
+            //writeFile_csv(fileName, content, encoding);
             return;
         }
-        var content = "THIS.IS.TEST-CONTENT!:D"; //only just in case for now
-        var encoding = "utf8";
-
-        writeFile_csv(fileName, content, encoding);
+        logger.warn("No file chosen to be saved!");
+        
     }
     dialog.showSaveDialog(options, callback);
+}
+
+// WORK IN PROGRESS
+function parse_content2Array() {
+    var sectionA_text;
+    var sectionB_text;
+    var sectionC_text;
+    var submissionID;
+    var submissionTIME;
+    var keywords;
+
+    var finalData = [];
+    finalData[0] = [];
+    finalData[1] = [];
 }
 
 /* This function takes in data that is in arrays, and then parses and writes it
 into new .csv files */
 function writeFile_csv(file, content, encoding) {
     //writing... Array[0-1][0-x]
-    var dataArray = get_survey_data();
+    var dataArray = content;
 
     //PARSING DATA FROM EDIT-VIEW HAPPENS >>HERE<<
 
@@ -38,7 +55,8 @@ function writeFile_csv(file, content, encoding) {
     */
 
     //parsing content...
-    console.log("Parsing content for saving...");
+    //console.log("Parsing content for saving...");
+    logger.info("Starting to parse array into proper csv-format...");
 
     var temp = "";
 
