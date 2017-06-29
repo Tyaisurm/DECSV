@@ -1,28 +1,9 @@
-﻿/* setting listener for save file -button. This hanles both saving file, and moving to next file in queue */
-document.getElementById("save-file-prompt").onclick = function () {
-    //console.log("SAVE CLICKED");
-    var options = {
-        title: "Save file",
-        //defaultPath: THIS MUST BE SET
-        filters: [
-            { name: 'CSV spreadsheet', extensions: ['csv'] }
-        ]
-    }
-    function callback(fileName) {
-        if (fileName !== undefined) {
-            var encoding = "utf8";
+﻿const remote = require('electron').remote;
+const BrowserWindow = remote.BrowserWindow;
+const dialog = remote.dialog;
 
-            //var content = parse_content2Array();
+/* setting listener for save file -button. This hanles both saving file, and moving to next file in queue */
 
-            console.log("HOOOOOOOOOOT! SAVED!");  // TEMPORARY TEXT HERE <===
-            //writeFile_csv(fileName, content, encoding);
-            return;
-        }
-        logger.warn("No file chosen to be saved!");
-        
-    }
-    dialog.showSaveDialog(options, callback);
-}
 
 // WORK IN PROGRESS
 function parse_content2Array() {

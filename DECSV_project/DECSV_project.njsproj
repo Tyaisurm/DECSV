@@ -137,7 +137,7 @@
     <Compile Include="assets\js\fileIO_old.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="assets\js\save_utils.js">
+    <Compile Include="assets\js\save_utils_old.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\js\startscreen.js">

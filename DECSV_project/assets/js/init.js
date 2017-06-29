@@ -1,19 +1,21 @@
 ﻿const remote = require('electron').remote;
 const BrowserWindow = remote.BrowserWindow;
 const dialog = remote.dialog;
-const focused_win = BrowserWindow.getFocusedWindow();
+const firstWindow = BrowserWindow.fromId(1);
 const fs = require('fs');
 const XLSX = require('xlsx');
 const shell = remote.shell;
+
+logger.info("Running init...");
 
 ///////////////////////////////////////////////////////// VIEW UTILITES
 
 function focusWindow(input) {
     if (input) {
-        //do stuff
+        $("html").css("opacity", "1");
     }
     else {
-        //do stuff
+        $("html").css("opacity", "0.5")
     }
 }
 
@@ -23,12 +25,12 @@ function updateContentStyle() {
 
 window.onfocus = function () {
     console.log("focus");
-    //focusWindow(true);
+    focusWindow(true);
 }
 
 window.onblur = function () {
     console.log("blur");
-    //focusWindow(false);
+    focusWindow(false);
 }
 
 window.onresize = function () {
@@ -37,15 +39,14 @@ window.onresize = function () {
     //const remote = require('electron').remote;
     //BrowserWindow = remote.BrowserWindow;
     //focused_win = BrowserWindow.getFocusedWindow();
-
-    if (focused_win.isMaximized() && document.getElementById("win-maximize-restore-icon").src !== "../ui_icons/appbar.window.restore.png") {
+    if (firstWindow.isMaximized() && document.getElementById("win-maximize-restore-icon").src !== "../ui_icons/appbar.window.restore.png") {
         document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.window.restore.png";
     }
-    else if (!focused_win.isMaximized() && document.getElementById("win-maximize-restore-icon").src !== "../ui_icons/appbar.app.png") {
+    else if (!firstWindow.isMaximized() && document.getElementById("win-maximize-restore-icon").src !== "../ui_icons/appbar.app.png") {
         document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.app.png";
     }
     else {
-        //something
+        //something... else?
     }
 }
 
@@ -115,8 +116,8 @@ function toggleViewMode(mode) {
         $("#secC").toggleClass("is-shown");
     }
     else if (mode === 13) {
-        $("#secB").toggleClass("is-shown");
         $("#secC").toggleClass("is-shown");
+        $("#secFinal").toggleClass("is-shown");
     }
     else {
         //
@@ -124,26 +125,81 @@ function toggleViewMode(mode) {
     }
 }
 
+function continueQueue() {
+    var files_left = window.fileQueue.length;
+    if (files_left >= 1) {
+        toggleViewMode(0);
+        clearElements();
+        readFile(window.fileQueue);
+    }
+    else if (files_left === 0) {
+
+        var options = {
+            type: 'info',
+            title: window.i18n.__('queue-empty-conf-title'),
+            message: window.i18n.__('queue-empty-conf-cont'),
+            buttons: [window.i18n.__('conf-ok')]
+        };
+
+        dialog.showMessageBox(options, function (index) {
+            clearElements();
+            toggleViewMode(1);
+        });
+    }
+    else {
+        logger.error("Unable to continue into the next file in queue!");
+    }
+}
+
+function clearElements() {
+    $("#secAcontent").empty();
+    $("#secBcontent").empty();
+    $("#aside-key-list").empty();
+    $("#final-censoredwords-list").empty();
+
+    for (var i = 1; i < 15; i++) {
+        var name = "secC-Q"+i+"-cont";
+        $(name).empty();
+    }
+
+    $("#aside-subID-value").empty();
+    $("#aside-subTIME-value").empty();
+}
+
 ////////////////////////////////////////////////////////////////////// WINDOW ELEMENT LISTENERS
 
     document.getElementById("win-minimize-icon").onclick = function () {
-        focused_win.minimize();
+        firstWindow.minimize();
     }
     document.getElementById("win-maximize-restore-icon").onclick = function () {
-        if (focused_win.isMaximized()) {
-            focused_win.unmaximize();
+        if (firstWindow.isMaximized()) {
+            firstWindow.unmaximize();
         }
         else {
-            focused_win.maximize();
+            firstWindow.maximize();
         }
     }
     document.getElementById("win-close-icon").onclick = function () {
-        if (window.noPendingChanges === true) {
-            focused_win.close();
+        if (window.noPendingChanges === true) { //THIS WILL BE CHECKED FROM LOCAL BACKUPFILE
+            firstWindow.close();
         }
         else {
-            //"Are you sure you want to quit?" PROMPT GOES HERE!!!
-            focused_win.close();
+
+            var options = {
+                type: 'info',
+                title: window.i18n.__('quit-conf-title'),
+                message: window.i18n.__('quit-conf-cont'),
+                buttons: [window.i18n.__('conf-yes'), window.i18n.__('conf-no')]
+            };
+
+            dialog.showMessageBox(options, function (index) {
+                if (index === 0) {
+                    firstWindow.close();
+                }
+                else {
+                    //
+                }
+            });
         }
     }
 
@@ -177,7 +233,7 @@ document.getElementById('').onclick = function () {
             
             if (fileNames !== undefined){
                 //console.log(fileNames);
-                //readFile(fileNames); // THIS SHOULD BE TURNED ON IN ORDER TO WORK
+                readFile(fileNames);
                 toggleViewMode(0);
                 return;
             }
@@ -197,6 +253,32 @@ document.getElementById('').onclick = function () {
             logger.error("Failed to open link to the portal!");
         });
     }
+
+/* setting listener for save file -button. This hanles both saving file, and moving to next file in queue */
+document.getElementById("save-file-prompt").onclick = function () {
+    //console.log("SAVE CLICKED");
+    var options = {
+        title: "Save file",
+        //defaultPath: THIS MUST BE SET
+        filters: [
+            { name: 'CSV spreadsheet', extensions: ['csv'] }
+        ]
+    }
+    function callback(fileName) {
+        if (fileName !== undefined) {
+            var encoding = "utf8";
+            removeCensored();
+            var content = parse_content2Array();
+            //console.log(content);
+            writeFile_csv(fileName, content, encoding);
+            continueQueue();
+            return;
+        }
+        logger.warn("No file chosen to be saved!");
+
+    }
+    dialog.showSaveDialog(options, callback);
+}
 
 document.getElementById('fromA2B').onclick = function () {
     toggleViewMode(11);
@@ -232,14 +314,46 @@ document.getElementById('save-file-prompt').onclick = function () {
 
 ////////////////////////////////////////////////////////// FUNCTIONS FOR READING (from files) AND SHOWING DATA (in webpages), AND SETTING UP UI TEXT (from translations)
 
-/* From here, code will be about fileIO */
+function updateFileQueue(files) {
+    //console.log(files);
+    var filename = null;
+    if (files.length > 0) {
+        filename = files.pop();
+        window.fileQueue = files;
+        //console.log("ASD 1");
+        $("#file-queue-counter-value").text(window.fileQueue.length);
+    }
+    else {
+        //console.log("ASD 2");
+        $("#file-queue-counter-value").text(window.fileQueue.length);
+    }
+    return filename;
+}
 
-    function readFile(files, encoding) {
+/* Turns .word with .censored class into " **** " */
+function removeCensored() {
+    //Section A
+    $("#secAcontent .censored").each(function (i) {
+        $(this).text("*****");
+    });
+    //Section B
+    $("#secBcontent .censored").each(function (i) {
+        $(this).text("*****");
+    });
+    //Section C
+
+    $("#secCtext-content .censored").each(function (i) {
+        $(this).text("*****");
+    });
+
+}
+
+/* From here, code will be about fileIO */
+    function readFile(files) { //does this need this? , encoding
 
         /* check file-extension */
-        var file = files[0];
-        var rest_files = files.pop();
-        window.fileQueue = rest_files;
+        var file = updateFileQueue(files);
+        var output_data = [];
 
         var file_ext = file.split('.').pop();
         //console.log("################################################");
@@ -301,16 +415,20 @@ document.getElementById('save-file-prompt').onclick = function () {
 
             var headers = CSVtoArray(lines[0]);
             var contents = CSVtoArray(lines[1]);
+            if (lines[2].length !== 0){
+                var keys = CSVtoArray(lines[2]);
+                output_data[2] = keys;
+            }
             //console.log(headers);
             //console.log(contents);
 
-            var output_data = [];
             output_data[0] = headers;
             output_data[1] = contents;
             //console.log("setting data");
-            //set_survey_data(output_data);//setting global variables.. oooh boy...
             window.currentFileContent = output_data;
-            //console.log(output_data);
+            var keys = null;
+            keys = showQuizData(output_data);
+            setupKeywordSelect(output_data[1].length, keys);
 
         }
 
@@ -329,11 +447,12 @@ document.getElementById('save-file-prompt').onclick = function () {
 
                 /* This function takes in raw data from read .csv file and turns it into arrays */
                 function parseCSV2Array(csv) {
-
+                    //console.log("RAW CSV DATA IN");
+                    //console.log(csv);
                     var separators = ['\"\",\"\"', ',\"\"', '\"\"'];
                     var newlines = ['\r\n', '\n'];
 
-                    console.log(typeof (csv));
+                    //console.log(typeof (csv));
                     //var lines = csv.split("\n");
                     var lines = csv.split(new RegExp(newlines.join('|'), 'g'));
                     //console.log(JSON.stringify(lines[0]));
@@ -342,18 +461,27 @@ document.getElementById('save-file-prompt').onclick = function () {
                     //console.log(JSON.stringify(lines[0]));
                     lines[1] = lines[1].substring(1, lines[1].length - 3);
                     //console.log(JSON.stringify(lines[1]));
+                    if (lines[2].length !== 0) {
+                        lines[2] = lines[2].substring(1, lines[2].length - 3);
+                    }
 
                     var headers = lines[0].split(new RegExp(separators.join('|'), 'g'));
                     var contents = lines[1].split(new RegExp(separators.join('|'), 'g'));
+                    if (lines[2].length !== 0) {
+                        var keys = lines[2].split(new RegExp(separators.join('|'), 'g'));
+                    }
                     //console.log(">>>>>>>>>>>>>>>>>>>>>>>>HEADERS");
                     //console.log(headers);
                     //console.log(">>>>>>>>>>>>>>>>>>>>>>>>CONTENTS");
                     //console.log(contents);
 
-                    var result = new Array(2);
+                    var result = new Array(); //was Array(2)
 
                     for (var i = 0; i < 2; i++) {
                         result[i] = [];
+                    }
+                    if (lines[2].length !== 0) {
+                        result[2] = [];
                     }
 
                     //result[0][0] = headers[0];
@@ -363,15 +491,21 @@ document.getElementById('save-file-prompt').onclick = function () {
                     for (var i = 0; i < contents.length; i++) {
                         result[1][i] = contents[i];
                     }
+                    if (lines[2].length !== 0) {
+                        for (var i = 0; i < keys.length; i++) {
+                            result[2][i] = keys[i];
+                        }
+                    }
 
                     return result;
                 }
                 //console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>OMAN TULOSTUS");
                 var output_data = parseCSV2Array(data)
                 //console.log("setting data");
-                //set_survey_data(output_data);//setting global variables.. oooh boy...
                 window.currentFileContent = output_data;
-                //console.log(output_data);
+                var keys = null;
+                keys = showQuizData(output_data);
+                setupKeywordSelect(output_data[1].length, keys);
             });
 
         }
@@ -382,69 +516,320 @@ document.getElementById('save-file-prompt').onclick = function () {
         /* This function parses data for textareas that are CURRENTLY USED
                 => Will be changed */
         function showQuizData(data) {
-            var data_0 = parseQuizArray(data, 0, 1);
-            var data_A = parseQuizArray(data, 2, 2);
-            var data_B = parseQuizArray(data, 3, 3);
-            var data_C = parseQuizArray(data, 4, data[0].length - 1);
-
-            if (data[2] === 'undefined') {
+            //console.log("INSIDE SHOW QUIZ DATA");
+            showCsecData(data); //, 4, data[0].length - 1);
+            var result = [];
+            if (data[2] === undefined) {
+                //console.log(data[2]);
                 logger.warn("Third line (keywords) is not available in current file!");
-            };
-
-
-            var text_0 = document.getElementById("text-area-0");
-            text_0.innerHTML = data_0;
-            var text_A = document.getElementById("text-area-A");
-            text_A.innerHTML = data_A;
-            var text_B = document.getElementById("text-area-B");
-            text_B.innerHTML = data_B;
-            var text_C = document.getElementById("text-area-C");
-            text_C.innerHTML = data_C;
-        }
-
-        /* This function makes it so that the text will look sorted in textarea */
-        function parseQuizArray(data, fromIX, toIX) {
-
-            var res = "";
-            for (var i = fromIX; i <= toIX; i++) {
-                res = res + data[0][i] + "\n>>>";
-                res = res + data[1][i] + "\n\n";
             }
-            return res;
+            else {
+                result = data[2];
+            }
+
+            var data_A = data[1][2];
+            var data_B = data[1][3];
+            $("#secAcontent").text(data_A);
+            $("#secBcontent").text(data_B);
+
+            $("#aside-subID-value").text(data[1][0]);
+            $("#aside-subTIME-value").text(data[1][1]);
+
+            return result;
         }
 
-                //showQuizData(output_data);
+        /* This function puts C section answers into right places */
+        function showCsecData(section_data) {
+            //console.log("#############");
+            var line = 1;
+            for (var i = 4; i < section_data[1].length - 1; i++){
+                //console.log(section_data[1][i]);
+                var lineId = "#secC-Q" + line + "-cont";
+                $(lineId).text(section_data[1][i]);
+                line++;
+            }
+        }
 
-        //var HERE YOU TAKE DATA FROM WINDOW-NAMESPACE, AND SHOW IT IN THE APPLICATION RIGHTLY FORMATTED!!!
+        /* This function shows pre-selected words from the file */
+        function loadKeyWords(keys) {
+            for (var i = 0; i < keys.length; i++){
+                var to_appended = '<li class="list-keys-elem">' + keys[i] + '</li>';
+                $("#aside-key-list").append(to_appended);
+                paintEmAll(keys[i], 0);
+            }
+            updateKeywordsList();
+        }
 
+        function updateKeywordsList() {
+            var elements = [];
+            $("#aside-key-list li").each(function (i) {
+                elements.push($(this).text());
+            });
+            elements.sort();
+            $("#aside-key-list").empty();
+
+            for (var i = 0; i < elements.length; i++) {
+                var to_appended = '<li class="list-keys-elem">' + elements[i] + '</li>';
+                $("#aside-key-list").append(to_appended);
+            }
+        }
+
+        function updateCensoredList() {
+            $("#final-censoredwords-list").empty();
+            //Section A
+            $("#secAcontent .censored").each(function (i) {
+                var to_appended = '<li class="list-censored-elem">' + $(this).text() + '</li>';
+                $("#final-censoredwords-list").append(to_appended);
+            });
+            //Section B
+            $("#secBcontent .censored").each(function (i) {
+                var to_appended = '<li class="list-censored-elem">' + $(this).text() + '</li>';
+                $("#final-censoredwords-list").append(to_appended);
+            });
+            //Section C
+
+            $("#secCtext-content .censored").each(function (i) {
+                var to_appended = '<li class="list-censored-elem">' + $(this).text() + '</li>';
+                $("#final-censoredwords-list").append(to_appended);
+            });
+        }
+
+        /* True if is found, false otherwise */
+        function testKeywordList(word) {
+
+            var found = false;
+
+            $("#aside-key-list li").each(function (i) {
+                //var index = $(this).index();
+                var text_cont = $(this).text();
+                if (text_cont === word) {
+                    found = true;
+                }
+            });
+            return found;
+        }
+
+        // mode 0 = paint all words as "keys"; mode 1 = remove "keys" marks from words
+        function paintEmAll(word, mode) {
+            //Section A
+            $("#secAcontent .word").each(function (i) {
+                var current_w = $(this).text();
+                if ((current_w.toLowerCase() === word.toLowerCase()) && !($(this).hasClass("censored"))) {
+                    if (mode === 0) { $(this).addClass("underlined"); }
+                    if (mode === 1) { $(this).removeClass("underlined"); }
+                }
+            });
+            //Section B
+            $("#secBcontent .word").each(function (i) {
+                var current_w = $(this).text();
+                if ((current_w.toLowerCase() === word.toLowerCase()) && !($(this).hasClass("censored"))) {
+                    if (mode === 0) { $(this).addClass("underlined"); }
+                    if (mode === 1) { $(this).removeClass("underlined"); }
+                }
+            });
+            //Section C
+
+            $("#secCtext-content .word").each(function (i) {
+                var current_w = $(this).text();
+                if ((current_w.toLowerCase() === word.toLowerCase()) && !($(this).hasClass("censored"))) {
+                    if (mode === 0) { $(this).addClass("underlined"); }
+                    if (mode === 1) { $(this).removeClass("underlined"); }
+                }
+            });
+
+        }
+        
+        // SETTING UP SELECTING KEYWORDS
+        function setupKeywordSelect(arr_l, keys_arr) {
+            $("#secAcontent").html(function (index, oldHtml) {
+                return oldHtml.replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
+            });
+            $("#secBcontent").html(function (index, oldHtml) {
+                return oldHtml.replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
+            });
+            for (var i = 1; i < (arr_l - 2); i++) {
+                var lineId = "#secC-Q" + i + "-cont";
+                //console.log(lineId);
+                $(lineId).html(function (index, oldHtml) {
+                    return oldHtml.replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
+                });
+            }
+
+            $(".word").on("click", function () {
+                //console.log($("#secBcontent").text());
+                if ($(this).hasClass("underlined")) {
+                    $(this).toggleClass("underlined");
+                    $(this).toggleClass("censored");
+                    updateCensoredList();
+                    paintEmAll($(this).text(), 1);
+                    var clicked = $(this).text().toLowerCase();
+                    $("#aside-key-list li").each(function (i) {
+                        //var index = $(this).index();
+
+                        var text_cont = $(this).text();
+                        if (text_cont === clicked) {
+                            $(this).remove();
+                        }
+
+                    });
+
+                }
+                else if ($(this).hasClass("censored")) {
+                    $(this).removeClass("censored");
+                    updateCensoredList();
+                    //go through list that is at the side->
+                    if (testKeywordList($(this).text())) { paintEmAll($(this).text(), 0); }
+                }
+                else {
+                    $(this).addClass("underlined");
+                    paintEmAll($(this).text(), 0);
+                    var clicked = $(this).text().toLowerCase();
+                    var found = testKeywordList(clicked);
+                    console.log(found);
+                    console.log(clicked);
+
+
+                    if (!found) {
+                        var to_appended = '<li class="list-keys-elem">' + clicked + '</li>';
+                        $("#aside-key-list").append(to_appended);
+                        updateKeywordsList();
+                    }
+                }
+            });
+            if (keys_arr !== null) {
+                loadKeyWords(keys_arr);
+            }
+        }
     }
 
 
 /* THIS IS SETTING UP UI TRANSLATION */
 
 function setupTranslations() {
+    logger.info("Loading translations into UI...");
     /* Start page */
     $("#open-file-prompt-text").text(i18n.__('open-files'));
     $("#portal-prompt-text").text(i18n.__('open-portal'));
 
     /* Section A */
+    $("#secAtitle").text(i18n.__('secAtitle'));
     $("#fromA2Btext").text(i18n.__('A2B-prompt'));
+    $("#secAquestion").text(i18n.__('secA-Q'));
 
     /* Section B */
-    //
+    $("#secBtitle").text(i18n.__('secBtitle'));
+    $("#fromB2Atext").text(i18n.__('B2A-prompt'));
+    $("#fromB2Ctext").text(i18n.__('B2C-prompt'));
+    $("#secBquestion").text(i18n.__('secB-Q'));
 
     /* Section C */
-    //
+    $("#secCtitle").text(i18n.__('secCtitle'));
+    $("#fromC2Btext").text(i18n.__('C2B-prompt'));
+    $("#fromC2Ftext").text(i18n.__('C2F-prompt'));
+
+    for (var i = 1; i < 15; i++){
+        var name = "#secC-Q" + i + "-t";
+        var translation = "secC-Q-" + i;
+        $(name).text(i18n.__(translation))
+    }
 
     /* Final section */
-    //
+    $("#secFtitle").text(i18n.__('secFtitle'));
+    $("#fromF2Ctext").text(i18n.__('F2C-prompt'));
+    $("#fromF2Savetext").text(i18n.__('save-next-prompt'));
+    $("#final-censoredwords-title").text(i18n.__('current-censored'));
 
     /* About */
     //
 
     // OTHERS ->>>
+    $("#file-queue-counter-text").text(i18n.__('fileQtitle'));
+    $("#aside-subID-title").text(i18n.__('subID'));
+    $("#aside-subTIME-title").text(i18n.__('subTIME'));
+    $("#aside-chosenkeys-title").text(i18n.__('current-keys'));
 
     logger.info("Setting up translations finished!");
     }
 
 setupTranslations();
+
+//////////////////////////////////////////////////////////// FUNCTIONS FOR WRITING DATA INTO FILES
+
+/* This function takes in data that is in arrays, and then parses and writes it
+into new .csv files */
+function writeFile_csv(file, dataArray, encoding) {
+    //writing... Array[0-1][0-x]
+
+    //console.log("Parsing content for saving...");
+    logger.info("Starting to parse array into proper csv-format...");
+
+    var temp = "";
+
+    //parse arrays to be like .csv file's content
+    for (var i = 0; i < dataArray.length; i++) {
+        temp = temp + "\"";
+        //console.log(i);
+        //console.log(temp);
+        for (var j = 0; j < dataArray[i].length; j++) {
+            //console.log(j);
+            //console.log(temp);
+            if (j === 0) {
+                temp = temp + dataArray[i][j];
+            }
+            else {
+                var input = dataArray[i][j];
+                temp = temp + ",\"\"" + input + "\"\"";
+            }
+        }
+        temp = temp + "\"\r\n";
+    }
+
+    //testlogs...
+    //console.log(file);
+    //console.log(encoding);
+    //console.log(temp);
+    content = temp;
+
+    //overwriting if same name at the moment!... naah. fs-dialog prompts about this before we even GET here :P
+    fs.writeFile(file, content, encoding, function (msg) {
+        if (!msg) {
+            //console.log(msg);
+            //console.log("The file has been successfully saved");
+            logger.info("File successfully saved!");
+            return;
+        }
+
+        logger.error("Error while trying to save a new file!");
+    });
+}
+
+// make array that will be then used to make new csv file
+function parse_content2Array() {
+
+    var orig_data = window.currentFileContent;
+
+    var sectionA_text = $("#secAcontent").text();
+    var sectionB_text = $("#secBcontent").text();
+    var sectionC_arr;
+    var keywords = [];
+    $("#aside-key-list li").each(function (i) {
+        keywords.push($(this).text());
+    });
+
+    $("#secC-Q1-cont___secC-Q14-cont").each(function (i) {
+        keywords.push($(this).text());
+    });
+
+    var finalData = orig_data;
+    finalData[1][2] = sectionA_text;
+    finalData[1][3] = sectionB_text;
+
+    for (var i = 1; i < 15; i++){
+
+        finalData[1][i+3] = $("#secC-Q"+i+"-cont").text();
+    }
+
+    finalData[2] = keywords;
+
+    return finalData;
+}

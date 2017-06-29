@@ -1,7 +1,7 @@
 {
   "name": "decsv_project",
   "productName": "DECSV",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Document editor for CSV-files to download, edit, save and upload them.",
   "main": "main.js",
   "scripts": {
@@ -21,6 +21,7 @@
     "electron-data": "2.1.0",
     "xlsx": "0.10.5",
     "jquery": "3.2.1",
-    "electron-log": "2.2.6"
+    "electron-log": "2.2.6",
+    "electron-builder": "19.8.0"
   }
 }

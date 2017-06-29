@@ -5,12 +5,12 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: aquamarine;
     pointer-events: none;
     visibility: hidden;
     opacity: 0;
     transform: scale(1.1);
     transition: visibility 0s .12s linear, opacity .12s ease-in, transform .12s ease-in;
+    z-index: 9000;
 }
     .about.is-shown {
         pointer-events:auto;

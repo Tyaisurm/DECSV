@@ -10,7 +10,7 @@ let mainWindow = null;
 function createWin() {
     mainWindow = new BrowserWindow({
         width: 900,
-        height: 700,
+        height: 830,
         frame: false,
         backgroundColor: '#999999'
     });
@@ -23,7 +23,7 @@ function createWin() {
     mainWindow.loadURL(win_url);
 
     //toggle dev tools when window opens
-    mainWindow.webContents.openDevTools();
+    //mainWindow.webContents.openDevTools();
 
     mainWindow.on('closed', function () {
         mainWindow = null;

@@ -5,8 +5,8 @@
     right: 0;
     bottom: 0;
     overflow-x: hidden;
-    overflow-y: auto;
-    color: var(--color-accent);
+    overflow-y: hidden;
+    /*color: var(--color-accent);*/
 
     /* Hide */
     pointer-events: none;
@@ -25,17 +25,47 @@
     }
 
 .text-content{
-    background-color:blanchedalmond;
     overflow-wrap:normal;
     overflow-x:auto;
     padding: 1rem;
     margin-left:2rem;
     margin-top:2rem;
     margin-bottom:2rem;
-    margin-right:30rem;
+    margin-right:2rem;
+    border: 2px solid black;
+    height: 50%;
 }
 
-.about{
-    z-index: 9000;
-    background-color: azure;
+.textSection{
+    left:0;
+    right:30%;
+}
+
+.asideSec{
+    right:0;
+    left:70%;
+    margin: 2rem;
+}
+
+/* ASIDE */
+#aside-wrap{
+    float:right;
+}
+
+#aside-chosenkeys{
+    height:300px;
+}
+
+#final-censoredwords{
+    height: 300px;
+    width: 170px;
+}
+
+ul {
+    border: 2px solid black;
+    height: 100%;
+    overflow: auto;
+}
+
+li {
 }

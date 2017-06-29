@@ -58,3 +58,18 @@ body {
         visibility: visible;
         opacity: 1;
     }
+
+p, h1, h2, h3, li {
+    -webkit-user-select:none;
+}
+
+.censored{
+    text-decoration:line-through;
+}
+
+.underlined{
+    background-color:yellow;
+}
+
+.word{
+}
