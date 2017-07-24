@@ -67,9 +67,13 @@ p, h1, h2, h3, li {
     text-decoration:line-through;
 }
 
-.underlined{
-    background-color:yellow;
+.underlined {
+    background-color: rgba(22, 155, 213, 1);
 }
 
 .word{
+    cursor:pointer;
 }
+    .word:hover {
+        text-shadow: 0 0 9px rgba(255,0,0,1);
+    }

@@ -1,12 +1,22 @@
 ﻿const remote = require('electron').remote;
-const BrowserWindow = remote.BrowserWindow;
 const dialog = remote.dialog;
-const firstWindow = BrowserWindow.fromId(1);
+const firstWindow = remote.getCurrentWindow();
 const fs = require('fs');
 const XLSX = require('xlsx');
+const http = require("http");
 const shell = remote.shell;
+const autoUpdater = remote.autoUpdater;
 
 logger.info("Running init...");
+
+var knex = require('knex')({
+    client: "sqlite3",
+    connection: {
+        filename: "../sql/database.sqlite"
+}
+});
+
+toggleViewMode(0);
 
 ///////////////////////////////////////////////////////// VIEW UTILITES
 
@@ -15,7 +25,7 @@ function focusWindow(input) {
         $("html").css("opacity", "1");
     }
     else {
-        $("html").css("opacity", "0.5")
+        $("html").css("opacity", "0.5");
     }
 }
 
@@ -24,17 +34,17 @@ function updateContentStyle() {
 }
 
 window.onfocus = function () {
-    console.log("focus");
+    //console.log("focus");
     focusWindow(true);
 }
 
 window.onblur = function () {
-    console.log("blur");
+    //console.log("blur");
     focusWindow(false);
 }
 
 window.onresize = function () {
-    console.log("resize");
+    //console.log("resize");
     //updateContentStyle();
     //const remote = require('electron').remote;
     //BrowserWindow = remote.BrowserWindow;
@@ -82,10 +92,11 @@ window.onresize = function () {
     // Input "2" = toggle about section
     //////
 function toggleViewMode(mode) {
+    console.log(mode);
     if (mode === 0) {
-        $("#aside-section").addClass("is-shown");
         $("#secA").addClass("is-shown");
 
+        $("#keywordsSec").removeClass("is-shown");
         $("#secB").removeClass("is-shown");
         $("#secC").removeClass("is-shown");
         $("#secFinal").removeClass("is-shown");
@@ -95,18 +106,19 @@ function toggleViewMode(mode) {
     else if (mode === 1) {
         $("#startSec").addClass("is-shown");
 
+        $("#keywordsSec").removeClass("is-shown");
         $("#secB").removeClass("is-shown");
         $("#secC").removeClass("is-shown");
         $("#secFinal").removeClass("is-shown");
         $("#aboutDiv").removeClass("is-shown");
-        $("#aside-section").removeClass("is-shown");
     }
     else if (mode === 2) {
         $("#aboutDiv").toggleClass("is-shown");
     }
     // Input "11" = toggle A-B
     // Input "12" = toggle B-C
-    // Input "13" = toggle C-F
+    // Input "13" = toggle C-K
+    // Input "14" = toggle K-F
     else if (mode === 11) {
         $("#secA").toggleClass("is-shown");
         $("#secB").toggleClass("is-shown");
@@ -117,10 +129,14 @@ function toggleViewMode(mode) {
     }
     else if (mode === 13) {
         $("#secC").toggleClass("is-shown");
+        $("#keywordsSec").toggleClass("is-shown");
+    }
+    else if (mode === 14) {
+        $("#keywordsSec").toggleClass("is-shown");
         $("#secFinal").toggleClass("is-shown");
     }
     else {
-        //
+        // If you end up here, blame the incompetent programmer
         logger.error("Error! Invalid parameter to toggleViewMode-function");
     }
 }
@@ -141,7 +157,7 @@ function continueQueue() {
             buttons: [window.i18n.__('conf-ok')]
         };
 
-        dialog.showMessageBox(options, function (index) {
+        dialog.showMessageBox(firstWindow, options, function (index) {
             clearElements();
             toggleViewMode(1);
         });
@@ -179,6 +195,11 @@ function clearElements() {
             firstWindow.maximize();
         }
     }
+
+    document.getElementById("update-prompt").onclick = function () {
+        autoUpdater.checkForUpdates();
+    }
+
     document.getElementById("win-close-icon").onclick = function () {
         if (window.noPendingChanges === true) { //THIS WILL BE CHECKED FROM LOCAL BACKUPFILE
             firstWindow.close();
@@ -192,7 +213,7 @@ function clearElements() {
                 buttons: [window.i18n.__('conf-yes'), window.i18n.__('conf-no')]
             };
 
-            dialog.showMessageBox(options, function (index) {
+            dialog.showMessageBox(firstWindow, options, function (index) {
                 if (index === 0) {
                     firstWindow.close();
                 }
@@ -220,7 +241,7 @@ document.getElementById('').onclick = function () {
     document.getElementById('open-file-prompt').onclick = function () {
         //console.log("OPEN CLICKED");
         var options = {
-            title: "Open file",
+            title: window.i18n.__('open-file-prompt-window-title'),
             //defaultPath: THIS MUST BE SET!
             filters: [
                 { name: 'Spreadsheet', extensions: ['csv', 'xls', 'xlsx'] }
@@ -239,7 +260,7 @@ document.getElementById('').onclick = function () {
             }
             logger.warn("No file(s) chosen to be opened!");
         }
-        dialog.showOpenDialog(options, callback);
+        dialog.showOpenDialog(firstWindow, options, callback);
     }
     document.getElementById('portal-prompt').onclick = function () {
         //console.log("HUEHHUEHUHE");
@@ -258,7 +279,7 @@ document.getElementById('').onclick = function () {
 document.getElementById("save-file-prompt").onclick = function () {
     //console.log("SAVE CLICKED");
     var options = {
-        title: "Save file",
+        title: window.i18n.__('save-prompt-window-title'),
         //defaultPath: THIS MUST BE SET
         filters: [
             { name: 'CSV spreadsheet', extensions: ['csv'] }
@@ -277,7 +298,7 @@ document.getElementById("save-file-prompt").onclick = function () {
         logger.warn("No file chosen to be saved!");
 
     }
-    dialog.showSaveDialog(options, callback);
+    dialog.showSaveDialog(firstWindow, options, callback);
 }
 
 document.getElementById('fromA2B').onclick = function () {
@@ -296,12 +317,20 @@ document.getElementById('fromC2B').onclick = function () {
     toggleViewMode(12);
 }
 
-document.getElementById('fromC2F').onclick = function () {
+document.getElementById('fromC2K').onclick = function () {
     toggleViewMode(13);
 }
 
-document.getElementById('fromF2C').onclick = function () {
+document.getElementById('fromK2C').onclick = function () {
     toggleViewMode(13);
+}
+
+document.getElementById('fromF2K').onclick = function () {
+    toggleViewMode(14);
+}
+
+document.getElementById('fromK2F').onclick = function () {
+    toggleViewMode(14);
 }
 
 /* NOT NEEDED!!!!!
@@ -349,6 +378,36 @@ function removeCensored() {
 }
 
 /* From here, code will be about fileIO */
+
+// Return array of string values, or NULL if CSV string not well formed.
+function CSVtoArray(text) {
+    var re_valid = /^\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*(?:,\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*)*$/;
+    var re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
+    // Return NULL if input string is not well formed CSV string.
+    if (!re_valid.test(text)) {
+        return null;
+    }
+    var arr = [];                     // Initialize array to receive values.
+    text.replace(re_value, // "Walk" the string using replace with callback.
+        function (m0, m1, m2, m3) {
+            // Remove backslash from \' in single quoted values.
+            if (m1 !== undefined) arr.push(m1.replace(/\\'/g, "'"));
+            // Remove backslash from \" in double quoted values.
+            else if (m2 !== undefined) {
+                arr.push(m2.replace(/\\"/g, '"'));
+            }
+            else if (m3 !== undefined) {
+                arr.push(m3);
+            }
+            return ''; // Return empty string.
+        });
+    // Handle special case of empty last value.
+    if (/,\s*$/.test(text)) {
+        arr.push('');
+    }
+    return arr;
+}
+
     function readFile(files) { //does this need this? , encoding
 
         /* check file-extension */
@@ -384,39 +443,13 @@ function removeCensored() {
             var newlines = ['\r\n', '\n'];
             var lines = csv_sheet.split(new RegExp(newlines.join('|'), 'g'));
 
-            // Return array of string values, or NULL if CSV string not well formed.
-            function CSVtoArray(text) {
-                var re_valid = /^\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*(?:,\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*)*$/;
-                var re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
-                // Return NULL if input string is not well formed CSV string.
-                if (!re_valid.test(text)) {
-                    return null;
-                }
-                var arr = [];                     // Initialize array to receive values.
-                text.replace(re_value, // "Walk" the string using replace with callback.
-                    function (m0, m1, m2, m3) {
-                        // Remove backslash from \' in single quoted values.
-                        if (m1 !== undefined) arr.push(m1.replace(/\\'/g, "'"));
-                        // Remove backslash from \" in double quoted values.
-                        else if (m2 !== undefined) {
-                            arr.push(m2.replace(/\\"/g, '"'));
-                        }
-                        else if (m3 !== undefined) {
-                            arr.push(m3);
-                        }
-                        return ''; // Return empty string.
-                    });
-                // Handle special case of empty last value.
-                if (/,\s*$/.test(text)) {
-                    arr.push('');
-                }
-                return arr;
-            };
-
             var headers = CSVtoArray(lines[0]);
             var contents = CSVtoArray(lines[1]);
+
+            var keys = null;
+
             if (lines[2].length !== 0){
-                var keys = CSVtoArray(lines[2]);
+                keys = CSVtoArray(lines[2]);
                 output_data[2] = keys;
             }
             //console.log(headers);
@@ -426,7 +459,7 @@ function removeCensored() {
             output_data[1] = contents;
             //console.log("setting data");
             window.currentFileContent = output_data;
-            var keys = null;
+            
             keys = showQuizData(output_data);
             setupKeywordSelect(output_data[1].length, keys);
 
@@ -476,8 +509,8 @@ function removeCensored() {
                     //console.log(contents);
 
                     var result = new Array(); //was Array(2)
-
-                    for (var i = 0; i < 2; i++) {
+                    var i = 0;
+                    for (i = 0; i < 2; i++) {
                         result[i] = [];
                     }
                     if (lines[2].length !== 0) {
@@ -485,14 +518,14 @@ function removeCensored() {
                     }
 
                     //result[0][0] = headers[0];
-                    for (var i = 0; i < headers.length; i++) {
+                    for (i = 0; i < headers.length; i++) {
                         result[0][i] = headers[i];
                     }
-                    for (var i = 0; i < contents.length; i++) {
+                    for (i = 0; i < contents.length; i++) {
                         result[1][i] = contents[i];
                     }
                     if (lines[2].length !== 0) {
-                        for (var i = 0; i < keys.length; i++) {
+                        for (i = 0; i < keys.length; i++) {
                             result[2][i] = keys[i];
                         }
                     }
@@ -500,7 +533,7 @@ function removeCensored() {
                     return result;
                 }
                 //console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>OMAN TULOSTUS");
-                var output_data = parseCSV2Array(data)
+                var output_data = parseCSV2Array(data);
                 //console.log("setting data");
                 window.currentFileContent = output_data;
                 var keys = null;
@@ -657,12 +690,13 @@ function removeCensored() {
 
             $(".word").on("click", function () {
                 //console.log($("#secBcontent").text());
+                var clicked = "";
                 if ($(this).hasClass("underlined")) {
                     $(this).toggleClass("underlined");
                     $(this).toggleClass("censored");
                     updateCensoredList();
                     paintEmAll($(this).text(), 1);
-                    var clicked = $(this).text().toLowerCase();
+                    clicked = $(this).text().toLowerCase();
                     $("#aside-key-list li").each(function (i) {
                         //var index = $(this).index();
 
@@ -683,7 +717,7 @@ function removeCensored() {
                 else {
                     $(this).addClass("underlined");
                     paintEmAll($(this).text(), 0);
-                    var clicked = $(this).text().toLowerCase();
+                    clicked = $(this).text().toLowerCase();
                     var found = testKeywordList(clicked);
                     console.log(found);
                     console.log(clicked);
@@ -710,6 +744,7 @@ function setupTranslations() {
     /* Start page */
     $("#open-file-prompt-text").text(i18n.__('open-files'));
     $("#portal-prompt-text").text(i18n.__('open-portal'));
+    $("#update-prompt-text").text(i18n.__('update-prompt'));
 
     /* Section A */
     $("#secAtitle").text(i18n.__('secAtitle'));
@@ -725,28 +760,34 @@ function setupTranslations() {
     /* Section C */
     $("#secCtitle").text(i18n.__('secCtitle'));
     $("#fromC2Btext").text(i18n.__('C2B-prompt'));
-    $("#fromC2Ftext").text(i18n.__('C2F-prompt'));
+    $("#fromC2Ktext").text(i18n.__('C2K-prompt'));
+
+    /* Tagging section */
+    $("#keywordsSecTitle").text(i18n.__('secKtitle'));
+    $("#fromK2Ctext").text(i18n.__('K2C-prompt'));
+    $("#fromK2Ftext").text(i18n.__('K2F-prompt'));
 
     for (var i = 1; i < 15; i++){
         var name = "#secC-Q" + i + "-t";
         var translation = "secC-Q-" + i;
-        $(name).text(i18n.__(translation))
+        $(name).text(i18n.__(translation));
     }
 
     /* Final section */
     $("#secFtitle").text(i18n.__('secFtitle'));
-    $("#fromF2Ctext").text(i18n.__('F2C-prompt'));
+    $("#fromF2Ktext").text(i18n.__('F2K-prompt'));
     $("#fromF2Savetext").text(i18n.__('save-next-prompt'));
     $("#final-censoredwords-title").text(i18n.__('current-censored'));
 
     /* About */
     //
 
-    // OTHERS ->>>
+    /* Titlebar */
     $("#file-queue-counter-text").text(i18n.__('fileQtitle'));
     $("#aside-subID-title").text(i18n.__('subID'));
     $("#aside-subTIME-title").text(i18n.__('subTIME'));
     $("#aside-chosenkeys-title").text(i18n.__('current-keys'));
+    $("#update-prompt-text").text(i18n.__('update-prompt'));
 
     logger.info("Setting up translations finished!");
     }
@@ -767,14 +808,25 @@ function writeFile_csv(file, dataArray, encoding) {
 
     //parse arrays to be like .csv file's content
     for (var i = 0; i < dataArray.length; i++) {
-        temp = temp + "\"";
+        if ((dataArray[2].length !== 0) && (i === 2)) {//
+            temp = temp + "\"\"";//
+        }//
+        else {//
+            temp = temp + "\"";
+        }//
         //console.log(i);
         //console.log(temp);
         for (var j = 0; j < dataArray[i].length; j++) {
             //console.log(j);
             //console.log(temp);
             if (j === 0) {
-                temp = temp + dataArray[i][j];
+                if ((dataArray[2].length !== 0) && (i === 2)){//
+                    temp = temp + dataArray[i][j] + "\"\"";//
+                }//
+                else {//
+                    temp = temp + dataArray[i][j];
+                }//
+
             }
             else {
                 var input = dataArray[i][j];

@@ -1,14 +1,13 @@
-﻿.ui-prompt{
+﻿.ui-prompt {
     /*
     position:absolute;
     */
-    border:1px solid black;
+    border: 1px solid black;
     padding: 1rem;
-    display:flex;
-    max-width:25rem;
-
+    display: flex;
+    max-width: 25rem;
     -webkit-user-select: none;
-    background-color: cadetblue;
+    background-color: rgba(22, 155, 213, 1);
     /*
     cursor:pointer;
     */
@@ -19,6 +18,6 @@
 }
 
 .ui-button:hover {
-    background-color: azure;
+    background-color:darkgrey;
 }
 

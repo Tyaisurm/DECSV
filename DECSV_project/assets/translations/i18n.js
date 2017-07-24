@@ -7,19 +7,23 @@ let app = electron.app ? electron.app : electron.remote.app
 module.exports = i18n;
 
 function i18n() {
+    var locale = app.getLocale();
+    if (!!/[^a-zA-Z]/.test(locale)) {
+        locale = locale.substring(0, 2);
+    }
     logger.info("loading translation file...");
-    if (fs.existsSync(path.join(__dirname, app.getLocale() + '.json'))) {
-        logger.info("Using translation for locale '" + app.getLocale() + "'.");
+    if (fs.existsSync(path.join(__dirname, locale + '.json'))) {
+        logger.info("Using translation for locale '" + locale + "'.");
         try {
-            loadedLanguage = require(path.join(__dirname, app.getLocale() + '.json'));
+            loadedLanguage = require(path.join(__dirname, locale + '.json'));
         }catch(err){
-            logger.error("Failed to read the file '" + app.getLocale() + ".json'");
+            logger.error("Failed to read the file '" + locale + ".json'");
         }
     }
     else {
-        logger.warn("No desired language found for user's locale. Using fallback-translation...");
-        logger.info("Using translation for locale 'en-US'.");
-        loadedLanguage = require(path.join(__dirname, 'en-US.json'));
+        logger.warn("No desired language found for user's locale. Using fallback-translation...\r\nGot locale: "+locale);
+        logger.info("Using translation for locale 'en'.");
+        loadedLanguage = require(path.join(__dirname, 'en.json'));
     }
 }
 

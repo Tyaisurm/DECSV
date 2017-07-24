@@ -4,7 +4,7 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <Name>DECSV_project</Name>
     <RootNamespace>DECSV_project</RootNamespace>
-    <NodeExePath>C:\Users\h17263\Documents\Visual Studio 2017\Projects\DECSV_project\DECSV_project\node_modules\electron\dist\electron.exe</NodeExePath>
+    <NodeExePath>C:\Users\h17263\VS-p\DECSV_project\DECSV_project\node_modules\electron\dist\electron.exe</NodeExePath>
     <ScriptArguments>
     </ScriptArguments>
     <NodeExeArguments>
@@ -39,9 +39,6 @@
     <Content Include="assets\css\about.css">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\css\debug_colors.css">
-      <SubType>Code</SubType>
-    </Content>
     <Content Include="assets\css\ui_controls.css">
       <SubType>Code</SubType>
     </Content>
@@ -54,10 +51,14 @@
     <Content Include="assets\css\titlebar.css">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="assets\css\w3.css" />
+    <Content Include="assets\html\sections\login.html" />
+    <Content Include="assets\html\sections\section_a-backup.html" />
+    <Content Include="assets\images\logo.png" />
     <Content Include="assets\html\sections\about.html">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\html\sections\aside.html">
+    <Content Include="assets\html\sections\aside_old.html">
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\html\sections\final.html">
@@ -66,6 +67,7 @@
     <Content Include="assets\html\sections\section_a.html">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="assets\html\sections\keywords.html" />
     <Content Include="assets\html\sections\section_b.html">
       <SubType>Code</SubType>
     </Content>
@@ -75,7 +77,8 @@
     <Content Include="assets\html\sections\start.html">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\translations\en-US.json">
+    <Content Include="assets\translations\fi.json" />
+    <Content Include="assets\translations\en.json">
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\ui_icons\appbar.app.png" />
@@ -104,6 +107,12 @@
     <Content Include="assets\html\index.html">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="build\icon.ico" />
+    <Content Include="build\install-spinner.gif" />
+    <Content Include="assets\html\opening.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="sql\database.sqlite" />
     <Content Include="tsconfig.json">
       <SubType>Code</SubType>
     </Content>
@@ -118,10 +127,13 @@
     <Folder Include="assets\" />
     <Folder Include="assets\html\" />
     <Folder Include="assets\html\sections\" />
+    <Folder Include="assets\images\" />
     <Folder Include="assets\ui_icons\" />
     <Folder Include="assets\js\" />
     <Folder Include="assets\css\" />
     <Folder Include="assets\translations\" />
+    <Folder Include="build\" />
+    <Folder Include="sql\" />
     <Folder Include="Scripts\" />
     <Folder Include="Scripts\typings\" />
     <Folder Include="Scripts\typings\node\" />
