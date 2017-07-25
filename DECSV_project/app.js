@@ -10,6 +10,8 @@ const dialog = electron.dialog;
 let openWindow = null;
 let mainWindow = null;
 
+let i18n_app = null;
+
 if (require('electron-squirrel-startup')) return;
 
 function createWin() {
@@ -30,6 +32,7 @@ function createWin() {
 
     mainWindow = new BrowserWindow({
         width: 1200,
+        minWidth: 736,
         height: 840,
         frame: false,
         backgroundColor: '#dadada',
@@ -51,9 +54,33 @@ function createWin() {
         mainWindow.show();
         openWindow.close();
     });
+
+    mainWindow.on('close', (e) => {
+
+        if (app.showExitPrompt) {
+            e.preventDefault();
+
+            var options = {
+                type: 'info',
+                title: i18n_app.__('quit-conf-title'),
+                message: i18n_app.__('quit-conf-cont'),
+                buttons: [i18n_app.__('conf-yes'), i18n_app.__('conf-no')]
+            };
+
+            dialog.showMessageBox(mainWindow, options, function (index) {
+                if (index === 0) { // Runs the following if 'Yes' is clicked
+                    app.showExitPrompt = false
+                    mainWindow.close()
+                }
+            })
+        }
+    })
+
     mainWindow.on('closed', function () {
         mainWindow = null;
     });
+    mainWindow.on('unresponsive', function () { });
+    mainWindow.on('responsive', function () { });
     openWindow.on('closed', function () {
         openWindow = null;
     });
@@ -84,7 +111,10 @@ app.on('ready', function () {
         //well then, you are fckd :x
     }
     logger.info('app ready');
-    
+
+    i18n_app = new (require('./assets/translations/i18n'))(true);
+    app.showExitPrompt = true;
+
     createWin();
 });
 
@@ -97,10 +127,13 @@ app.on('activate', function () {
     }
 });
 /* AUTOUPDATER */
-var updatePath = "http://testing-tyaisurm.c9users.io/update/win64/" + app.getVersion().toString();
+var updatePath = "http://testing-tyaisurm.c9users.io/update/win32/" + app.getVersion().toString();
 autoUpdater.setFeedURL(updatePath);
 
 app.on('will-quit', function () {
+    logger.info("application will quit...");
+});
+app.on('quit', function () {
     logger.info("quitting application...");
 });
 
@@ -110,36 +143,26 @@ autoUpdater.on('checking-for-update', function () {
 
     var options = {
         type: 'info',
-        title: "CHECKING!!!!",
-        message: app.getVersion().toString(),
-        buttons: ["Yes :)", "Naah :c"]
+        title: "Checking for updates",
+        message: app.getVersion().toString() + " is the current version",
+        buttons: ["ok"]
     };
 
     dialog.showMessageBox(options, function (index) {
-        if (index === 0) {
-           //
-        }
-        else {
-            //nothing
-        }
+        //
     });
 });
 autoUpdater.on('update-available', function () {
     logger.info("Update available!");
     var options = {
         type: 'info',
-        title: "UPDATE AVAILABLE :D",
-        message: "DOWNLOADING!",
-        buttons: ["Yes :)", "Naah :c"]
+        title: "Update available",
+        message: "Update found to be available",
+        buttons: ["ok"]
     };
 
     dialog.showMessageBox(options, function (index) {
-        if (index === 0) {
-           //
-        }
-        else {
-            //nothing
-        }
+        //
     });
 });
 autoUpdater.on('error', function (err) {
@@ -148,35 +171,25 @@ autoUpdater.on('error', function (err) {
     var options = {
         type: 'info',
         title: "ERRORR!!!!",
-        message: updatePath + "##################" + err.toString(),
-        buttons: ["Yes :)", "Naah :c"]
+        message: updatePath + "##################\r\n" + err.toString(),
+        buttons: ["ok"]
     };
 
     dialog.showMessageBox(options, function (index) {
-        if (index === 0) {
-            //
-        }
-        else {
-            //nothing
-        }
+        //
     });
 });
 autoUpdater.on('update-not-available', function () {
-    logger.info("Update NOT available!");
+    logger.info("Update not available!");
     var options = {
         type: 'info',
         title: "NO UPDATE",
-        message: "UPDATE NO ACAILABLE",
-        buttons: ["Yes :)", "Naah :c"]
+        message: "UPDATE NO AVAILABLE",
+        buttons: ["ok"]
     };
 
     dialog.showMessageBox(options, function (index) {
-        if (index === 0) {
-            
-        }
-        else {
-            //nothing
-        }
+        //
     });
 });
 autoUpdater.on('update-downloaded', function (ev, relNot, relNam, relDat, updUrl) {
@@ -188,9 +201,9 @@ autoUpdater.on('update-downloaded', function (ev, relNot, relNam, relDat, updUrl
     console.log(updUrl);
     var options = {
         type: 'info',
-        title: "UPDATE READY",
-        message: "INSTALL?",
-        buttons: ["Yes :)", "Naah :c"]
+        title: "Update ready to install",
+        message: "Install? Information:\r\nev: " + ev + "\r\nrelNot: " + relNot + "\r\nrelNam: " + relNam + "\r\nrelDat: " + relDat + "\r\nupdUrl: " + updUrl,
+        buttons: ["Yea :)", "Naah :c"]
     };
 
     dialog.showMessageBox(options, function (index) {

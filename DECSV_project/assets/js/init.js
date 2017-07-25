@@ -20,45 +20,10 @@ toggleViewMode(0);
 
 ///////////////////////////////////////////////////////// VIEW UTILITES
 
-function focusWindow(input) {
-    if (input) {
-        $("html").css("opacity", "1");
-    }
-    else {
-        $("html").css("opacity", "0.5");
-    }
-}
-
-function updateContentStyle() {
-    //modify content style depending on window size
-}
-
-window.onfocus = function () {
-    //console.log("focus");
-    focusWindow(true);
-}
-
-window.onblur = function () {
-    //console.log("blur");
-    focusWindow(false);
-}
-
-window.onresize = function () {
-    //console.log("resize");
-    //updateContentStyle();
-    //const remote = require('electron').remote;
-    //BrowserWindow = remote.BrowserWindow;
-    //focused_win = BrowserWindow.getFocusedWindow();
-    if (firstWindow.isMaximized() && document.getElementById("win-maximize-restore-icon").src !== "../ui_icons/appbar.window.restore.png") {
-        document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.window.restore.png";
-    }
-    else if (!firstWindow.isMaximized() && document.getElementById("win-maximize-restore-icon").src !== "../ui_icons/appbar.app.png") {
-        document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.app.png";
-    }
-    else {
-        //something... else?
-    }
-}
+firstWindow.on('focus', function () { $("html").css("opacity", "1");});
+firstWindow.on('blur', function () { $("html").css("opacity", "0.5");});
+firstWindow.on('maximize', function () { document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.window.restore.png";});
+firstWindow.on('unmaximize', function () { document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.app.png"; });
 
 //window.onload = function () {
     /*
@@ -201,30 +166,11 @@ function clearElements() {
     }
 
     document.getElementById("win-close-icon").onclick = function () {
-        if (window.noPendingChanges === true) { //THIS WILL BE CHECKED FROM LOCAL BACKUPFILE
-            firstWindow.close();
-        }
-        else {
-
-            var options = {
-                type: 'info',
-                title: window.i18n.__('quit-conf-title'),
-                message: window.i18n.__('quit-conf-cont'),
-                buttons: [window.i18n.__('conf-yes'), window.i18n.__('conf-no')]
-            };
-
-            dialog.showMessageBox(firstWindow, options, function (index) {
-                if (index === 0) {
-                    firstWindow.close();
-                }
-                else {
-                    //
-                }
-            });
-        }
+        firstWindow.close();
     }
 
-document.getElementById('titlebar-window-about').onclick = function () {
+
+document.getElementById('win-about-icon').onclick = function () {
     toggleViewMode(2);
 }
 

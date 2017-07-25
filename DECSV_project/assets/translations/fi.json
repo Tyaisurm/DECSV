@@ -20,7 +20,7 @@
   "subTIME": "Vastausaika:",
   "fileQtitle": "Tiedostoja jonossa:",
   "quit-conf-title": "Vahvistus",
-  "quit-conf-cont": "Oletko varma, että haluat sulkea ohjelman?",
+  "quit-conf-cont": "Haluatko varmasti sulkea ohjelman?",
   "queue-empty-conf-title": "Ei enempää tiedostoja",
   "queue-empty-conf-cont": "Olet päässyt jonon loppuun. Ei tiedostoja jäljellä!",
   "restore-conf": "Haluaisitko palauttaa edellisen istunnon?",

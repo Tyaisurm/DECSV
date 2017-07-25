@@ -11,6 +11,6 @@ Array.prototype.forEach.call(links, function (link) {
         document.querySelector('.content').appendChild(clone);
     }
 
-    document.querySelector('.content').appendChild(clone);
+    //document.querySelector('.content').appendChild(clone);
     logger.info("Imported: " + link.href);
 });

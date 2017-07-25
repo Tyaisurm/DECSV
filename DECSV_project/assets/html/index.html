@@ -9,11 +9,7 @@
     <script>window.i18n = new (require('../translations/i18n'));</script>
 
     <link rel="stylesheet" href="../css/w3.css">
-    <link rel="stylesheet" href="../css/global.css">
-    <link rel="stylesheet" href="../css/about.css">
-    <link rel="stylesheet" href="../css/titlebar.css">
-    <link rel="stylesheet" href="../css/sections.css">
-    <link rel="stylesheet" href="../css/ui_controls.css">
+    <link rel="stylesheet" href="../css/custom.css">
 
     <link rel="import" href="./sections/start.html">
     <link rel="import" href="./sections/section_a.html">
@@ -24,29 +20,23 @@
     <link rel="import" href="./sections/about.html">
 
 </head>
-<body style="margin: 5px;height: 100%;display: flex;flex-direction:column;">
-    <header id="top-titlebar"class="drag disable-select">
-        <div id="titlebar-window-controls" class="no-drag">
-            <div id="titlebar-window-about" class="win-control-button disable-select ">
-                <img draggable="false" id="win-about-icon" class="win-control-button ui-button disable-select" src="../ui_icons/appbar.question.png" />
-            </div>
-            <div id="titlebar-window-minimize" class="win-control-button disable-select ">
-                <img draggable="false" id="win-minimize-icon" class="win-control-button ui-button disable-select" src="../ui_icons/appbar.minus.png" />
-            </div>
-            <div id="titlebar-window-maximize-restore" class="win-control-button">
-                <img draggable="false" id="win-maximize-restore-icon" class="win-control-button ui-button disable-select" src="../ui_icons/appbar.app.png" />
-            </div>
-            <div id="titlebar-window-close" class="win-control-button">
-                <img draggable="false" id="win-close-icon" class="win-control-button ui-button disable-select" src="../ui_icons/appbar.close.png" />
-            </div>
+<body>
+    <header id="top-titlebar"class="w3-display-container w3-blue drag">
+        <div id="titlebar-left-corner" class="w3-display-topleft w3-bar">
+            <img draggable="false" id="slipps-title-icon" class="w3-bar-item" src="../ui_icons/SLIPPS.logo-76.png" />
+            <p id="titlebar-filename" class="w3-bar-item">No file</p>
+            <p id="titlebar-appname" class="w3-bar-item"> - DECSV</p>
         </div>
 
+        <div id="titlebar-window-controls" class="w3-bar w3-display-topright no-drag">
+                <img draggable="false" id="win-about-icon" class="w3-bar-item w3-button corner-buttons" src="../ui_icons/appbar.question.png" />
+                <img draggable="false" id="win-minimize-icon" class="w3-bar-item w3-button corner-buttons" src="../ui_icons/appbar.minus.png" />
+                <img draggable="false" id="win-maximize-restore-icon" class="w3-bar-item w3-button corner-buttons" src="../ui_icons/appbar.app.png" />
+                <img draggable="false" id="win-close-icon" class="w3-bar-item w3-button corner-buttons" src="../ui_icons/appbar.close.png" />
+        </div>
     </header>
 
-    <h2 id="file-queue-counter-text"></h2>
-    <h2 id="file-queue-counter-value">0</h2>
-
-    <main class="content is-shown"></main>
+    <main class="content is-shown w3-container"></main>
     <script>require('../js/importing');</script>
     <script>require('../js/init');</script>
 </body>

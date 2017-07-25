@@ -1,17 +1,23 @@
 ﻿const path = require("path")
 const electron = require('electron')
 const fs = require('fs');
+
+const logger = require('electron-log');
+
 let loadedLanguage;
 let app = electron.app ? electron.app : electron.remote.app
 
 module.exports = i18n;
 
-function i18n() {
+function i18n(check = false) {
+    logger.info("in app?: " + check);
     var locale = app.getLocale();
     if (!!/[^a-zA-Z]/.test(locale)) {
         locale = locale.substring(0, 2);
     }
+
     logger.info("loading translation file...");
+
     if (fs.existsSync(path.join(__dirname, locale + '.json'))) {
         logger.info("Using translation for locale '" + locale + "'.");
         try {

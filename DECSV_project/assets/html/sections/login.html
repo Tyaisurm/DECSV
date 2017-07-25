@@ -1,5 +1,33 @@
 ﻿<template class="phase-template">
     <div id="aboutDiv" class="about">
         <p style="margin:auto;">LOGIN WILL BE HERE</p>
+
+        <form action='login.php' method='POST'>
+            <div class=''>
+                <div class=''>
+                    <input id='email' name='login' type='text' class=''>
+                    <label for='email'>Username or Email</label>
+                </div>
+            </div>
+            <div class=''>
+                <div class=''>
+                    <input id='password' name='password' type='password' class=''>
+                    <label for='password'>Password</label>
+                </div>
+            </div>
+            <div>
+                <input type='checkbox' id='remember_me' checked='checked' />
+                <label for='remember_me'>Remember Me</label>
+            </div>
+            <div class='row'>
+                <div class=''>
+                    <button class='' name='action_login'>Sign In</button>
+                </div>
+            </div>
+        </form>
+        <p>
+            <a class='' href='reset.php'>Reset Password</a>
+        </p>
+
     </div>
 </template>

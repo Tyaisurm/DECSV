@@ -39,6 +39,9 @@
     <Content Include="assets\css\about.css">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="assets\css\custom.css">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="assets\css\ui_controls.css">
       <SubType>Code</SubType>
     </Content>
@@ -107,6 +110,8 @@
     <Content Include="assets\html\index.html">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="assets\ui_icons\SLIPPS.logo-76.png" />
+    <Content Include="assets\ui_icons\SLIPPS.logo.png" />
     <Content Include="build\icon.ico" />
     <Content Include="build\install-spinner.gif" />
     <Content Include="assets\html\opening.html">
@@ -150,9 +155,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\js\save_utils_old.js">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="assets\js\startscreen.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\translations\i18n.js">

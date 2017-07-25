@@ -1,0 +1,236 @@
+﻿/*
+* {
+    box-sizing: border-box;
+}
+
+html {
+    height: 100%;
+    font-family: 'BlinkMacSystemFont', 'Lucida Grande', 'Segoe UI', Ubuntu, Cantarell, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow: hidden; /* Prevents rubber-band scrolling of the whole "page" */
+    /*background-color: #fff; /* To cover OSes with no default background color */
+}
+
+/*
+body {
+    margin: 5px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+*/
+
+/* Utilities ---------------------------- */
+
+.u-avoid-clicks {
+    pointer-events: none;
+}
+
+
+.no-display {
+    display: none;
+}
+
+.disable-select {
+    -webkit-user-select: none;
+}
+
+.drag {
+    -webkit-app-region: drag;
+}
+
+.no-drag {
+    -webkit-app-region: no-drag;
+}
+
+/*
+.section {
+    position: absolute;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: visibility 0s .12s linear, opacity .12s ease-in, transform .12s ease-in;
+    background-color: #dadada;
+}
+    
+    .section.is-shown {
+        pointer-events: auto;
+        visibility: visible;
+        opacity: 1;
+        transform: translateX(0);
+        transition: visibility 0s 0s linear, opacity .36s ease-out, transform .36s ease-out;
+    }
+    */
+/*
+.text-content {
+    overflow-wrap: normal;
+    overflow-x: auto;
+    padding: 1rem;
+    margin: 2rem;
+    border: 2px solid black;
+    height: 50%;
+    background-color: white;
+}
+    */
+/*
+.textSection{
+    left:0;
+    right:30%;
+}*/
+/*
+.asideSec{
+    right:0;
+    left:70%;
+    margin: 2rem;
+}*/
+
+/* ASIDE 
+#aside-wrap{
+    float:right;
+}
+
+#aside-chosenkeys{
+    height:300px;
+}
+*/
+/*
+#final-censoredwords {
+    height: 300px;
+    width: 170px;
+}
+
+ul {
+    border: 2px solid black;
+    height: 100%;
+    overflow: auto;
+}
+
+.win-control-button {
+    max-width: 30px;
+    max-height: 30px;
+    display: inline-block;
+}
+
+#titlebar-window-controls {
+    float: right;
+    min-height: 30px;
+    max-height: 30px;
+}
+*/
+#top-titlebar {
+    z-index: 9001;
+    height:33px;
+}
+.corner-buttons {
+    height: 38px;
+}
+#slipps-title-icon {
+    margin-left: -10px;
+    margin-top: -4px;
+    height: 45px;
+    padding-right:10px;
+}
+#titlebar-left-corner{
+    z-index: 9000;
+}
+#titlebar-filename{
+    margin-top:0px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    min-width:0;
+    max-width:400px;
+    padding-left:0;
+    padding-right:0;
+}
+#titlebar-appname {
+    margin-top: 0px;
+    padding-left:0;
+    white-space:pre;
+}
+#titlebar-window-controls {
+    width: 216px;
+    z-index: 9002;
+}
+/*
+.about {
+    position: absolute;
+    display: flex;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    transform: scale(1.1);
+    transition: visibility 0s .12s linear, opacity .12s ease-in, transform .12s ease-in;
+    z-index: 8000;
+    background-color: #dadada;
+}
+
+    .about.is-shown {
+        pointer-events: auto;
+        visibility: visible;
+        opacity: 1;
+        transform: scale(1);
+        transition: visibility 0s 0s linear, opacity .24s ease-out, transform .24s ease-out;
+    }
+
+
+.ui-prompt {
+    border: 1px solid black;
+    padding: 1rem;
+    display: flex;
+    max-width: 25rem;
+    -webkit-user-select: none;
+    background-color: rgba(22, 155, 213, 1);
+}
+
+    .ui-prompt h2 {
+        overflow: hidden;
+        overflow-wrap: normal;
+    }
+
+.ui-button:hover {
+    background-color: darkgrey;
+}
+*/
+/* Content ------------------ */
+/*
+.content {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    visibility: hidden;
+    opacity: 0;
+}
+
+    .content.is-shown {
+        visibility: visible;
+        opacity: 1;
+    }
+*/
+p, h1, h2, h3, h4, h5, h6, li {
+    -webkit-user-select: none;
+}
+
+.censored {
+    text-decoration: line-through;
+}
+
+.underlined {
+    background-color: rgba(22, 155, 213, 1);
+}
+
+.word {
+    cursor: pointer;
+}
+
+    .word:hover {
+        text-shadow: 0 0 9px rgba(255,0,0,1);
+    }
