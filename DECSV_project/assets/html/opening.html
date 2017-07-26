@@ -3,15 +3,28 @@
 <html xmlns="http://www.w3.org/1999/xhtml" style="height: 100%;font-family: 'BlinkMacSystemFont', 'Lucida Grande', 'Segoe UI', Ubuntu, Cantarell, sans-serif;font-size: 14px;line-height: 1.5;overflow: hidden;">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style>
+        @keyframes spinning {
+            0% {
+                -webkit-transform: rotateY(0deg)
+            }
+            100% {
+                -webkit-transform: rotateY(359deg)
+            }
+        }
+    </style>
 </head>
-<body>
+<body style="margin:5px;pointer-events:none">
     <header id="top-titlebar" style="position:absolute;min-height: 40px;max-height: 40px;width:290px;z-index: 9001;-webkit-app-region: drag;" class="drag disable-select">
     </header>
         <div id="image-logo" style="-webkit-user-select: none;">
-            <img draggable="false" id="logo" style="display:block;margin:auto;-webkit-user-select: none;" src="../images/logo.png" />
+            <img draggable="false" id="logo" style="display:block;margin:auto;-webkit-user-select: none;animation: spinning 4s infinite linear" src="../images/logo_noname.png" />
         </div>
     <div style="text-align:center;transform:translateY(-40px);">
-        <h1 style="font-style:italic;color:#187dc1;-webkit-user-select: none;">DECSV</h1>
+        <h1 style="font-family:sans-serif;font-style:italic;font-size:40px;color:#187dc1;-webkit-user-select: none;">SLIPPS</h1>
+    </div>
+    <div style="text-align:center;transform:translateY(-90px);">
+        <h1 style="font-family:sans-serif;font-style:italic;color:#187dc1;-webkit-user-select: none;">DECSV</h1>
     </div>
 </body>
 </html>

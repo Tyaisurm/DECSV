@@ -11,13 +11,22 @@ it possible to easily port the program to different platforms
 (Linux, Mac, Windows), thanks to the cross platform support of the
 Electron framework.
 
+This is made as a part of SLIPPS project, meaning it will be used by teachers/professors of medical
+students, in order to review data from SLIPPS surveys.
+
 Used packages/libraries/frameworks:
 > electron (MIT)
-   - node.js
-   - chromium
-   - v8
-> electron-data (MIT License)
+   > node.js
+   > chromium
+   > v8
+
+> electron-store (MIT License)
+
+> electron-squirrel-startup (Apache License 2.0)
+> electron-builder-squirrel-windows (MIT License) NO LICENSE FILE!!! (plugin to electron builder)
 > js-xlsx (xlsx) (Apache License 2.0)
 > jquery (MIT License)
 > electron-log (MIT License)
 > electron-builder (MIT License)
+
+>Windowsicons (CC BY-ND 3.0 License)

@@ -7,19 +7,12 @@ const http = require("http");
 const shell = remote.shell;
 const autoUpdater = remote.autoUpdater;
 
-logger.info("Running init...");
-
-var knex = require('knex')({
-    client: "sqlite3",
-    connection: {
-        filename: "../sql/database.sqlite"
-}
-});
-
-toggleViewMode(0);
+/* FAST DEBUG - toggles everything that is not titlebar */
+const enable_onclicks = false;
+logger.debug("Running init...");
 
 ///////////////////////////////////////////////////////// VIEW UTILITES
-
+if (firstWindow.isMaximized()) { document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.window.restore.png"; } // just to make sure when opening 
 firstWindow.on('focus', function () { $("html").css("opacity", "1");});
 firstWindow.on('blur', function () { $("html").css("opacity", "0.5");});
 firstWindow.on('maximize', function () { document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.window.restore.png";});
@@ -57,7 +50,7 @@ firstWindow.on('unmaximize', function () { document.getElementById("win-maximize
     // Input "2" = toggle about section
     //////
 function toggleViewMode(mode) {
-    console.log(mode);
+    logger.debug("toggled viewing mode:"+mode);
     if (mode === 0) {
         $("#secA").addClass("is-shown");
 
@@ -161,9 +154,11 @@ function clearElements() {
         }
     }
 
+    if (enable_onclicks){
     document.getElementById("update-prompt").onclick = function () {
         autoUpdater.checkForUpdates();
-    }
+        }
+     }
 
     document.getElementById("win-close-icon").onclick = function () {
         firstWindow.close();
@@ -171,7 +166,7 @@ function clearElements() {
 
 
 document.getElementById('win-about-icon').onclick = function () {
-    toggleViewMode(2);
+    // HERE YOU OPEN NEW WINDOW
 }
 
 /*
@@ -184,6 +179,7 @@ document.getElementById('').onclick = function () {
 */
 
     /* setting listener for open file -button */
+if (enable_onclicks) {
     document.getElementById('open-file-prompt').onclick = function () {
         //console.log("OPEN CLICKED");
         var options = {
@@ -197,8 +193,8 @@ document.getElementById('').onclick = function () {
             ]
         }
         function callback(fileNames) {
-            
-            if (fileNames !== undefined){
+
+            if (fileNames !== undefined) {
                 //console.log(fileNames);
                 readFile(fileNames);
                 toggleViewMode(0);
@@ -208,9 +204,11 @@ document.getElementById('').onclick = function () {
         }
         dialog.showOpenDialog(firstWindow, options, callback);
     }
+}
+if (enable_onclicks) {
     document.getElementById('portal-prompt').onclick = function () {
         //console.log("HUEHHUEHUHE");
-        shell.openExternal('https://www.google.com',[], function (err) {
+        shell.openExternal('https://www.google.com', [], function (err) {
             if (!err) {
                 //logger.error(err);
 
@@ -220,70 +218,70 @@ document.getElementById('').onclick = function () {
             logger.error("Failed to open link to the portal!");
         });
     }
+}
 
 /* setting listener for save file -button. This hanles both saving file, and moving to next file in queue */
-document.getElementById("save-file-prompt").onclick = function () {
-    //console.log("SAVE CLICKED");
-    var options = {
-        title: window.i18n.__('save-prompt-window-title'),
-        //defaultPath: THIS MUST BE SET
-        filters: [
-            { name: 'CSV spreadsheet', extensions: ['csv'] }
-        ]
-    }
-    function callback(fileName) {
-        if (fileName !== undefined) {
-            var encoding = "utf8";
-            removeCensored();
-            var content = parse_content2Array();
-            //console.log(content);
-            writeFile_csv(fileName, content, encoding);
-            continueQueue();
-            return;
+if (enable_onclicks) {
+    document.getElementById("save-file-prompt").onclick = function () {
+        //console.log("SAVE CLICKED");
+        var options = {
+            title: window.i18n.__('save-prompt-window-title'),
+            //defaultPath: THIS MUST BE SET
+            filters: [
+                { name: 'CSV spreadsheet', extensions: ['csv'] }
+            ]
         }
-        logger.warn("No file chosen to be saved!");
+        function callback(fileName) {
+            if (fileName !== undefined) {
+                var encoding = "utf8";
+                removeCensored();
+                var content = parse_content2Array();
+                //console.log(content);
+                writeFile_csv(fileName, content, encoding);
+                continueQueue();
+                return;
+            }
+            logger.warn("No file chosen to be saved!");
 
+        }
+        dialog.showSaveDialog(firstWindow, options, callback);
     }
-    dialog.showSaveDialog(firstWindow, options, callback);
 }
 
-document.getElementById('fromA2B').onclick = function () {
-    toggleViewMode(11);
+if (enable_onclicks) {
+    document.getElementById('fromA2B').onclick = function () {
+        toggleViewMode(11);
     }
 
-document.getElementById('fromB2A').onclick = function () {
-    toggleViewMode(11);
+    document.getElementById('fromB2A').onclick = function () {
+        toggleViewMode(11);
+    }
+
+    document.getElementById('fromB2C').onclick = function () {
+        toggleViewMode(12);
+    }
+
+    document.getElementById('fromC2B').onclick = function () {
+        toggleViewMode(12);
+    }
+
+    document.getElementById('fromC2K').onclick = function () {
+        toggleViewMode(13);
+    }
+
+    document.getElementById('fromK2C').onclick = function () {
+        toggleViewMode(13);
+    }
+
+    document.getElementById('fromF2K').onclick = function () {
+        toggleViewMode(14);
+    }
+
+    document.getElementById('fromK2F').onclick = function () {
+        toggleViewMode(14);
+    }
 }
 
-document.getElementById('fromB2C').onclick = function () {
-    toggleViewMode(12);
-}
-
-document.getElementById('fromC2B').onclick = function () {
-    toggleViewMode(12);
-}
-
-document.getElementById('fromC2K').onclick = function () {
-    toggleViewMode(13);
-}
-
-document.getElementById('fromK2C').onclick = function () {
-    toggleViewMode(13);
-}
-
-document.getElementById('fromF2K').onclick = function () {
-    toggleViewMode(14);
-}
-
-document.getElementById('fromK2F').onclick = function () {
-    toggleViewMode(14);
-}
-
-/* NOT NEEDED!!!!!
-document.getElementById('save-file-prompt').onclick = function () {
-    toggleViewMode();
-}
-*/
 
 //}
 

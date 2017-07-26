@@ -10,7 +10,7 @@ let app = electron.app ? electron.app : electron.remote.app
 module.exports = i18n;
 
 function i18n(check = false) {
-    logger.info("in app?: " + check);
+    logger.debug("in main?: " + check);
     var locale = app.getLocale();
     if (!!/[^a-zA-Z]/.test(locale)) {
         locale = locale.substring(0, 2);
@@ -33,7 +33,7 @@ function i18n(check = false) {
     }
 }
 
-i18n.prototype.__ = function (phrase) {
+i18n.prototype.__ = function (phrase,check = false) {
     let translation;
     try {
         translation = loadedLanguage[phrase]
@@ -41,6 +41,9 @@ i18n.prototype.__ = function (phrase) {
         logger.error("No language set to be used!");
     }
     if (translation === undefined) {
+        if (check) {
+        logger.debug("in main");
+        }
         logger.error("No translation for '" + phrase + "' found in translation-file! Using placeholder '{**NO_TRANSLATION**}'");
         translation = "{**NO_TRANSLATION**}";
     }

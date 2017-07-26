@@ -42,39 +42,40 @@
     <Content Include="assets\css\custom.css">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\css\ui_controls.css">
+    <Content Include="assets\css\old\ui_controls.css">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\css\global.css">
+    <Content Include="assets\css\old\global.css">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\css\sections.css">
+    <Content Include="assets\css\old\sections.css">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\css\titlebar.css">
+    <Content Include="assets\css\old\titlebar.css">
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\css\w3.css" />
     <Content Include="assets\html\sections\login.html" />
-    <Content Include="assets\html\sections\section_a-backup.html" />
+    <Content Include="assets\html\old\section_a-backup.html" />
+    <Content Include="assets\images\logo_noname.png" />
     <Content Include="assets\images\logo.png" />
-    <Content Include="assets\html\sections\about.html">
+    <Content Include="assets\html\about.html">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\html\sections\aside_old.html">
+    <Content Include="assets\html\old\aside_old.html">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\html\sections\final.html">
+    <Content Include="assets\html\old\final.html">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\html\sections\section_a.html">
+    <Content Include="assets\html\old\section_a.html">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\html\sections\keywords.html" />
-    <Content Include="assets\html\sections\section_b.html">
+    <Content Include="assets\html\old\keywords.html" />
+    <Content Include="assets\html\old\section_b.html">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\html\sections\section_c.html">
+    <Content Include="assets\html\old\section_c.html">
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\html\sections\start.html">
@@ -84,10 +85,12 @@
     <Content Include="assets\translations\en.json">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="assets\ui_icons\appbar.add.png" />
     <Content Include="assets\ui_icons\appbar.app.png" />
     <Content Include="assets\ui_icons\appbar.browser.png" />
     <Content Include="assets\ui_icons\appbar.close.png" />
     <Content Include="assets\ui_icons\appbar.draw.marker.png" />
+    <Content Include="assets\ui_icons\appbar.edit.box.png" />
     <Content Include="assets\ui_icons\appbar.home.variant.enter.png" />
     <Content Include="assets\ui_icons\appbar.information.circle.png" />
     <Content Include="assets\ui_icons\appbar.list.gear.png" />
@@ -95,6 +98,7 @@
     <Content Include="assets\ui_icons\appbar.navigate.next.png" />
     <Content Include="assets\ui_icons\appbar.navigate.previous.png" />
     <Content Include="assets\ui_icons\appbar.page.arrow.png" />
+    <Content Include="assets\ui_icons\appbar.people.png" />
     <Content Include="assets\ui_icons\appbar.progress.png" />
     <Content Include="assets\ui_icons\appbar.question.png" />
     <Content Include="assets\ui_icons\appbar.reset.png" />
@@ -104,7 +108,7 @@
     <Content Include="assets\ui_icons\appbar.warning.png" />
     <Content Include="assets\ui_icons\appbar.window.maximize.png" />
     <Content Include="assets\ui_icons\appbar.window.restore.png" />
-    <Content Include="assets\css\main_old.css">
+    <Content Include="assets\css\old\main_old.css">
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\html\index.html">
@@ -113,32 +117,42 @@
     <Content Include="assets\ui_icons\SLIPPS.logo-76.png" />
     <Content Include="assets\ui_icons\SLIPPS.logo.png" />
     <Content Include="build\icon.ico" />
-    <Content Include="build\install-spinner.gif" />
     <Content Include="assets\html\opening.html">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="sql\database.sqlite" />
+    <Content Include="build\install-spinner.gif" />
     <Content Include="tsconfig.json">
       <SubType>Code</SubType>
     </Content>
     <Content Include="package.json" />
-    <Content Include="assets\html\index_old.html">
+    <Content Include="assets\html\old\index_old.html">
       <SubType>Code</SubType>
     </Content>
     <Content Include="README.md" />
+    <Content Include="__licenses\electron-builder_license.txt" />
+    <Content Include="__licenses\electron-log_license.txt" />
+    <Content Include="__licenses\electron-squirrel-startup_license.txt" />
+    <Content Include="__licenses\electron-store_license.txt" />
+    <Content Include="__licenses\electron_license.txt" />
+    <Content Include="__licenses\jquery_license.txt" />
+    <Content Include="__licenses\js-xlsx_license.txt" />
+    <Content Include="__licenses\WindowsIcons_license.txt" />
     <TypeScriptCompile Include="Scripts\typings\node\node.d.ts" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="assets\" />
+    <Folder Include="assets\css\old\" />
     <Folder Include="assets\html\" />
+    <Folder Include="assets\html\old\" />
     <Folder Include="assets\html\sections\" />
     <Folder Include="assets\images\" />
+    <Folder Include="assets\js\old\" />
     <Folder Include="assets\ui_icons\" />
     <Folder Include="assets\js\" />
     <Folder Include="assets\css\" />
     <Folder Include="assets\translations\" />
     <Folder Include="build\" />
-    <Folder Include="sql\" />
+    <Folder Include="__licenses\" />
     <Folder Include="Scripts\" />
     <Folder Include="Scripts\typings\" />
     <Folder Include="Scripts\typings\node\" />
@@ -151,25 +165,25 @@
     <Compile Include="assets\js\importing.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="assets\js\fileIO_old.js">
+    <Compile Include="assets\js\old\fileIO_old.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="assets\js\save_utils_old.js">
+    <Compile Include="assets\js\old\save_utils_old.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\translations\i18n.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="assets\js\requires_old.js">
+    <Compile Include="assets\js\old\requires_old.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="assets\js\saving_file_old.js">
+    <Compile Include="assets\js\old\saving_file_old.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="assets\js\textview_old.js">
+    <Compile Include="assets\js\old\textview_old.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="assets\js\main_old.js">
+    <Compile Include="assets\js\old\main_old.js">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

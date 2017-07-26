@@ -2,15 +2,22 @@
 * {
     box-sizing: border-box;
 }
-
+*/
+/*
 html {
-    height: 100%;
-    font-family: 'BlinkMacSystemFont', 'Lucida Grande', 'Segoe UI', Ubuntu, Cantarell, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
     overflow: hidden; /* Prevents rubber-band scrolling of the whole "page" */
-    /*background-color: #fff; /* To cover OSes with no default background color */
+    /*background-color: #fff; /* To cover OSes with no default background color *//*
 }
+*/
+html, body {
+    height:100%;
+
+}
+body {
+    display:flex;
+    flex-direction:column;
+}
+
 
 /*
 body {
@@ -52,8 +59,6 @@ body {
     pointer-events: none;
     visibility: hidden;
     opacity: 0;
-    transform: translateX(-20px);
-    transition: visibility 0s .12s linear, opacity .12s ease-in, transform .12s ease-in;
     background-color: #dadada;
 }
     
@@ -61,8 +66,6 @@ body {
         pointer-events: auto;
         visibility: visible;
         opacity: 1;
-        transform: translateX(0);
-        transition: visibility 0s 0s linear, opacity .36s ease-out, transform .36s ease-out;
     }
     */
 /*
@@ -122,21 +125,41 @@ ul {
 }
 */
 #top-titlebar {
+    top:0;
+    left:0;
+    right:0;
+    margin-top: 5px;
+    margin-right: 5px;
+    margin-left: 5px;
     z-index: 9001;
-    height:33px;
+    height:28px;
+    position:absolute;
 }
 .corner-buttons {
     height: 38px;
 }
+
+.navbar-text {
+    font-size: 11px;
+    margin:0;
+}
+
+.navbar-image {
+    height: 30px;
+}
+
 #slipps-title-icon {
     margin-left: -10px;
-    margin-top: -4px;
+    margin-top: -5px;
     height: 45px;
-    padding-right:10px;
+    padding-right: 10px;
 }
 #titlebar-left-corner{
     z-index: 9000;
+    width:unset;
+    right:216px;
 }
+/*
 #titlebar-filename{
     margin-top:0px;
     overflow:hidden;
@@ -147,10 +170,16 @@ ul {
     padding-left:0;
     padding-right:0;
 }
+*/
 #titlebar-appname {
-    margin-top: 0px;
-    padding-left:0;
-    white-space:pre;
+    z-index:9000;
+    overflow-x:hidden;
+    text-overflow:ellipsis;
+    margin-top: -3px;
+    padding-left:40px;
+    white-space:nowrap;
+    position:absolute;
+    width:100%;
 }
 #titlebar-window-controls {
     width: 216px;
@@ -201,10 +230,8 @@ ul {
 }
 */
 /* Content ------------------ */
-/*
+
 .content {
-    flex: 1;
-    position: relative;
     overflow: hidden;
     visibility: hidden;
     opacity: 0;
@@ -214,9 +241,13 @@ ul {
         visibility: visible;
         opacity: 1;
     }
-*/
+
 p, h1, h2, h3, h4, h5, h6, li {
     -webkit-user-select: none;
+}
+
+.decsv-gray {
+    background-color:#dadada;
 }
 
 .censored {

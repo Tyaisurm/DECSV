@@ -7,13 +7,25 @@ const url = require('url');
 const fs = require('fs');
 const autoUpdater = electron.autoUpdater;
 const dialog = electron.dialog;
+const windowStateKeeper = require('electron-window-state');
 let openWindow = null;
 let mainWindow = null;
-
 let i18n_app = null;
 
-if (require('electron-squirrel-startup')) return;
+if (require('electron-squirrel-startup')) app.quit();
 
+/*
+Logger logs are on %AppData%\Roaming\*package: productName*\log.log (or "old" version of the same) by default on windows systems.
+The app itself will be installed into %AppData%\Local\*package: name*.
+
+electron-store will save data as JSON into app.getPath(userData), which should be %AppData%\Roaming\*package: productName*
+*/
+
+function handleclosing() {
+    // do things needed before shutting down
+
+    app.quit();
+}
 function createWin() {
     openWindow = new BrowserWindow({
         width: 300,
@@ -30,14 +42,21 @@ function createWin() {
     });
     openWindow.loadURL(win1_url);
 
+    let mainWindowState = windowStateKeeper({
+        defaultWidth: 1200,
+        defaultHeight: 840
+    });
+
     mainWindow = new BrowserWindow({
-        width: 1200,
-        minWidth: 736,
-        height: 840,
+        x: mainWindowState.x,
+        y: mainWindowState.y,
+        width: mainWindowState.width,
+        height: mainWindowState.height,
         frame: false,
         backgroundColor: '#dadada',
         show: false
     });
+    mainWindowState.manage(mainWindow);
 
     let win2_url = url.format({
         protocol: 'file',
@@ -45,7 +64,6 @@ function createWin() {
         pathname: path.join(__dirname, './assets/html/index.html')
     });
     mainWindow.loadURL(win2_url);
-
 
     //toggle dev tools when window opens
     //mainWindow.webContents.openDevTools();
@@ -62,19 +80,19 @@ function createWin() {
 
             var options = {
                 type: 'info',
-                title: i18n_app.__('quit-conf-title'),
-                message: i18n_app.__('quit-conf-cont'),
-                buttons: [i18n_app.__('conf-yes'), i18n_app.__('conf-no')]
+                title: i18n_app.__('quit-conf-title', true),
+                message: i18n_app.__('quit-conf-cont', true),
+                buttons: [i18n_app.__('conf-yes', true), i18n_app.__('conf-no', true)]
             };
 
             dialog.showMessageBox(mainWindow, options, function (index) {
-                if (index === 0) { // Runs the following if 'Yes' is clicked
-                    app.showExitPrompt = false
-                    mainWindow.close()
+                if (index === 0) {
+                    app.showExitPrompt = false;
+                    handleclosing();
                 }
-            })
+            });
         }
-    })
+    });
 
     mainWindow.on('closed', function () {
         mainWindow = null;
@@ -153,7 +171,7 @@ autoUpdater.on('checking-for-update', function () {
     });
 });
 autoUpdater.on('update-available', function () {
-    logger.info("Update available!");
+    logger.info("Update available! Trying to load...");
     var options = {
         type: 'info',
         title: "Update available",

@@ -11,23 +11,19 @@
     <link rel="stylesheet" href="../css/w3.css">
     <link rel="stylesheet" href="../css/custom.css">
 
-    <link rel="import" href="./sections/start.html">
-    <link rel="import" href="./sections/section_a.html">
-    <link rel="import" href="./sections/section_b.html">
-    <link rel="import" href="./sections/section_c.html">
-    <link rel="import" href="./sections/keywords.html">
-    <link rel="import" href="./sections/final.html">
-    <link rel="import" href="./sections/about.html">
+    <!--<link rel="import" href="./sections/start.html">-->
 
 </head>
 <body>
-    <header id="top-titlebar"class="w3-display-container w3-blue drag">
+
+    <div id="top-titlebar" class="drag disable-select"></div>
+
+    <header style="height:33px;" class="w3-display-container w3-blue disable-select">
+
         <div id="titlebar-left-corner" class="w3-display-topleft w3-bar">
             <img draggable="false" id="slipps-title-icon" class="w3-bar-item" src="../ui_icons/SLIPPS.logo-76.png" />
-            <p id="titlebar-filename" class="w3-bar-item">No file</p>
-            <p id="titlebar-appname" class="w3-bar-item"> - DECSV</p>
+            <p id="titlebar-appname" class="w3-bar-item">DECSV</p>
         </div>
-
         <div id="titlebar-window-controls" class="w3-bar w3-display-topright no-drag">
                 <img draggable="false" id="win-about-icon" class="w3-bar-item w3-button corner-buttons" src="../ui_icons/appbar.question.png" />
                 <img draggable="false" id="win-minimize-icon" class="w3-bar-item w3-button corner-buttons" src="../ui_icons/appbar.minus.png" />
@@ -36,7 +32,55 @@
         </div>
     </header>
 
-    <main class="content is-shown w3-container"></main>
+    <div style="border-color:#dadada" class="w3-bar w3-gray w3-bottombar w3-border-white disable-select">
+        <div class="w3-bar-item w3-button">
+            <img draggable="false" id="nav-file-icon" class="navbar-image" src="../ui_icons/appbar.add.png" />
+            <p class="navbar-text">Add File</p>
+        </div>
+        <div class="w3-bar-item w3-button">
+            <img draggable="false" id="nav-settings-icon" class="navbar-image" src="../ui_icons/appbar.settings.png" />
+            <p class="navbar-text">Settings</p>
+        </div>
+        <div class="w3-bar-item w3-button w3-right">
+            <img draggable="false" id="nav-login-icon" class="navbar-image" src="../ui_icons/appbar.people.png" />
+            <p class="navbar-text">Log in</p>
+        </div>
+        <div style="margin-top:15px;"class="w3-bar-item w3-right w3-border-right w3-border-black">
+            <p class="navbar-text">Not logged</p>
+        </div>
+    </div>
+
+    <div class="w3-row disable-select">
+        <div style="width:200px; border-right:2px solid #dadada;" class="w3-col w3-container w3-gray w3-left w3-border-white w3-center">
+            <p style="font-size:11px;">Files in Que</p>
+        </div>
+        <div style="width:200px;border-left:2px solid #dadada" class="w3-col w3-gray w3-container w3-right w3-border-white w3-center">
+            <p style="font-size:11px;">Mode: PREVIEW</p>
+        </div>
+        <div class="w3-rest w3-gray w3-container">
+            <p style="overflow-x:hidden;text-overflow:ellipsis;white-space:nowrap; font-size:11px;">Current File: {CURRENT FILE}</p>
+        </div>
+    </div>
+
+    <div style="flex-grow:1;display:flex;" class="">
+
+        <div style="width:200px;border-right:2px solid #dadada;" class="w3-red w3-border-white"></div>
+        <div style="flex:1;" class="w3-green"></div>
+        <div style="width:200px;border-left:2px solid #dadada" class="w3-yellow w3-border-white"></div>
+
+        <!--<main class="content is-shown w3-green">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</main>-->
+        
+    </div>
+
+    <footer id="window-footer" class="w3-gray w3-container w3-topbar w3-border-white disable-select">
+        <p>
+        <button class="w3-button w3-blue w3-round-large">Button 1</button>
+        <button class="w3-button w3-blue w3-round-large">Button 2</button>
+        <button class="w3-button w3-blue w3-round-large">Button 3</button>
+        <button class="w3-button w3-blue w3-round-large">Button 4</button>
+        </p>
+    </footer>
+
     <script>require('../js/importing');</script>
     <script>require('../js/init');</script>
 </body>
