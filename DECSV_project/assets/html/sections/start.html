@@ -1,29 +1,18 @@
 ﻿<template class="phase-template">
-    <section id="startSec" class="textSection section is-shown">
-        <div id="startContent">
+        <div id="start-div" class="section w3-display-container is-shown">
 
-            <div id="open-file-prompt" class="ui-prompt ui-button disable-select">
-                <div id="open-file-button">
-                    <img draggable="false" id="open-file-icon" class="disable-select" src="../ui_icons/appbar.page.arrow.png" />
+            <div class="w3-display-middle">
+                <div class="w3-button">
+                    <img draggable="false" id="nav-open-proj-icon" class="" src="../ui_icons/appbar.folder.open.png" />
+                    <p class="navbar-text">Open project</p>
                 </div>
-                <h2 id="open-file-prompt-text"></h2>
+                <div class="w3-button">
+                    <img draggable="false" id="nav-create-proj-icon" class="" src="../ui_icons/appbar.new.png" />
+                    <p class="navbar-text">Create project</p>
+                </div>
             </div>
 
-            <div id="portal-prompt" class="ui-prompt ui-button disable-select">
-                <div id="portal-button">
-                    <img draggable="false" id="portal-icon" class="disable-select" src="../ui_icons/appbar.browser.png" />
-                </div>
-                <h2 id="portal-prompt-text"></h2>
-            </div>
-
-
-            <div id="update-prompt" class="ui-prompt ui-button disable-select">
-                <div id="update-button">
-                    <img draggable="false" id="testing-icon" class="disable-select" src="../ui_icons/appbar.reset.png" />
-                </div>
-                <h2 id="update-prompt-text"></h2>
-            </div>
+            <p style="font-weight: bolder;" class="w3-display-bottomleft">These buttons toggle between different views - other buttons (except update) DO NOT WORK!</p>
 
         </div>
-    </section>
 </template>

@@ -55,8 +55,23 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\css\w3.css" />
+    <Content Include="assets\html\sections\edit-a.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\html\sections\edit-b.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\html\sections\edit-c.html">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="assets\html\sections\login.html" />
     <Content Include="assets\html\old\section_a-backup.html" />
+    <Content Include="assets\html\sections\preview.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\html\sections\settings.html">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="assets\images\logo_noname.png" />
     <Content Include="assets\images\logo.png" />
     <Content Include="assets\html\about.html">
@@ -89,14 +104,17 @@
     <Content Include="assets\ui_icons\appbar.app.png" />
     <Content Include="assets\ui_icons\appbar.browser.png" />
     <Content Include="assets\ui_icons\appbar.close.png" />
+    <Content Include="assets\ui_icons\appbar.download.png" />
     <Content Include="assets\ui_icons\appbar.draw.marker.png" />
     <Content Include="assets\ui_icons\appbar.edit.box.png" />
+    <Content Include="assets\ui_icons\appbar.folder.open.png" />
     <Content Include="assets\ui_icons\appbar.home.variant.enter.png" />
     <Content Include="assets\ui_icons\appbar.information.circle.png" />
     <Content Include="assets\ui_icons\appbar.list.gear.png" />
     <Content Include="assets\ui_icons\appbar.minus.png" />
     <Content Include="assets\ui_icons\appbar.navigate.next.png" />
     <Content Include="assets\ui_icons\appbar.navigate.previous.png" />
+    <Content Include="assets\ui_icons\appbar.new.png" />
     <Content Include="assets\ui_icons\appbar.page.arrow.png" />
     <Content Include="assets\ui_icons\appbar.people.png" />
     <Content Include="assets\ui_icons\appbar.progress.png" />
@@ -159,10 +177,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="app.js" />
+    <Compile Include="assets\js\about.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="assets\js\init.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\js\importing.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="assets\js\localsetup.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\js\old\fileIO_old.js">

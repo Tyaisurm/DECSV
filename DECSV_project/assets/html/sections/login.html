@@ -1,31 +1,43 @@
 ﻿<template class="phase-template">
-    <div id="aboutDiv" class="about">
-        <p style="margin:auto;">LOGIN WILL BE HERE</p>
+    <div class="section">
+        <div align="center">
+            <div class="w3-panel">
 
-            <div class=''>
-                <div class=''>
-                    <input id='email' name='login' type='text' class=''>
-                    <label for='email'>Username or Email</label>
-                </div>
-            </div>
-            <div class=''>
-                <div class=''>
-                    <input id='password' name='password' type='password' class=''>
-                    <label for='password'>Password</label>
-                </div>
-            </div>
-            <div>
-                <input type='checkbox' id='remember_me' checked='checked' />
-                <label for='remember_me'>Remember Me</label>
-            </div>
-            <div class='row'>
-                <div class=''>
-                    <button class='' name='action_login'>Sign In</button>
-                </div>
-            </div>
-        <p>
-            <button class='' name='action_reset'>Reset Password</button>
-        </p>
+                <p>Register/login/forgot password</p>
 
+                <div id="loginchoices_2" class="loginchoices">
+                    <label class="w3-text-blue"><b>Username/email</b></label>
+                    <input style="max-width: 300px;" class="w3-input w3-border" type="text">
+                </div>
+
+                <div id="registerchoices_1" class="registerchoices">
+                <label class="w3-text-blue"><b>Username</b></label>
+                <input style="max-width: 300px;" class="w3-input w3-border" type="text">
+                <label class="w3-text-blue"><b>Email</b></label>
+                <input style="max-width: 300px;" class="w3-input w3-border" type="text">
+                <label class="w3-text-blue"><b>Name</b></label>
+                <input style="max-width: 300px;" class="w3-input w3-border" type="text">
+                <label class="w3-text-blue"><b>Email</b></label>
+                <input style="max-width: 300px;" class="w3-input w3-border" type="text">
+                </div>
+
+                <div id="loginchoices_2"  class="loginchoices">
+                    <label class="w3-text-blue"><b>Password</b></label>
+                    <input style="max-width: 300px;" class="w3-input w3-border" type="password">
+                </div>
+                <div id="registerchoices_2" class="registerchoices">
+                    <label class="w3-text-blue"><b>Retype password</b></label>
+                    <input style="max-width: 300px;" class="w3-input w3-border" type="password">
+                </div>
+
+            </div>
+            <div class="w3-panel">
+                <div id="loginchoices_3" class="loginchoices">
+                <button class="w3-button w3-green">Login</button>
+                <button class="w3-button w3-red">Forgot password?</button>
+                </div>
+                <button class="w3-button w3-blue">Register</button>
+            </div>
+        </div>
     </div>
 </template>

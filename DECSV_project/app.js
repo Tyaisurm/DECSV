@@ -10,9 +10,24 @@ const dialog = electron.dialog;
 const windowStateKeeper = require('electron-window-state');
 let openWindow = null;
 let mainWindow = null;
+let aboutWindow = null;
 let i18n_app = null;
 
 if (require('electron-squirrel-startup')) app.quit();
+
+const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, we should focus our window.
+    if (mainWindow) {
+        if (mainWindow.isMinimized()) {
+            mainWindow.restore();
+        }
+        mainWindow.focus();
+    }
+});
+
+if (isSecondInstance) {
+    app.quit()
+}
 
 /*
 Logger logs are on %AppData%\Roaming\*package: productName*\log.log (or "old" version of the same) by default on windows systems.
@@ -20,6 +35,19 @@ The app itself will be installed into %AppData%\Local\*package: name*.
 
 electron-store will save data as JSON into app.getPath(userData), which should be %AppData%\Roaming\*package: productName*
 */
+function createDocStructure() {
+    var docpath = app.getPath('documents');
+}
+
+function createAppStructure() {
+    var apppath = app.getPath('userData');
+    var promise = new Promise();
+}
+
+function createNewProject() { }
+
+function setupAppDefaults() { }
+
 
 function handleclosing() {
     // do things needed before shutting down
@@ -81,7 +109,8 @@ function createWin() {
             var options = {
                 type: 'info',
                 title: i18n_app.__('quit-conf-title', true),
-                message: i18n_app.__('quit-conf-cont', true),
+                message: i18n_app.__('quit-conf-message', true),
+                detail: i18n_app.__('quit-conf-detail', true),
                 buttons: [i18n_app.__('conf-yes', true), i18n_app.__('conf-no', true)]
             };
 
@@ -108,7 +137,7 @@ app.on('window-all-closed', function () {
     logger.info("all windows closed");
     // On OS X it is common for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
-    if (process.platform != 'darwin') {
+    if (process.platform !== 'darwin') {
         app.quit();
     }
 });
@@ -116,13 +145,13 @@ app.on('window-all-closed', function () {
 app.on('ready', function () {
     logger.transports.file.level = "info";
     logger.transports.console.level = "silly";
-    if (process.platform == 'win32') {
+    if (process.platform === 'win32') {
         //
     }
-    else if (process.platform == 'linux') {
+    else if (process.platform === 'linux') {
         //
     }
-    else if (process.platform == 'darwin'){
+    else if (process.platform === 'darwin'){
         //
     }
     else {
@@ -171,11 +200,12 @@ autoUpdater.on('checking-for-update', function () {
     });
 });
 autoUpdater.on('update-available', function () {
-    logger.info("Update available! Trying to load...");
+    logger.info("Update available!");
     var options = {
         type: 'info',
         title: "Update available",
         message: "Update found to be available",
+        detail: "Update will be downloaded automatically if possible",
         buttons: ["ok"]
     };
 
@@ -184,12 +214,12 @@ autoUpdater.on('update-available', function () {
     });
 });
 autoUpdater.on('error', function (err) {
-    logger.error("Error in autoUpdater!");
-    logger.error(err.message);
+    logger.error("Error in autoUpdater! " + err.message);
     var options = {
         type: 'info',
-        title: "ERRORR!!!!",
-        message: updatePath + "##################\r\n" + err.toString(),
+        title: "ERRORR!",
+        message: "Error has happened in AutoUpdater",
+        detail: "This was the Error:\r\n" + err.message,
         buttons: ["ok"]
     };
 
@@ -201,8 +231,9 @@ autoUpdater.on('update-not-available', function () {
     logger.info("Update not available!");
     var options = {
         type: 'info',
-        title: "NO UPDATE",
-        message: "UPDATE NO AVAILABLE",
+        title: "No update",
+        message: "Update not available",
+        detail: "You have the latest version",
         buttons: ["ok"]
     };
 
@@ -210,6 +241,7 @@ autoUpdater.on('update-not-available', function () {
         //
     });
 });
+
 autoUpdater.on('update-downloaded', function (ev, relNot, relNam, relDat, updUrl) {
     logger.info("Update has been downloaded!");
     console.log(ev);
@@ -220,8 +252,9 @@ autoUpdater.on('update-downloaded', function (ev, relNot, relNam, relDat, updUrl
     var options = {
         type: 'info',
         title: "Update ready to install",
-        message: "Install? Information:\r\nev: " + ev + "\r\nrelNot: " + relNot + "\r\nrelNam: " + relNam + "\r\nrelDat: " + relDat + "\r\nupdUrl: " + updUrl,
-        buttons: ["Yea :)", "Naah :c"]
+        message: "Install the downloaded update?",
+        detail: "Information:\r\nev: " + ev + "\r\nrelNot: " + relNot + "\r\nrelNam: " + relNam + "\r\nrelDat: " + relDat + "\r\nupdUrl: " + updUrl,
+        buttons: ["yes", "no"]
     };
 
     dialog.showMessageBox(options, function (index) {
@@ -233,3 +266,41 @@ autoUpdater.on('update-downloaded', function (ev, relNot, relNam, relDat, updUrl
         }
     });
 });
+
+
+
+global.createAboutWin = function () {
+    if (aboutWindow === null) {
+        logger.info("Opening about-window...");
+        aboutWindow = new BrowserWindow({
+            width: 500,
+            height: 500,
+            //resizable: false,
+            minWidth: 500,
+            minHeight: 500,
+            frame: false,
+            backgroundColor: '#dadada',
+            show: false
+        });
+
+        let about_url = url.format({
+            protocol: 'file',
+            slashes: true,
+            pathname: path.join(__dirname, './assets/html/about.html')
+        });
+        aboutWindow.loadURL(about_url);
+
+        aboutWindow.on('ready-to-show', function () {
+            aboutWindow.show();
+        });
+
+        aboutWindow.on('closed', function () {
+            logger.info("About-window closed");
+            aboutWindow = null;
+        });
+    }
+    else {
+        logger.debug("Refocus about-window...");
+        aboutWindow.focus();
+    }
+}

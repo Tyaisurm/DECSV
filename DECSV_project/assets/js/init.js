@@ -1,4 +1,5 @@
 ﻿const remote = require('electron').remote;
+const BrowserWindow = remote.BrowserWindow;
 const dialog = remote.dialog;
 const firstWindow = remote.getCurrentWindow();
 const fs = require('fs');
@@ -6,17 +7,63 @@ const XLSX = require('xlsx');
 const http = require("http");
 const shell = remote.shell;
 const autoUpdater = remote.autoUpdater;
+const path = require('path');
+const url = require('url');
+
+let aboutCreatFunc = remote.getGlobal('createAboutWin');
+
+/*
+const Store = require('electron-store');
+var options1 = {
+    defaults: {},
+    name: "testing-userData",
+    cwd: remote.app.getPath('userData')
+}
+const store1 = new Store(options1);
+var options2 = {
+    defaults: {},
+    name: "testing-documents",
+    cwd: remote.app.getPath('documents')
+}
+const store2 = new Store(options2);
+*/
+
 
 /* FAST DEBUG - toggles everything that is not titlebar */
 const enable_onclicks = false;
 logger.debug("Running init...");
 
-///////////////////////////////////////////////////////// VIEW UTILITES
+///////////////////////////////////////////////////////// STARTUP FUNCTIONS
+setupTranslations();
+
+///////////////////////////////////////////////////////// WINDOW CONTROL BUTTONS FUNCTIONALITY
 if (firstWindow.isMaximized()) { document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.window.restore.png"; } // just to make sure when opening 
 firstWindow.on('focus', function () { $("html").css("opacity", "1");});
 firstWindow.on('blur', function () { $("html").css("opacity", "0.5");});
 firstWindow.on('maximize', function () { document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.window.restore.png";});
 firstWindow.on('unmaximize', function () { document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.app.png"; });
+
+document.getElementById("win-minimize-icon").onclick = function () {
+    firstWindow.minimize();
+}
+document.getElementById("win-maximize-restore-icon").onclick = function () {
+    if (firstWindow.isMaximized()) {
+        firstWindow.unmaximize();
+    }
+    else {
+        firstWindow.maximize();
+    }
+}
+document.getElementById("win-close-icon").onclick = function () {
+    firstWindow.close();
+}
+document.getElementById('win-about-icon').onclick = function () {
+    aboutCreatFunc();
+}
+
+document.getElementById("check-app-updates-button").onclick = function () {
+    autoUpdater.checkForUpdates();
+}
 
 //window.onload = function () {
     /*
@@ -27,7 +74,11 @@ firstWindow.on('unmaximize', function () { document.getElementById("win-maximize
         if (
             (activeElTagName == "textarea") || (activeElTagName == "input" &&
                 /^(?:text|search|password|tel|url)$/i.test(activeEl.type)) &&
-            (typeof activeEl.selectionStart == "number")
+            (typeof activeEl.selec
+
+
+
+tionStart == "number")
         ) {
             text = activeEl.value.slice(activeEl.selectionStart, activeEl.selectionEnd);
         } else if (window.getSelection) {
@@ -45,53 +96,57 @@ firstWindow.on('unmaximize', function () { document.getElementById("win-maximize
     };
 */
 
-    // Input "0" = toggle start-view away, replace with section A (and aside) being ONLY ONE visible (Clean beginning of view)
-    // Input "1" = toggle sections away, replaced with ONLY start visible (Clean start)
-    // Input "2" = toggle about section
-    //////
+    // Input "0" = toggle "start" view
+    // Input "1" = toggle "preview" view
+    // Input "2" = toggle "edit A" view
+    // Input "3" = toggle "edit B" view
+    // Input "4" = toggle "edit C" view
+    // Input "5" = toggle "login" view
+    // Input "6" = toggle "register" view
+    // Input "7" = toggle "settings" view
+    // Input "8" = toggle "confirmation(disabled)" view
+
+    // Input "00" = toggle sidepanels (under toppanel)
+    // Input "11" = toggle toppanel (under navbar)
+    // Input "22" = toggle footer NOT USED!!!!!!
 function toggleViewMode(mode) {
     logger.debug("toggled viewing mode:"+mode);
     if (mode === 0) {
-        $("#secA").addClass("is-shown");
 
-        $("#keywordsSec").removeClass("is-shown");
-        $("#secB").removeClass("is-shown");
-        $("#secC").removeClass("is-shown");
-        $("#secFinal").removeClass("is-shown");
-        $("#aboutDiv").removeClass("is-shown");
-        $("#startSec").removeClass("is-shown");
     }
     else if (mode === 1) {
         $("#startSec").addClass("is-shown");
-
-        $("#keywordsSec").removeClass("is-shown");
-        $("#secB").removeClass("is-shown");
-        $("#secC").removeClass("is-shown");
-        $("#secFinal").removeClass("is-shown");
-        $("#aboutDiv").removeClass("is-shown");
     }
     else if (mode === 2) {
-        $("#aboutDiv").toggleClass("is-shown");
+        //
     }
-    // Input "11" = toggle A-B
-    // Input "12" = toggle B-C
-    // Input "13" = toggle C-K
-    // Input "14" = toggle K-F
+    else if (mode === 3) {
+        //
+    }
+    else if (mode === 4) {
+        //
+    }
+    else if (mode === 5) {
+        //
+    }
+    else if (mode === 6) {
+        //
+    }
+    else if (mode === 7) {
+        //
+    }
+    else if (mode === 8) {
+        //
+    }
+    else if (mode === 00) {
+        $("#leftsection").toggleClass("no-display");
+        $("#rightsection").toggleClass("no-display");
+    }
     else if (mode === 11) {
-        $("#secA").toggleClass("is-shown");
-        $("#secB").toggleClass("is-shown");
+        $("#middleheader").toggleClass("no-display");
     }
-    else if (mode === 12) {
-        $("#secB").toggleClass("is-shown");
-        $("#secC").toggleClass("is-shown");
-    }
-    else if (mode === 13) {
-        $("#secC").toggleClass("is-shown");
-        $("#keywordsSec").toggleClass("is-shown");
-    }
-    else if (mode === 14) {
-        $("#keywordsSec").toggleClass("is-shown");
-        $("#secFinal").toggleClass("is-shown");
+    else if (mode === 22) {
+        //$("#window-footer").toggleClass("no-display");
     }
     else {
         // If you end up here, blame the incompetent programmer
@@ -125,6 +180,22 @@ function continueQueue() {
     }
 }
 
+function updateFileQueue(files) {
+    //console.log(files);
+    var filename = null;
+    if (files.length > 0) {
+        filename = files.pop();
+        window.fileQueue = files;
+        //console.log("ASD 1");
+        $("#file-queue-counter-value").text(window.fileQueue.length);
+    }
+    else {
+        //console.log("ASD 2");
+        $("#file-queue-counter-value").text(window.fileQueue.length);
+    }
+    return filename;
+}
+
 function clearElements() {
     $("#secAcontent").empty();
     $("#secBcontent").empty();
@@ -140,45 +211,15 @@ function clearElements() {
     $("#aside-subTIME-value").empty();
 }
 
-////////////////////////////////////////////////////////////////////// WINDOW ELEMENT LISTENERS
-
-    document.getElementById("win-minimize-icon").onclick = function () {
-        firstWindow.minimize();
+//updateprompt
+if (enable_onclicks){
+document.getElementById("update-prompt").onclick = function () {
+    autoUpdater.checkForUpdates();
     }
-    document.getElementById("win-maximize-restore-icon").onclick = function () {
-        if (firstWindow.isMaximized()) {
-            firstWindow.unmaximize();
-        }
-        else {
-            firstWindow.maximize();
-        }
     }
-
-    if (enable_onclicks){
-    document.getElementById("update-prompt").onclick = function () {
-        autoUpdater.checkForUpdates();
-        }
-     }
-
-    document.getElementById("win-close-icon").onclick = function () {
-        firstWindow.close();
-    }
-
-
-document.getElementById('win-about-icon').onclick = function () {
-    // HERE YOU OPEN NEW WINDOW
-}
-
-/*
-document.getElementById('').onclick = function () {
-    //
-    }
-document.getElementById('').onclick = function () {
-    //
-}
-*/
 
     /* setting listener for open file -button */
+//openfileprompt
 if (enable_onclicks) {
     document.getElementById('open-file-prompt').onclick = function () {
         //console.log("OPEN CLICKED");
@@ -205,6 +246,7 @@ if (enable_onclicks) {
         dialog.showOpenDialog(firstWindow, options, callback);
     }
 }
+//portalpromt
 if (enable_onclicks) {
     document.getElementById('portal-prompt').onclick = function () {
         //console.log("HUEHHUEHUHE");
@@ -220,7 +262,7 @@ if (enable_onclicks) {
     }
 }
 
-/* setting listener for save file -button. This hanles both saving file, and moving to next file in queue */
+//savefileprompt
 if (enable_onclicks) {
     document.getElementById("save-file-prompt").onclick = function () {
         //console.log("SAVE CLICKED");
@@ -248,6 +290,7 @@ if (enable_onclicks) {
     }
 }
 
+//navigation between sections ABCKF
 if (enable_onclicks) {
     document.getElementById('fromA2B').onclick = function () {
         toggleViewMode(11);
@@ -283,26 +326,6 @@ if (enable_onclicks) {
 }
 
 
-//}
-
-////////////////////////////////////////////////////////// FUNCTIONS FOR READING (from files) AND SHOWING DATA (in webpages), AND SETTING UP UI TEXT (from translations)
-
-function updateFileQueue(files) {
-    //console.log(files);
-    var filename = null;
-    if (files.length > 0) {
-        filename = files.pop();
-        window.fileQueue = files;
-        //console.log("ASD 1");
-        $("#file-queue-counter-value").text(window.fileQueue.length);
-    }
-    else {
-        //console.log("ASD 2");
-        $("#file-queue-counter-value").text(window.fileQueue.length);
-    }
-    return filename;
-}
-
 /* Turns .word with .censored class into " **** " */
 function removeCensored() {
     //Section A
@@ -320,8 +343,6 @@ function removeCensored() {
     });
 
 }
-
-/* From here, code will be about fileIO */
 
 // Return array of string values, or NULL if CSV string not well formed.
 function CSVtoArray(text) {
@@ -352,391 +373,379 @@ function CSVtoArray(text) {
     return arr;
 }
 
-    function readFile(files) { //does this need this? , encoding
+/* This function takes in raw data from read .csv file and turns it into arrays */
+function parseCSV2Array(csv) {
+    //console.log("RAW CSV DATA IN");
+    //console.log(csv);
+    var separators = ['\"\",\"\"', ',\"\"', '\"\"'];
+    var newlines = ['\r\n', '\n'];
 
-        /* check file-extension */
-        var file = updateFileQueue(files);
-        var output_data = [];
+    //console.log(typeof (csv));
+    //var lines = csv.split("\n");
+    var lines = csv.split(new RegExp(newlines.join('|'), 'g'));
+    //console.log(JSON.stringify(lines[0]));
 
-        var file_ext = file.split('.').pop();
-        //console.log("################################################");
-        //console.log(file_ext);
-        //console.log(file);
+    lines[0] = lines[0].substring(1, lines[0].length - 3);
+    //console.log(JSON.stringify(lines[0]));
+    lines[1] = lines[1].substring(1, lines[1].length - 3);
+    //console.log(JSON.stringify(lines[1]));
+    if (lines[2].length !== 0) {
+        lines[2] = lines[2].substring(1, lines[2].length - 3);
+    }
 
+    var headers = lines[0].split(new RegExp(separators.join('|'), 'g'));
+    var contents = lines[1].split(new RegExp(separators.join('|'), 'g'));
+    if (lines[2].length !== 0) {
+        var keys = lines[2].split(new RegExp(separators.join('|'), 'g'));
+    }
+    //console.log(">>>>>>>>>>>>>>>>>>>>>>>>HEADERS");
+    //console.log(headers);
+    //console.log(">>>>>>>>>>>>>>>>>>>>>>>>CONTENTS");
+    //console.log(contents);
 
+    var result = new Array(); //was Array(2)
+    var i = 0;
+    for (i = 0; i < 2; i++) {
+        result[i] = [];
+    }
+    if (lines[2].length !== 0) {
+        result[2] = [];
+    }
 
-        /* file has .xlsx or .xls extension */
-        if (file_ext === 'xlsx' || file_ext === 'xls') {
-
-            /* xlsx-js */
-            try {
-                var workbook = XLSX.readFile(file);
-            }
-            catch (err) {
-                logger.error("Unable to open .xlsx or .xls file '"+ file +"'!");
-                return;
-            }
-            var first_sheet_name = workbook.SheetNames[0];
-            var worksheet = workbook.Sheets[first_sheet_name];
-
-            var csv_sheet = XLSX.utils.sheet_to_csv(worksheet);
-            //console.log("EXCEL TO CSV");
-            //console.log(JSON.stringify(csv_sheet));
-
-            /* xlsx-js continue... */
-            var newlines = ['\r\n', '\n'];
-            var lines = csv_sheet.split(new RegExp(newlines.join('|'), 'g'));
-
-            var headers = CSVtoArray(lines[0]);
-            var contents = CSVtoArray(lines[1]);
-
-            var keys = null;
-
-            if (lines[2].length !== 0){
-                keys = CSVtoArray(lines[2]);
-                output_data[2] = keys;
-            }
-            //console.log(headers);
-            //console.log(contents);
-
-            output_data[0] = headers;
-            output_data[1] = contents;
-            //console.log("setting data");
-            window.currentFileContent = output_data;
-            
-            keys = showQuizData(output_data);
-            setupKeywordSelect(output_data[1].length, keys);
-
+    //result[0][0] = headers[0];
+    for (i = 0; i < headers.length; i++) {
+        result[0][i] = headers[i];
+    }
+    for (i = 0; i < contents.length; i++) {
+        result[1][i] = contents[i];
+    }
+    if (lines[2].length !== 0) {
+        for (i = 0; i < keys.length; i++) {
+            result[2][i] = keys[i];
         }
+    }
 
-        /* file has .csv extension */
-        else if (file_ext === 'csv') {
+    return result;
+}
 
-            /*Node.js fs*/
-            fs.readFile(file, 'utf8', function (err, data) {
-                if (err) {
-                    logger.error("Unable to open .csv file '"+ file +"'!");
-                    return;
-                }
-                //console.log("DATA FROM READFILE");
-                //console.log(JSON.stringify(data));
-                //console.log(data);
+/* This function parses data for textareas that are CURRENTLY USED
+        => Will be changed */
+function showQuizData(data) {
+    //console.log("INSIDE SHOW QUIZ DATA");
+    showCsecData(data); //, 4, data[0].length - 1);
+    var result = [];
+    if (data[2] === undefined) {
+        //console.log(data[2]);
+        logger.warn("Third line (keywords) is not available in current file!");
+    }
+    else {
+        result = data[2];
+    }
 
-                /* This function takes in raw data from read .csv file and turns it into arrays */
-                function parseCSV2Array(csv) {
-                    //console.log("RAW CSV DATA IN");
-                    //console.log(csv);
-                    var separators = ['\"\",\"\"', ',\"\"', '\"\"'];
-                    var newlines = ['\r\n', '\n'];
+    var data_A = data[1][2];
+    var data_B = data[1][3];
+    $("#secAcontent").text(data_A);
+    $("#secBcontent").text(data_B);
 
-                    //console.log(typeof (csv));
-                    //var lines = csv.split("\n");
-                    var lines = csv.split(new RegExp(newlines.join('|'), 'g'));
-                    //console.log(JSON.stringify(lines[0]));
+    $("#aside-subID-value").text(data[1][0]);
+    $("#aside-subTIME-value").text(data[1][1]);
 
-                    lines[0] = lines[0].substring(1, lines[0].length - 3);
-                    //console.log(JSON.stringify(lines[0]));
-                    lines[1] = lines[1].substring(1, lines[1].length - 3);
-                    //console.log(JSON.stringify(lines[1]));
-                    if (lines[2].length !== 0) {
-                        lines[2] = lines[2].substring(1, lines[2].length - 3);
-                    }
+    return result;
+}
 
-                    var headers = lines[0].split(new RegExp(separators.join('|'), 'g'));
-                    var contents = lines[1].split(new RegExp(separators.join('|'), 'g'));
-                    if (lines[2].length !== 0) {
-                        var keys = lines[2].split(new RegExp(separators.join('|'), 'g'));
-                    }
-                    //console.log(">>>>>>>>>>>>>>>>>>>>>>>>HEADERS");
-                    //console.log(headers);
-                    //console.log(">>>>>>>>>>>>>>>>>>>>>>>>CONTENTS");
-                    //console.log(contents);
+/* This function puts C section answers into right places */
+function showCsecData(section_data) {
+    //console.log("#############");
+    var line = 1;
+    for (var i = 4; i < section_data[1].length - 1; i++) {
+        //console.log(section_data[1][i]);
+        var lineId = "#secC-Q" + line + "-cont";
+        $(lineId).text(section_data[1][i]);
+        line++;
+    }
+}
 
-                    var result = new Array(); //was Array(2)
-                    var i = 0;
-                    for (i = 0; i < 2; i++) {
-                        result[i] = [];
-                    }
-                    if (lines[2].length !== 0) {
-                        result[2] = [];
-                    }
+/* This function shows pre-selected words from the file */
+function loadKeyWords(keys) {
+    for (var i = 0; i < keys.length; i++) {
+        var to_appended = '<li class="list-keys-elem">' + keys[i] + '</li>';
+        $("#aside-key-list").append(to_appended);
+        paintEmAll(keys[i], 0);
+    }
+    updateKeywordsList();
+}
 
-                    //result[0][0] = headers[0];
-                    for (i = 0; i < headers.length; i++) {
-                        result[0][i] = headers[i];
-                    }
-                    for (i = 0; i < contents.length; i++) {
-                        result[1][i] = contents[i];
-                    }
-                    if (lines[2].length !== 0) {
-                        for (i = 0; i < keys.length; i++) {
-                            result[2][i] = keys[i];
-                        }
-                    }
+function updateKeywordsList() {
+    var elements = [];
+    $("#aside-key-list li").each(function (i) {
+        elements.push($(this).text());
+    });
+    elements.sort();
+    $("#aside-key-list").empty();
 
-                    return result;
-                }
-                //console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>OMAN TULOSTUS");
-                var output_data = parseCSV2Array(data);
-                //console.log("setting data");
-                window.currentFileContent = output_data;
-                var keys = null;
-                keys = showQuizData(output_data);
-                setupKeywordSelect(output_data[1].length, keys);
-            });
+    for (var i = 0; i < elements.length; i++) {
+        var to_appended = '<li class="list-keys-elem">' + elements[i] + '</li>';
+        $("#aside-key-list").append(to_appended);
+    }
+}
 
+function updateCensoredList() {
+    $("#final-censoredwords-list").empty();
+    //Section A
+    $("#secAcontent .censored").each(function (i) {
+        var to_appended = '<li class="list-censored-elem">' + $(this).text() + '</li>';
+        $("#final-censoredwords-list").append(to_appended);
+    });
+    //Section B
+    $("#secBcontent .censored").each(function (i) {
+        var to_appended = '<li class="list-censored-elem">' + $(this).text() + '</li>';
+        $("#final-censoredwords-list").append(to_appended);
+    });
+    //Section C
+
+    $("#secCtext-content .censored").each(function (i) {
+        var to_appended = '<li class="list-censored-elem">' + $(this).text() + '</li>';
+        $("#final-censoredwords-list").append(to_appended);
+    });
+}
+
+/* True if is found, false otherwise */
+function testKeywordList(word) {
+
+    var found = false;
+
+    $("#aside-key-list li").each(function (i) {
+        //var index = $(this).index();
+        var text_cont = $(this).text();
+        if (text_cont === word) {
+            found = true;
         }
-        else {
-            //what lies beyond this land...
+    });
+    return found;
+}
+
+// mode 0 = paint all words as "keys"; mode 1 = remove "keys" marks from words
+function paintEmAll(word, mode) {
+    //Section A
+    $("#secAcontent .word").each(function (i) {
+        var current_w = $(this).text();
+        if ((current_w.toLowerCase() === word.toLowerCase()) && !($(this).hasClass("censored"))) {
+            if (mode === 0) { $(this).addClass("underlined"); }
+            if (mode === 1) { $(this).removeClass("underlined"); }
         }
-
-        /* This function parses data for textareas that are CURRENTLY USED
-                => Will be changed */
-        function showQuizData(data) {
-            //console.log("INSIDE SHOW QUIZ DATA");
-            showCsecData(data); //, 4, data[0].length - 1);
-            var result = [];
-            if (data[2] === undefined) {
-                //console.log(data[2]);
-                logger.warn("Third line (keywords) is not available in current file!");
-            }
-            else {
-                result = data[2];
-            }
-
-            var data_A = data[1][2];
-            var data_B = data[1][3];
-            $("#secAcontent").text(data_A);
-            $("#secBcontent").text(data_B);
-
-            $("#aside-subID-value").text(data[1][0]);
-            $("#aside-subTIME-value").text(data[1][1]);
-
-            return result;
+    });
+    //Section B
+    $("#secBcontent .word").each(function (i) {
+        var current_w = $(this).text();
+        if ((current_w.toLowerCase() === word.toLowerCase()) && !($(this).hasClass("censored"))) {
+            if (mode === 0) { $(this).addClass("underlined"); }
+            if (mode === 1) { $(this).removeClass("underlined"); }
         }
+    });
+    //Section C
 
-        /* This function puts C section answers into right places */
-        function showCsecData(section_data) {
-            //console.log("#############");
-            var line = 1;
-            for (var i = 4; i < section_data[1].length - 1; i++){
-                //console.log(section_data[1][i]);
-                var lineId = "#secC-Q" + line + "-cont";
-                $(lineId).text(section_data[1][i]);
-                line++;
-            }
+    $("#secCtext-content .word").each(function (i) {
+        var current_w = $(this).text();
+        if ((current_w.toLowerCase() === word.toLowerCase()) && !($(this).hasClass("censored"))) {
+            if (mode === 0) { $(this).addClass("underlined"); }
+            if (mode === 1) { $(this).removeClass("underlined"); }
         }
+    });
 
-        /* This function shows pre-selected words from the file */
-        function loadKeyWords(keys) {
-            for (var i = 0; i < keys.length; i++){
-                var to_appended = '<li class="list-keys-elem">' + keys[i] + '</li>';
-                $("#aside-key-list").append(to_appended);
-                paintEmAll(keys[i], 0);
-            }
-            updateKeywordsList();
-        }
+}
 
-        function updateKeywordsList() {
-            var elements = [];
-            $("#aside-key-list li").each(function (i) {
-                elements.push($(this).text());
-            });
-            elements.sort();
-            $("#aside-key-list").empty();
+// SETTING UP SELECTING KEYWORDS
+function setupKeywordSelect(arr_l, keys_arr) {
+    $("#secAcontent").html(function (index, oldHtml) {
+        return oldHtml.replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
+    });
+    $("#secBcontent").html(function (index, oldHtml) {
+        return oldHtml.replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
+    });
+    for (var i = 1; i < (arr_l - 2); i++) {
+        var lineId = "#secC-Q" + i + "-cont";
+        //console.log(lineId);
+        $(lineId).html(function (index, oldHtml) {
+            return oldHtml.replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
+        });
+    }
 
-            for (var i = 0; i < elements.length; i++) {
-                var to_appended = '<li class="list-keys-elem">' + elements[i] + '</li>';
-                $("#aside-key-list").append(to_appended);
-            }
-        }
-
-        function updateCensoredList() {
-            $("#final-censoredwords-list").empty();
-            //Section A
-            $("#secAcontent .censored").each(function (i) {
-                var to_appended = '<li class="list-censored-elem">' + $(this).text() + '</li>';
-                $("#final-censoredwords-list").append(to_appended);
-            });
-            //Section B
-            $("#secBcontent .censored").each(function (i) {
-                var to_appended = '<li class="list-censored-elem">' + $(this).text() + '</li>';
-                $("#final-censoredwords-list").append(to_appended);
-            });
-            //Section C
-
-            $("#secCtext-content .censored").each(function (i) {
-                var to_appended = '<li class="list-censored-elem">' + $(this).text() + '</li>';
-                $("#final-censoredwords-list").append(to_appended);
-            });
-        }
-
-        /* True if is found, false otherwise */
-        function testKeywordList(word) {
-
-            var found = false;
-
+    $(".word").on("click", function () {
+        //console.log($("#secBcontent").text());
+        var clicked = "";
+        if ($(this).hasClass("underlined")) {
+            $(this).toggleClass("underlined");
+            $(this).toggleClass("censored");
+            updateCensoredList();
+            paintEmAll($(this).text(), 1);
+            clicked = $(this).text().toLowerCase();
             $("#aside-key-list li").each(function (i) {
                 //var index = $(this).index();
+
                 var text_cont = $(this).text();
-                if (text_cont === word) {
-                    found = true;
+                if (text_cont === clicked) {
+                    $(this).remove();
                 }
-            });
-            return found;
-        }
 
-        // mode 0 = paint all words as "keys"; mode 1 = remove "keys" marks from words
-        function paintEmAll(word, mode) {
-            //Section A
-            $("#secAcontent .word").each(function (i) {
-                var current_w = $(this).text();
-                if ((current_w.toLowerCase() === word.toLowerCase()) && !($(this).hasClass("censored"))) {
-                    if (mode === 0) { $(this).addClass("underlined"); }
-                    if (mode === 1) { $(this).removeClass("underlined"); }
-                }
-            });
-            //Section B
-            $("#secBcontent .word").each(function (i) {
-                var current_w = $(this).text();
-                if ((current_w.toLowerCase() === word.toLowerCase()) && !($(this).hasClass("censored"))) {
-                    if (mode === 0) { $(this).addClass("underlined"); }
-                    if (mode === 1) { $(this).removeClass("underlined"); }
-                }
-            });
-            //Section C
-
-            $("#secCtext-content .word").each(function (i) {
-                var current_w = $(this).text();
-                if ((current_w.toLowerCase() === word.toLowerCase()) && !($(this).hasClass("censored"))) {
-                    if (mode === 0) { $(this).addClass("underlined"); }
-                    if (mode === 1) { $(this).removeClass("underlined"); }
-                }
             });
 
         }
-        
-        // SETTING UP SELECTING KEYWORDS
-        function setupKeywordSelect(arr_l, keys_arr) {
-            $("#secAcontent").html(function (index, oldHtml) {
-                return oldHtml.replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
-            });
-            $("#secBcontent").html(function (index, oldHtml) {
-                return oldHtml.replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
-            });
-            for (var i = 1; i < (arr_l - 2); i++) {
-                var lineId = "#secC-Q" + i + "-cont";
-                //console.log(lineId);
-                $(lineId).html(function (index, oldHtml) {
-                    return oldHtml.replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
-                });
-            }
-
-            $(".word").on("click", function () {
-                //console.log($("#secBcontent").text());
-                var clicked = "";
-                if ($(this).hasClass("underlined")) {
-                    $(this).toggleClass("underlined");
-                    $(this).toggleClass("censored");
-                    updateCensoredList();
-                    paintEmAll($(this).text(), 1);
-                    clicked = $(this).text().toLowerCase();
-                    $("#aside-key-list li").each(function (i) {
-                        //var index = $(this).index();
-
-                        var text_cont = $(this).text();
-                        if (text_cont === clicked) {
-                            $(this).remove();
-                        }
-
-                    });
-
-                }
-                else if ($(this).hasClass("censored")) {
-                    $(this).removeClass("censored");
-                    updateCensoredList();
-                    //go through list that is at the side->
-                    if (testKeywordList($(this).text())) { paintEmAll($(this).text(), 0); }
-                }
-                else {
-                    $(this).addClass("underlined");
-                    paintEmAll($(this).text(), 0);
-                    clicked = $(this).text().toLowerCase();
-                    var found = testKeywordList(clicked);
-                    console.log(found);
-                    console.log(clicked);
+        else if ($(this).hasClass("censored")) {
+            $(this).removeClass("censored");
+            updateCensoredList();
+            //go through list that is at the side->
+            if (testKeywordList($(this).text())) { paintEmAll($(this).text(), 0); }
+        }
+        else {
+            $(this).addClass("underlined");
+            paintEmAll($(this).text(), 0);
+            clicked = $(this).text().toLowerCase();
+            var found = testKeywordList(clicked);
+            console.log(found);
+            console.log(clicked);
 
 
-                    if (!found) {
-                        var to_appended = '<li class="list-keys-elem">' + clicked + '</li>';
-                        $("#aside-key-list").append(to_appended);
-                        updateKeywordsList();
-                    }
-                }
-            });
-            if (keys_arr !== null) {
-                loadKeyWords(keys_arr);
+            if (!found) {
+                var to_appended = '<li class="list-keys-elem">' + clicked + '</li>';
+                $("#aside-key-list").append(to_appended);
+                updateKeywordsList();
             }
         }
+    });
+    if (keys_arr !== null) {
+        loadKeyWords(keys_arr);
+    }
+}
+
+// make array that will be then used to make new csv file
+function parse_content2Array() {
+
+    var orig_data = window.currentFileContent;
+
+    var sectionA_text = $("#secAcontent").text();
+    var sectionB_text = $("#secBcontent").text();
+    var sectionC_arr;
+    var keywords = [];
+    $("#aside-key-list li").each(function (i) {
+        keywords.push($(this).text());
+    });
+
+    $("#secC-Q1-cont___secC-Q14-cont").each(function (i) {
+        keywords.push($(this).text());
+    });
+
+    var finalData = orig_data;
+    finalData[1][2] = sectionA_text;
+    finalData[1][3] = sectionB_text;
+
+    for (var i = 1; i < 15; i++) {
+
+        finalData[1][i + 3] = $("#secC-Q" + i + "-cont").text();
     }
 
+    finalData[2] = keywords;
+
+    return finalData;
+}
 
 /* THIS IS SETTING UP UI TRANSLATION */
-
 function setupTranslations() {
     logger.info("Loading translations into UI...");
-    /* Start page */
-    $("#open-file-prompt-text").text(i18n.__('open-files'));
-    $("#portal-prompt-text").text(i18n.__('open-portal'));
-    $("#update-prompt-text").text(i18n.__('update-prompt'));
-
-    /* Section A */
-    $("#secAtitle").text(i18n.__('secAtitle'));
-    $("#fromA2Btext").text(i18n.__('A2B-prompt'));
-    $("#secAquestion").text(i18n.__('secA-Q'));
-
-    /* Section B */
-    $("#secBtitle").text(i18n.__('secBtitle'));
-    $("#fromB2Atext").text(i18n.__('B2A-prompt'));
-    $("#fromB2Ctext").text(i18n.__('B2C-prompt'));
-    $("#secBquestion").text(i18n.__('secB-Q'));
-
-    /* Section C */
-    $("#secCtitle").text(i18n.__('secCtitle'));
-    $("#fromC2Btext").text(i18n.__('C2B-prompt'));
-    $("#fromC2Ktext").text(i18n.__('C2K-prompt'));
-
-    /* Tagging section */
-    $("#keywordsSecTitle").text(i18n.__('secKtitle'));
-    $("#fromK2Ctext").text(i18n.__('K2C-prompt'));
-    $("#fromK2Ftext").text(i18n.__('K2F-prompt'));
-
-    for (var i = 1; i < 15; i++){
-        var name = "#secC-Q" + i + "-t";
-        var translation = "secC-Q-" + i;
-        $(name).text(i18n.__(translation));
-    }
-
-    /* Final section */
-    $("#secFtitle").text(i18n.__('secFtitle'));
-    $("#fromF2Ktext").text(i18n.__('F2K-prompt'));
-    $("#fromF2Savetext").text(i18n.__('save-next-prompt'));
-    $("#final-censoredwords-title").text(i18n.__('current-censored'));
-
-    /* About */
+    /* Start */
     //
 
-    /* Titlebar */
-    $("#file-queue-counter-text").text(i18n.__('fileQtitle'));
-    $("#aside-subID-title").text(i18n.__('subID'));
-    $("#aside-subTIME-title").text(i18n.__('subTIME'));
-    $("#aside-chosenkeys-title").text(i18n.__('current-keys'));
-    $("#update-prompt-text").text(i18n.__('update-prompt'));
+    /* Login */
+    //
 
-    logger.info("Setting up translations finished!");
+    /* Main-window */
+    $("#titlebar-appname").text("DECSV {Alpha version " + remote.app.getVersion() + "}");
+}
+
+function readFile(file) { //does this need this? , encoding
+
+    /* check file-extension and name */
+    var output_data = [];
+    var file_ext = file.split('.').pop();
+    var file_name = file.split('/').pop();
+
+    //console.log("################################################");
+    //console.log(file_ext);
+    //console.log(file);
+
+
+
+    /* file has .xlsx or .xls extension */
+    if (file_ext === 'xlsx' || file_ext === 'xls') {
+
+        /* xlsx-js */
+        try {
+            var workbook = XLSX.readFile(file);
+        }
+        catch (err) {
+            logger.error("Unable to open .xlsx or .xls file '"+ file +"'!");
+            return;
+        }
+        var first_sheet_name = workbook.SheetNames[0];
+        var worksheet = workbook.Sheets[first_sheet_name];
+
+        var csv_sheet = XLSX.utils.sheet_to_csv(worksheet);
+        //console.log("EXCEL TO CSV");
+        //console.log(JSON.stringify(csv_sheet));
+
+        /* xlsx-js continue... */
+        var newlines = ['\r\n', '\n'];
+        var lines = csv_sheet.split(new RegExp(newlines.join('|'), 'g'));
+
+        var headers = CSVtoArray(lines[0]);
+        var contents = CSVtoArray(lines[1]);
+
+        var keys = null;
+
+        if (lines[2].length !== 0){
+            keys = CSVtoArray(lines[2]);
+            output_data[2] = keys;
+        }
+        //console.log(headers);
+        //console.log(contents);
+
+        output_data[0] = headers;
+        output_data[1] = contents;
+        //console.log("setting data");
+        window.currentFileContent = output_data;
+            
+        keys = showQuizData(output_data);
+        setupKeywordSelect(output_data[1].length, keys);
+
     }
 
-setupTranslations();
+    /* file has .csv extension */
+    else if (file_ext === 'csv') {
+
+        /*Node.js fs*/
+        fs.readFile(file, 'utf8', function (err, data) {
+            if (err) {
+                logger.error("Unable to open .csv file '"+ file +"'!");
+                return;
+            }
+            //console.log("DATA FROM READFILE");
+            //console.log(JSON.stringify(data));
+            //console.log(data);
+
+            
+            //console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>OMAN TULOSTUS");
+            var output_data = parseCSV2Array(data);
+            //console.log("setting data");
+            window.currentFileContent = output_data;
+            var keys = null;
+            keys = showQuizData(output_data);
+            setupKeywordSelect(output_data[1].length, keys);
+        });
+
+    }
+    else {
+        //what lies beyond this land...
+    }
+}
 
 //////////////////////////////////////////////////////////// FUNCTIONS FOR WRITING DATA INTO FILES
 
@@ -797,35 +806,4 @@ function writeFile_csv(file, dataArray, encoding) {
 
         logger.error("Error while trying to save a new file!");
     });
-}
-
-// make array that will be then used to make new csv file
-function parse_content2Array() {
-
-    var orig_data = window.currentFileContent;
-
-    var sectionA_text = $("#secAcontent").text();
-    var sectionB_text = $("#secBcontent").text();
-    var sectionC_arr;
-    var keywords = [];
-    $("#aside-key-list li").each(function (i) {
-        keywords.push($(this).text());
-    });
-
-    $("#secC-Q1-cont___secC-Q14-cont").each(function (i) {
-        keywords.push($(this).text());
-    });
-
-    var finalData = orig_data;
-    finalData[1][2] = sectionA_text;
-    finalData[1][3] = sectionB_text;
-
-    for (var i = 1; i < 15; i++){
-
-        finalData[1][i+3] = $("#secC-Q"+i+"-cont").text();
-    }
-
-    finalData[2] = keywords;
-
-    return finalData;
 }

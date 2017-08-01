@@ -1,7 +1,7 @@
 {
   "name": "decsv",
   "productName": "DECSV",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "SLIPPS survey results review and edit application.",
   "main": "app.js",
   "scripts": {
