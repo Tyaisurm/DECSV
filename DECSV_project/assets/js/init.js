@@ -95,57 +95,160 @@ tionStart == "number")
         getHighlightedWords();
     };
 */
+document.getElementById("subB1").onclick = function () {
+    toggleViewMode(2);
+    toggleViewMode(9);
+}
+document.getElementById("subB2").onclick = function () {
+    toggleViewMode(3);
+    toggleViewMode(9);
+}
+document.getElementById("subB3").onclick = function () {
+    toggleViewMode(4);
+    toggleViewMode(9);
+}
+document.getElementById("subB4").onclick = function () {
+    toggleViewMode(1);
+    toggleViewMode(9);
+}
+document.getElementById("subB5").onclick = function () {
+    toggleViewMode(0);
+    toggleViewMode(10);
+}
+document.getElementById("subB6").onclick = function () {
+    toggleViewMode(5);
+    toggleViewMode(10);
+}
+document.getElementById("subB7").onclick = function () {
+    toggleViewMode(6);
+    toggleViewMode(10);
+}
+document.getElementById("subB8").onclick = function () {
+    toggleViewMode(7);
+    toggleViewMode(10);
+}
+document.getElementById("subB9").onclick = function () {
+    toggleViewMode(8);
+    //toggleViewMode(00);
+}
 
-    // Input "0" = toggle "start" view
-    // Input "1" = toggle "preview" view
-    // Input "2" = toggle "edit A" view
-    // Input "3" = toggle "edit B" view
-    // Input "4" = toggle "edit C" view
-    // Input "5" = toggle "login" view
-    // Input "6" = toggle "register" view
-    // Input "7" = toggle "settings" view
-    // Input "8" = toggle "confirmation(disabled)" view
 
-    // Input "00" = toggle sidepanels (under toppanel)
-    // Input "11" = toggle toppanel (under navbar)
-    // Input "22" = toggle footer NOT USED!!!!!!
+
+
+
+    // Input "0" =  "start" view
+    // Input "1" =  "preview" view
+    // Input "2" =  "edit A" view
+    // Input "3" =  "edit B" view
+    // Input "4" =  "edit C" view
+    // Input "5" =  "login" view
+    // Input "6" =  "register" view
+    // Input "7" =  "settings" view
+    // Input "8" =  "confirmation(disabled)" view
+
+    // Input "9" = enable sidepanels (under toppanel) and toppanel (under navbar)
+    // Input "10" = disable sidepanels (under toppanel) and toppanel (under navbar)
+    // Input "11" = toggle footer NOT USED!!!!!!
 function toggleViewMode(mode) {
     logger.debug("toggled viewing mode:"+mode);
     if (mode === 0) {
-
+        $("#start-div").addClass("is-shown");
+        $("#preview-div").removeClass("is-shown");
+        $("#edita-div").removeClass("is-shown");
+        $("#editb-div").removeClass("is-shown");
+        $("#editc-div").removeClass("is-shown");
+        $("#logreg-div").removeClass("is-shown");
+        $("#settings-div").removeClass("is-shown");
     }
     else if (mode === 1) {
-        $("#startSec").addClass("is-shown");
+        $("#start-div").removeClass("is-shown");
+        $("#preview-div").addClass("is-shown");
+        $("#edita-div").removeClass("is-shown");
+        $("#editb-div").removeClass("is-shown");
+        $("#editc-div").removeClass("is-shown");
+        $("#logreg-div").removeClass("is-shown");
+        $("#settings-div").removeClass("is-shown");
     }
     else if (mode === 2) {
-        //
+        $("#start-div").removeClass("is-shown");
+        $("#preview-div").removeClass("is-shown");
+        $("#edita-div").addClass("is-shown");
+        $("#editb-div").removeClass("is-shown");
+        $("#editc-div").removeClass("is-shown");
+        $("#logreg-div").removeClass("is-shown");
+        $("#settings-div").removeClass("is-shown");
     }
     else if (mode === 3) {
-        //
+        $("#start-div").removeClass("is-shown");
+        $("#preview-div").removeClass("is-shown");
+        $("#edita-div").removeClass("is-shown");
+        $("#editb-div").addClass("is-shown");
+        $("#editc-div").removeClass("is-shown");
+        $("#logreg-div").removeClass("is-shown");
+        $("#settings-div").removeClass("is-shown");
     }
     else if (mode === 4) {
-        //
+        $("#start-div").removeClass("is-shown");
+        $("#preview-div").removeClass("is-shown");
+        $("#edita-div").removeClass("is-shown");
+        $("#editb-div").removeClass("is-shown");
+        $("#editc-div").addClass("is-shown");
+        $("#logreg-div").removeClass("is-shown");
+        $("#settings-div").removeClass("is-shown");
     }
     else if (mode === 5) {
-        //
+        $("#start-div").removeClass("is-shown");
+        $("#preview-div").removeClass("is-shown");
+        $("#edita-div").removeClass("is-shown");
+        $("#editb-div").removeClass("is-shown");
+        $("#editc-div").removeClass("is-shown");
+        $("#logreg-div").addClass("is-shown");
+        $("#settings-div").removeClass("is-shown");
+
+        $("#loginchoices_1").removeClass("no-display");
+        $("#loginchoices_2").removeClass("no-display");
+        $("#loginchoices_3").removeClass("no-display");
+        $("#registerchoices_1").addClass("no-display");
+        $("#registerchoices_2").addClass("no-display");
     }
     else if (mode === 6) {
-        //
+        $("#start-div").removeClass("is-shown");
+        $("#preview-div").removeClass("is-shown");
+        $("#edita-div").removeClass("is-shown");
+        $("#editb-div").removeClass("is-shown");
+        $("#editc-div").removeClass("is-shown");
+        $("#logreg-div").addClass("is-shown");
+        $("#settings-div").removeClass("is-shown");
+
+        $("#loginchoices_1").addClass("no-display");
+        $("#loginchoices_2").removeClass("no-display");
+        $("#loginchoices_3").addClass("no-display");
+        $("#registerchoices_1").removeClass("no-display");
+        $("#registerchoices_2").removeClass("no-display");
     }
     else if (mode === 7) {
-        //
+        $("#start-div").removeClass("is-shown");
+        $("#preview-div").removeClass("is-shown");
+        $("#edita-div").removeClass("is-shown");
+        $("#editb-div").removeClass("is-shown");
+        $("#editc-div").removeClass("is-shown");
+        $("#logreg-div").removeClass("is-shown");
+        $("#settings-div").addClass("is-shown");
     }
     else if (mode === 8) {
         //
     }
-    else if (mode === 00) {
-        $("#leftsection").toggleClass("no-display");
-        $("#rightsection").toggleClass("no-display");
+    else if (mode === 9) {
+        $("#leftsection").removeClass("no-display");
+        $("#rightsection").removeClass("no-display");
+        $("#middleheader").removeClass("no-display");
+    }
+    else if (mode === 10) {
+        $("#leftsection").addClass("no-display");
+        $("#rightsection").addClass("no-display");
+        $("#middleheader").addClass("no-display");
     }
     else if (mode === 11) {
-        $("#middleheader").toggleClass("no-display");
-    }
-    else if (mode === 22) {
         //$("#window-footer").toggleClass("no-display");
     }
     else {

@@ -72,6 +72,12 @@ body {
     display:flex;
     flex-direction: column;
 }
+.section-half {
+    width: 100%;
+    height: 50%;
+    display: flex;
+    flex-direction: column;
+}
     
 /*
 .text-content {
