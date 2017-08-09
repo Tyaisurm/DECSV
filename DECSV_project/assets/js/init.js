@@ -9,6 +9,57 @@ const shell = remote.shell;
 const autoUpdater = remote.autoUpdater;
 const path = require('path');
 const url = require('url');
+const select2 = require('select2');
+
+
+/* This sets up the language that ALL select2 select-fields will use */
+$.fn.select2.amd.define('select2/i18n/current_lang', [], function () {
+    // Current language $("#open-file-prompt-text").text(i18n.__('open-files'));
+    return {
+        errorLoading: function () {
+            return i18n.__('select2-cannot-load');
+        },
+        inputTooLong: function (args) {
+            var overChars = args.input.length - args.maximum;
+            var message = i18n.__('select2-del-char-p1') + overChars;
+            if (overChars < 2){
+                message += i18n.__('select2-del-char-p2-1')
+            }
+            else if (overChars >= 2) {
+                message += i18n.__('select2-del-char-p2-2');
+            }
+            return message;
+        },
+        inputTooShort: function (args) {
+            var remainingChars = args.minimum - args.input.length;
+
+            var message = i18n.__('select2-add-char-p1') + remainingChars + i18n.__('select2-add-char-p2');
+
+            return message;
+        },
+        loadingMore: function () {
+            return i18n.__('select2-loading-more');
+        },
+        maximumSelected: function (args) {
+            var message = i18n.__('select2-select-p1') + e.maximum;
+
+            if (args.maximum < 2) {
+                message += i18n.__('select2-select-p2-1');
+            }
+            else if (args.maximum >= 2){
+                message += i18n.__('select2-select-p2-2');
+            }
+
+            return message;
+        },
+        noResults: function () {
+            return i18n.__('select2-no-results');
+        },
+        searching: function () {
+            return i18n.__('select2-searching');
+        }
+    };
+});
 
 let aboutCreatFunc = remote.getGlobal('createAboutWin');
 
@@ -35,6 +86,12 @@ logger.debug("Running init...");
 
 ///////////////////////////////////////////////////////// STARTUP FUNCTIONS
 setupTranslations();
+set_KW_choose_selector();
+set_app_lang_selector();
+set_kw_list_available_select()
+//set_Lang_Select(null); //not done
+//get_KW_list_available_selector(null); //not done - select KW lists (from available) to be downloaded (and then automatically selected as "used")
+//update_kw_choose_list(null, 0); //not done - check if "chosen list" contents are shown in list
 
 ///////////////////////////////////////////////////////// WINDOW CONTROL BUTTONS FUNCTIONALITY
 if (firstWindow.isMaximized()) { document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.window.restore.png"; } // just to make sure when opening 
@@ -129,12 +186,77 @@ document.getElementById("subB8").onclick = function () {
 }
 document.getElementById("subB9").onclick = function () {
     toggleViewMode(8);
-    //toggleViewMode(00);
+}
+document.getElementById("subB10").onclick = function () {
+    toggleViewMode(12);
+    toggleViewMode(10);
+}
+///////////////////
+document.getElementById("subB1").onclick = function () {
+    toggleViewMode(2);
+    toggleViewMode(9);
+}
+document.getElementById("subB2").onclick = function () {
+    toggleViewMode(3);
+    toggleViewMode(9);
+}
+document.getElementById("subB3").onclick = function () {
+    toggleViewMode(4);
+    toggleViewMode(9);
+}
+document.getElementById("subB4").onclick = function () {
+    toggleViewMode(1);
+    toggleViewMode(9);
+}
+document.getElementById("subB5").onclick = function () {
+    toggleViewMode(0);
+    toggleViewMode(10);
+}
+document.getElementById("subB6").onclick = function () {
+    toggleViewMode(5);
+    toggleViewMode(10);
+}
+document.getElementById("subB7").onclick = function () {
+    toggleViewMode(6);
+    toggleViewMode(10);
+}
+document.getElementById("subB8").onclick = function () {
+    toggleViewMode(7);
+    toggleViewMode(10);
+}
+document.getElementById("subB9").onclick = function () {
+    toggleViewMode(8);
+}
+document.getElementById("subB10").onclick = function () {
+    toggleViewMode(12);
+    toggleViewMode(10);
 }
 
 
+/////////////////////////////////////////////////////////////// FUNCTIONS
 
-
+/* These set up SELECT boxes :) */
+function set_KW_choose_selector() {
+    $("#KW-selector").select2({
+        language: "current_lang",
+        placeholder: 'Select an option',
+        allowClear: true
+    });
+}
+function set_app_lang_selector() {
+    $("#app-lang-selector").select2({
+        language: "current_lang",
+        placeholder: "Select language",
+        allowClear: false
+    });
+}
+function set_kw_list_available_select() {
+    $("#kw-list-available-choose").select2({
+        language: "current_lang",
+        placeholder: "Choose keyword lists",
+        allowClear: true
+    });
+}
 
     // Input "0" =  "start" view
     // Input "1" =  "preview" view
@@ -145,6 +267,7 @@ document.getElementById("subB9").onclick = function () {
     // Input "6" =  "register" view
     // Input "7" =  "settings" view
     // Input "8" =  "confirmation(disabled)" view
+    // Input "12" =  "information" view
 
     // Input "9" = enable sidepanels (under toppanel) and toppanel (under navbar)
     // Input "10" = disable sidepanels (under toppanel) and toppanel (under navbar)
@@ -159,6 +282,7 @@ function toggleViewMode(mode) {
         $("#editc-div").removeClass("is-shown");
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").removeClass("is-shown");
+        $("#information-div").removeClass("is-shown");
     }
     else if (mode === 1) {
         $("#start-div").removeClass("is-shown");
@@ -168,6 +292,11 @@ function toggleViewMode(mode) {
         $("#editc-div").removeClass("is-shown");
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").removeClass("is-shown");
+        $("#information-div").removeClass("is-shown");
+
+        $('#a-censored-words').removeClass('no-display');
+        $('#b-censored-words').removeClass('no-display');
+        $('#c-censored-words').removeClass('no-display');
     }
     else if (mode === 2) {
         $("#start-div").removeClass("is-shown");
@@ -177,6 +306,11 @@ function toggleViewMode(mode) {
         $("#editc-div").removeClass("is-shown");
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").removeClass("is-shown");
+        $("#information-div").removeClass("is-shown");
+
+        $('#a-censored-words').removeClass('no-display');
+        $('#b-censored-words').addClass('no-display');
+        $('#c-censored-words').addClass('no-display');
     }
     else if (mode === 3) {
         $("#start-div").removeClass("is-shown");
@@ -186,6 +320,11 @@ function toggleViewMode(mode) {
         $("#editc-div").removeClass("is-shown");
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").removeClass("is-shown");
+        $("#information-div").removeClass("is-shown");
+
+        $('#a-censored-words').addClass('no-display');
+        $('#b-censored-words').removeClass('no-display');
+        $('#c-censored-words').addClass('no-display');
     }
     else if (mode === 4) {
         $("#start-div").removeClass("is-shown");
@@ -195,6 +334,11 @@ function toggleViewMode(mode) {
         $("#editc-div").addClass("is-shown");
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").removeClass("is-shown");
+        $("#information-div").removeClass("is-shown");
+
+        $('#a-censored-words').addClass('no-display');
+        $('#b-censored-words').addClass('no-display');
+        $('#c-censored-words').removeClass('no-display');
     }
     else if (mode === 5) {
         $("#start-div").removeClass("is-shown");
@@ -204,6 +348,7 @@ function toggleViewMode(mode) {
         $("#editc-div").removeClass("is-shown");
         $("#logreg-div").addClass("is-shown");
         $("#settings-div").removeClass("is-shown");
+        $("#information-div").removeClass("is-shown");
 
         $("#loginchoices_1").removeClass("no-display");
         $("#loginchoices_2").removeClass("no-display");
@@ -219,6 +364,7 @@ function toggleViewMode(mode) {
         $("#editc-div").removeClass("is-shown");
         $("#logreg-div").addClass("is-shown");
         $("#settings-div").removeClass("is-shown");
+        $("#information-div").removeClass("is-shown");
 
         $("#loginchoices_1").addClass("no-display");
         $("#loginchoices_2").removeClass("no-display");
@@ -234,9 +380,13 @@ function toggleViewMode(mode) {
         $("#editc-div").removeClass("is-shown");
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").addClass("is-shown");
+        $("#information-div").removeClass("is-shown");
     }
     else if (mode === 8) {
-        //
+        $(".w3-button").toggleClass("element-disabled");
+        $("ul").toggleClass("element-disabled");
+        $(".select2").toggleClass("element-disabled");
+        $("#subB9").toggleClass("element-disabled");// just because, well, you'd be stuck :D
     }
     else if (mode === 9) {
         $("#leftsection").removeClass("no-display");
@@ -250,6 +400,16 @@ function toggleViewMode(mode) {
     }
     else if (mode === 11) {
         //$("#window-footer").toggleClass("no-display");
+    }
+    else if (mode === 12) {
+        $("#start-div").removeClass("is-shown");
+        $("#preview-div").removeClass("is-shown");
+        $("#edita-div").removeClass("is-shown");
+        $("#editb-div").removeClass("is-shown");
+        $("#editc-div").removeClass("is-shown");
+        $("#logreg-div").removeClass("is-shown");
+        $("#settings-div").removeClass("is-shown");
+        $("#information-div").addClass("is-shown");
     }
     else {
         // If you end up here, blame the incompetent programmer

@@ -1,5 +1,19 @@
 ﻿{
   "term-in-program": "Translation",
+
+  "select2-cannot-load": "The result can not be loaded.",
+  "select2-del-char-p1": "Please, delete ",
+  "select2-del-char-p2-1": " character",
+  "select2-del-char-p2-2": " characters",
+  "select2-add-char-p1": "'Please, enter ",
+  "select2-add-char-p2": " or more characters",
+  "select2-loading-more": "Loading more resources…",
+  "select2-select-p1": "You can only select ",
+  "select2-select-p2-1": " item",
+  "select2-select-p2-2": " items",
+  "select2-no-results": "No results found",
+  "select2-searching": "Searching…",
+
   "secAtitle": "Section A",
   "secBtitle": "Section B",
   "secCtitle": "Section C",
@@ -18,6 +32,7 @@
   "current-censored": "Words to be censored:",
   "subID": "Submission ID:",
   "subTIME": "Submission time:",
+
   "secA-Q": "Please tell us about an event that was important for you learning about patient safety:",
   "secB-Q": "Tell us what you learnt and how you felt about the event afterwards:",
   "secC-Q-1": "Your profession:",

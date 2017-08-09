@@ -29,4 +29,6 @@ Used packages/libraries/frameworks:
 > electron-log (MIT License)
 > electron-builder (MIT License)
 
+> select2 (MIT License)
+
 >Windowsicons (CC BY-ND 3.0 License)

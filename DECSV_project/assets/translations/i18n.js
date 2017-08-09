@@ -12,9 +12,25 @@ module.exports = i18n;
 function i18n(check = false) {
     logger.debug("in main?: " + check);
     var locale = app.getLocale();
+     
+     
+    const Store = require('electron-store');
+    var langstore_options = {
+        name: "app-configuration",
+        cwd: app.getPath('userData')
+    }
+    const langstore = new Store(langstore_options);
+    var lang = langstore.get('app-lang', 'NOT_FOUND');
+    
+
     if (!!/[^a-zA-Z]/.test(locale)) {
         locale = locale.substring(0, 2);
     }
+    if (lang != 'NOT_FOUND') {
+        logger.info("language aquired from configuration file: " + lang);
+        locale = lang;
+    }
+    
 
     logger.info("loading translation file...");
 

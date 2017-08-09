@@ -55,6 +55,9 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\css\w3.css" />
+    <Content Include="assets\html\sections\create-proj.html">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="assets\html\sections\edit-a.html">
       <SubType>Code</SubType>
     </Content>
@@ -62,6 +65,9 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\html\sections\edit-c.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="assets\html\sections\information.html">
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\html\sections\login.html" />
@@ -96,6 +102,8 @@
     <Content Include="assets\html\sections\start.html">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="assets\select2\css\select2.css" />
+    <Content Include="assets\select2\css\select2.min.css" />
     <Content Include="assets\translations\fi.json" />
     <Content Include="assets\translations\en.json">
       <SubType>Code</SubType>
@@ -103,6 +111,7 @@
     <Content Include="assets\ui_icons\appbar.add.png" />
     <Content Include="assets\ui_icons\appbar.app.png" />
     <Content Include="assets\ui_icons\appbar.browser.png" />
+    <Content Include="assets\ui_icons\appbar.close-dark.png" />
     <Content Include="assets\ui_icons\appbar.close.png" />
     <Content Include="assets\ui_icons\appbar.download.png" />
     <Content Include="assets\ui_icons\appbar.draw.marker.png" />
@@ -154,6 +163,7 @@
     <Content Include="__licenses\electron_license.txt" />
     <Content Include="__licenses\jquery_license.txt" />
     <Content Include="__licenses\js-xlsx_license.txt" />
+    <Content Include="__licenses\select2_license.txt" />
     <Content Include="__licenses\WindowsIcons_license.txt" />
     <TypeScriptCompile Include="Scripts\typings\node\node.d.ts" />
   </ItemGroup>
@@ -165,6 +175,8 @@
     <Folder Include="assets\html\sections\" />
     <Folder Include="assets\images\" />
     <Folder Include="assets\js\old\" />
+    <Folder Include="assets\select2\" />
+    <Folder Include="assets\select2\css\" />
     <Folder Include="assets\ui_icons\" />
     <Folder Include="assets\js\" />
     <Folder Include="assets\css\" />

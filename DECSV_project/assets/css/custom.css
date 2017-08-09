@@ -43,6 +43,11 @@ body {
     -webkit-user-select: none;
 }
 
+.element-disabled {
+    pointer-events: none !important;
+    opacity: 0.5;
+}
+
 .drag {
     -webkit-app-region: drag;
 }

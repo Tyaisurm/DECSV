@@ -8,6 +8,7 @@ const fs = require('fs');
 const autoUpdater = electron.autoUpdater;
 const dialog = electron.dialog;
 const windowStateKeeper = require('electron-window-state');
+const Store = require('electron-store');
 let openWindow = null;
 let mainWindow = null;
 let aboutWindow = null;
@@ -35,26 +36,178 @@ The app itself will be installed into %AppData%\Local\*package: name*.
 
 electron-store will save data as JSON into app.getPath(userData), which should be %AppData%\Roaming\*package: productName*
 */
+
+///////////////////// Create directories to user's Documents-folder, and set up some files and directories in applications AppData/Roaming folder
+createDocStructure();
+createAppStructure();
+/////////////////////
+
+
+
 function createDocStructure() {
+    logger.debug("createDocStructure");
     var docpath = app.getPath('documents');
+    if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
+        logger.info("No app documents folder found! Creating one...");
+        fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV'));
+    }
+    if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
+        logger.info("No app PROJECTS folder found! Creating one...");
+        fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects'));
+    }
+    if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Output'))) {
+        logger.info("No app OUTPUT folder found! Creating one...");
+        fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Output'));
+    }
 }
 
 function createAppStructure() {
+    logger.debug("createAppStructure");
     var apppath = app.getPath('userData');
-    var promise = new Promise();
+    if (!fs.existsSync(path.join(apppath, 'app-configuration.json'))) {
+        logger.info("No app configuration file found! Creating one with defaults...");
+        var CA1_options = {
+            defaults: {
+                "app-lang": "en",
+                "first-use": true,
+                "safe-to-shutdown": true,
+                "backup": {
+                    "latest-project": null
+                }
+            },
+            name: "app-configuration",
+            cwd: apppath
+        }
+        const CA1_store = new Store(CA1_options);
+
+    }
+    if (!fs.existsSync(path.join(apppath, 'keywordlists\\keyword-config.json'))) {
+        logger.info("No keyword configuration file found! Creating one with defaults...");
+        fs.mkdirSync(path.join(apppath, 'keywordlists'));
+        var CA2_options = {
+            defaults: {
+                "last-successfull-update": null,
+                "available-keywordlists": {},
+                "local-keywordlists": {},
+                "enabled-keywordlists": {}
+            },
+            name: "keyword-config",
+            cwd: path.join(apppath, 'keywordlists')
+        }
+        const CA2_store = new Store(CA2_options);
+    }
 }
 
-function createNewProject() { }
+// TEST
+//fs.writeFileSync('log.txt', 'lisää ääkkösiä', encoding='utf-8');
+//createNewProject("ää");
 
-function setupAppDefaults() { }
+function createNewProject(proj_name) {
+    logger.debug("createNewProject");
+    var regex_filepath_val = /^[^\\/:\*\?"<>\|]+$/;
+    var docpath = app.getPath('documents');
+
+    if (proj_name === undefined) {
+        // Projectname not defined
+        return false;
+    }
+    else if (proj_name.lenght === 0 || proj_name.lenght > 100) {
+        // Projectname length 0 or over 100 characters
+        return false;
+    }
+    else if (!regex_filepath_val.test(proj_name)) {
+        // Projectname not allowed
+        return false;
+    }
+    else if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
+        if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
+            if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name))) {
+                fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name), 'utf8');
+
+                var CA3_options = {
+                    defaults: {
+                        "created-on": null,
+                        "source-files": {},
+                        "temp-files": {},
+                        "kw-per-file": {},
+                        "notes": []
+                    },
+                    name: proj_name,
+                    cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name)
+                }
+                const CA3_store = new Store(CA3_options);
+                logger.info("Created project " + proj_name + "...");
+                return true;
+            }
+            else {
+                // Project with same name exists!
+                return false;
+            }
+        }
+        else {
+            // Projects-folder not present!
+            createDocStructure();
+            return false;
+        }
+    }
+    else {
+        // Application-folder (at Documents) not present!
+        createDocStructure();
+        return false;
+    }
+}
+
+function removeProject(proj_name) {
+    logger.debug("removeProject");
+    if (proj_name.lenght === 0 || proj_name.lenght > 100) {
+        // Projectname length 0 or over 100 characters
+        return false;
+    }
+    else if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))){
+        if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))){
+            if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name))) {
+
+                //  REMOVE PROJECT DIRECTORY HERE!!!!!!
+
+            }
+            else {
+                // No project with given name found!
+                return false;
+            }
+        }
+        else {
+            // Projects-folder not present!
+            return false;
+        }
+    }
+    else {
+        // No Application-folder (at Documents) not present!
+        return false;
+    }
+
+
+}
+
+function openProject() {
+    //
+}
 
 
 function handleclosing() {
+    logger.debug("handleClosing");
     // do things needed before shutting down
+    var CA3_options = {
+        name: "app-configuration",
+        cwd: app.getPath('userData')
+    }
+    const CA3_store = new Store(CA3_options);
 
+
+    CA3_store.set("safe-to-shutdown", true)
     app.quit();
 }
 function createWin() {
+    logger.debug("createWin");
     openWindow = new BrowserWindow({
         width: 300,
         height: 300,
