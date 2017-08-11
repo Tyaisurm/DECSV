@@ -14,7 +14,12 @@ let mainWindow = null;
 let aboutWindow = null;
 let i18n_app = null;
 
-if (require('electron-squirrel-startup')) app.quit();
+if (require('electron-squirrel-startup')) { app.quit(); }
+
+///////////////////////////////
+logger.transports.file.level = "info";
+logger.transports.console.level = "silly";
+///////////////////////////////
 
 const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
     // Someone tried to run a second instance, we should focus our window.
@@ -27,6 +32,7 @@ const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) 
 });
 
 if (isSecondInstance) {
+    logger.debug("Tried to create second instance!");
     app.quit()
 }
 
@@ -42,6 +48,29 @@ createDocStructure();
 createAppStructure();
 /////////////////////
 
+//////////////////////////////////////////////////////////// IPC MAIN LISTENERS
+const { ipcMain } = require('electron')
+
+// create project
+ipcMain.on('async-create-project', (event, arg) => {
+    var returns_from = createNewProject(arg);
+    var sending_back = returns_from;
+    event.sender.send('async-create-project-reply', sending_back)
+})
+
+// delete project
+ipcMain.on('async-delete-project', (event, arg) => {
+    console.log(arg);
+    event.sender.send('async-delete-project-reply', 'pong')
+})
+
+// import files to project folder
+ipcMain.on('async-import-files', (event, arg) => {
+    console.log(arg);
+    event.sender.send('async -import-files', 'pong')
+})
+
+////////////////////////////////////////////////////////////
 
 
 function createDocStructure() {
@@ -86,10 +115,10 @@ function createAppStructure() {
         fs.mkdirSync(path.join(apppath, 'keywordlists'));
         var CA2_options = {
             defaults: {
-                "last-successfull-update": null,
+                "last-successful-update": null,
                 "available-keywordlists": {},
                 "local-keywordlists": {},
-                "enabled-keywordlists": {}
+                "enabled-keywordlists": []
             },
             name: "keyword-config",
             cwd: path.join(apppath, 'keywordlists')
@@ -122,12 +151,14 @@ function createNewProject(proj_name) {
     else if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
         if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
             if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name))) {
-                fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name), 'utf8');
+                fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name));
+
+                var today = new Date();
 
                 var CA3_options = {
                     defaults: {
-                        "created-on": null,
-                        "source-files": {},
+                        "created-on": today,
+                        "source-files": [],
                         "temp-files": {},
                         "kw-per-file": {},
                         "notes": []
@@ -136,6 +167,13 @@ function createNewProject(proj_name) {
                     cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name)
                 }
                 const CA3_store = new Store(CA3_options);
+
+                if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source'))) {
+                    fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source'));
+                }
+                if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp'))) {
+                    fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp'));
+                }
                 logger.info("Created project " + proj_name + "...");
                 return true;
             }
@@ -296,8 +334,6 @@ app.on('window-all-closed', function () {
 });
 
 app.on('ready', function () {
-    logger.transports.file.level = "info";
-    logger.transports.console.level = "silly";
     if (process.platform === 'win32') {
         //
     }
@@ -312,6 +348,7 @@ app.on('ready', function () {
     }
     logger.info('app ready');
 
+    logger.debug("setupTranslations(app.js)");
     i18n_app = new (require('./assets/translations/i18n'))(true);
     app.showExitPrompt = true;
 
@@ -326,6 +363,7 @@ app.on('activate', function () {
         createWin();
     }
 });
+
 /* AUTOUPDATER */
 var updatePath = "http://testing-tyaisurm.c9users.io/update/win32/" + app.getVersion().toString();
 autoUpdater.setFeedURL(updatePath);

@@ -26,6 +26,8 @@
     <link rel="import" href="./sections/start.html" />
     <link rel="import" href="./sections/settings.html" />
     <link rel="import" href="./sections/information.html" />
+    <link rel="import" href="./sections/create-proj.html" />
+
 
 
 </head>
@@ -114,7 +116,7 @@
                         <li class="w3-green w3-hover-blue w3-display-container">File1.csv</li>
                         <li class="w3-green w3-hover-blue w3-display-container">File2.csv</li>
                         <li class="w3-green w3-hover-blue w3-display-container">File3.csv</li>
-                        <li class="w3-blue w3-hover-blue w3-display-container">File4.csv</li>
+                        <li class="w3-yellow w3-hover-blue w3-display-container">File4.csv</li>
                         <li class="w3-hover-blue w3-display-container">File5.csv</li>
                         <li class="w3-hover-blue w3-display-container">File6.csv</li>
                         <li class="w3-hover-blue w3-display-container">File7.csv</li>
@@ -141,7 +143,13 @@
         <div style="flex:1;" class="w3-display-container content is-shown"></div>
         <div id="rightsection" style="width:240px;border-left:2px solid #dadada" class=" w3-display-container w3-border-white no-display">
 
-            <div style="height:20%;" class="section-half">
+            <div style="height:10%;font-size:smaller;margin:auto;" class="section-half">
+                <div class="w3-bar">
+                    <p class="w3-bar-item" style="margin: 0; padding-bottom:0;">Submission ID: 13</p>
+                    <p class="w3-bar-item" style="margin: 0; padding-top:0;">Submission Date: 2017-08-09T12:46:54.043Z</p>
+                </div>
+            </div>
+            <div style="height:10%;" class="section-half">
                 <div style="height:38.28px;" class="w3-bar">
                     <p style="margin-top:0;" class="w3-bar-item w3-left">Adding Keywords:</p>
                 </div>
@@ -157,8 +165,8 @@
                             <option value="testvalue4">Test Option 4</option>
                         </optgroup>
                         <optgroup label="Group 3">
-                            <option value="testvalue3">Test Option THIS ONE IS TOO LONG TO FIT INTO SINGLE LINE SO IT WRAPS INTO MULTIPLE</option>
-                            <option value="testvalue4">This is short</option>
+                            <option value="testvalue5">Test Option THIS ONE IS TOO LONG TO FIT INTO SINGLE LINE SO IT WRAPS INTO MULTIPLE</option>
+                            <option value="testvalue6">This is short</option>
                         </optgroup>
                     </select>
 
@@ -169,9 +177,8 @@
                     <p style="margin-top:0;" class="w3-bar-item w3-left">Chosen Keywords:</p>
                 </div>
                 <div style="flex:1;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
-                    <ul class="w3-ul">
-                        <li class="w3-hover-blue w3-display-container">Lorem<span onclick="$(this.parentElement).remove();" class="w3-button w3-display-right">&times;</span></li>
-                        <li class="w3-hover-blue w3-display-container">Ipsum<span onclick="$(this.parentElement).remove();" class="w3-button w3-display-right">&times;</span></li>
+                    <ul id="chosen-kw-ul" class="w3-ul">
+                        
                     </ul> 
                 </div>
             </div>
@@ -182,24 +189,24 @@
                 </div>
                 <div style="flex:1;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
                     <div id="a-censored-words">
-                        <p>A</p>
+                        <p style="font-size: smaller;">Section A</p>
                         <ul class="w3-ul">
-                            <li class="w3-hover-blue w3-display-container">Lorem</li>
-                            <li class="w3-hover-blue w3-display-container">Ipsum</li>
+                            <li class="w3-display-container">Lorem</li>
+                            <li class="w3-display-container">Ipsum</li>
                         </ul>
                     </div>
                     <div id="b-censored-words">
-                        <p>B</p>
+                        <p style="font-size: smaller;">Section B</p>
                         <ul class="w3-ul">
-                            <li class="w3-hover-blue w3-display-container">Lorem</li>
-                            <li class="w3-hover-blue w3-display-container">Ipsum</li>
+                            <li class="w3-display-container">Lorem</li>
+                            <li class="w3-display-container">Ipsum</li>
                         </ul>
                     </div>
                     <div id="c-censored-words">
-                        <p>C</p>
+                        <p style="font-size: smaller;">Section C</p>
                         <ul class="w3-ul">
-                            <li class="w3-hover-blue w3-display-container">Lorem</li>
-                            <li class="w3-hover-blue w3-display-container">Ipsum</li>
+                            <li class="w3-display-container">Lorem</li>
+                            <li class="w3-display-container">Ipsum</li>
                         </ul>
                     </div>
                 </div>
@@ -212,7 +219,7 @@
     </div>
 
     <footer id="window-footer" class="w3-gray w3-container w3-topbar w3-border-white disable-select">
-        <p>
+        <p class="no-display">
             <button id="subB1" class="w3-button w3-blue w3-round-large">Edit A</button>
             <button id="subB2" class="w3-button w3-blue w3-round-large">Edit B</button>
             <button id="subB3" class="w3-button w3-blue w3-round-large">Edit C</button>
@@ -224,6 +231,37 @@
             <button id="subB9" class="w3-button w3-blue w3-round-large">Disable (TOGGLE)</button>
             <button id="subB10" class="w3-button w3-blue w3-round-large">Information</button>
         </p>
+
+        <div id="" class="w3-row disable-select">
+            <div style="width:240px;" class="w3-col w3-container w3-left w3-center">
+                
+            </div>
+            <div style="width:240px;" class="w3-col w3-container w3-right w3-center">
+                
+            </div>
+            <div class="w3-rest w3-container w3-display-container"style="min-height:68.28px;">
+                <div class="w3-display-left">
+                    <p class="">
+                        <button id="footer-nav-btn1" class="w3-button w3-blue w3-round-large slipps-footer-btn">Button 1</button>
+                        <button id="footer-nav-btn2" class="w3-button w3-blue w3-round-large slipps-footer-btn">Button 2</button>
+
+                    </p>
+                </div>
+                <div class="w3-display-middle">
+                    <p class="">
+                        <button id="footer-nav-btn3" class="w3-button w3-blue w3-round-large slipps-footer-btn">Button 3</button>
+                        <button id="footer-nav-btn4" class="w3-button w3-blue w3-round-large slipps-footer-btn">Button 4</button>
+                    </p>
+                </div>
+                <div class="w3-display-right">
+                    <p class="">
+                        <button id="footer-nav-btn5" class="w3-button w3-blue w3-round-large slipps-footer-btn">Button 5</button>
+                        <button id="footer-nav-btn6" class="w3-button w3-blue w3-round-large slipps-footer-btn">Button 6</button>
+                    </p>
+                </div>
+            </div>
+        </div>
+
     </footer>
 
     <script>require('../js/importing');</script>

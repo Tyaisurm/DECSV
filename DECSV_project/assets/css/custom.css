@@ -203,6 +203,10 @@ ul {
     height: 32px;
     z-index: 9002;
 }
+
+.slipps-footer-btn {
+    font-size: smaller;
+}
 /*
 .about {
     position: absolute;
@@ -248,7 +252,6 @@ ul {
 }
 */
 /* Content ------------------ */
-
 .content {
     overflow: hidden;
     visibility: hidden;
@@ -267,6 +270,11 @@ ul {
 
 p, h1, h2, h3, h4, h5, h6, li {
     -webkit-user-select: none;
+}
+
+li {
+    font-size: smaller;
+    overflow-wrap: break-word;
 }
 
 .decsv-gray {

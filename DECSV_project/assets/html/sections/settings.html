@@ -5,10 +5,8 @@
             <div>
                 <p class="w3-border-bottom w3-border-black">Application</p>
                 <div class="w3-bar">
-                    <select id="app-lang-selector" class="w3-bar-item">
-                        <option value="">Choose language</option>
-                        <option value="en">English</option>
-                        <option value="fi">Finnish</option>
+                    <select style="width:200px;" id="app-lang-selector" class="w3-bar-item">
+                        <option></option>
                     </select>
                     <p class="w3-bar-item">Current language:</p><p class="w3-bar-item">English</p>
                 </div>
@@ -17,8 +15,8 @@
             <div>
                 <p class="w3-border-bottom w3-border-black">Keywords</p>
                 <div>
-                    <p class="">Select keyword lists you would like to download</p>
-                    <select id="kw-list-available-choose" multiple="multiple">
+                    <p class="">Select keyword lists you would like to download (will be shown in the local list below):</p>
+                    <select style="width:400px;" id="kw-list-available-choose" multiple="multiple">
                         <option></option>
                         <optgroup label="Main">
                             <option value="testvalue1">English</option>
@@ -36,10 +34,11 @@
                     </select>
                     <div id="downloadandupdatekeywords" class="w3-button">
                         <img draggable="false" id="danduKW-file-icon" class="navbar-image" src="../ui_icons/appbar.download.png" />
-                        <p class="navbar-text">Download and update</p>
+                        <p class="navbar-text">Download new and update local</p>
                     </div>
                 </div>
                 <div>
+                    <p>Local (already downloaded) lists:</p>
                     <div style="width:500px;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
                         <ul class="w3-ul">
                             <li class="w3-hover-blue w3-display-container kw-list-enabled">list 1<span onclick="$(this.parentElement).toggleClass('kw-list-enabled'); $(this).toggleClass('w3-red'); $(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="mark_enabled w3-green w3-button w3-display-right">&radic;</span></li>
@@ -51,9 +50,6 @@
                     </div>
                 </div>
             </div>
-
-            <button id="" class="w3-button w3-blue w3-round-large">Save</button>
-
         </div>
     </div>
 </template>

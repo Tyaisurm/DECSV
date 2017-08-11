@@ -1,4 +1,5 @@
 ﻿const remote = require('electron').remote;
+const { ipcRenderer } = require('electron')
 const BrowserWindow = remote.BrowserWindow;
 const dialog = remote.dialog;
 const firstWindow = remote.getCurrentWindow();
@@ -10,6 +11,7 @@ const autoUpdater = remote.autoUpdater;
 const path = require('path');
 const url = require('url');
 const select2 = require('select2');
+const Store = require('electron-store');
 
 
 /* This sets up the language that ALL select2 select-fields will use */
@@ -79,19 +81,14 @@ var options2 = {
 const store2 = new Store(options2);
 */
 
-
-/* FAST DEBUG - toggles everything that is not titlebar */
-const enable_onclicks = false;
+const enable_onclicks = false; // NEEDS TO BE DELETED
 logger.debug("Running init...");
 
 ///////////////////////////////////////////////////////// STARTUP FUNCTIONS
 setupTranslations();
 set_KW_choose_selector();
 set_app_lang_selector();
-set_kw_list_available_select()
-//set_Lang_Select(null); //not done
-//get_KW_list_available_selector(null); //not done - select KW lists (from available) to be downloaded (and then automatically selected as "used")
-//update_kw_choose_list(null, 0); //not done - check if "chosen list" contents are shown in list
+set_kw_list_available_select();
 
 ///////////////////////////////////////////////////////// WINDOW CONTROL BUTTONS FUNCTIONALITY
 if (firstWindow.isMaximized()) { document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.window.restore.png"; } // just to make sure when opening 
@@ -101,9 +98,11 @@ firstWindow.on('maximize', function () { document.getElementById("win-maximize-r
 firstWindow.on('unmaximize', function () { document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.app.png"; });
 
 document.getElementById("win-minimize-icon").onclick = function () {
+    logger.debug("win-minimize icon/button");
     firstWindow.minimize();
 }
 document.getElementById("win-maximize-restore-icon").onclick = function () {
+    logger.debug("win-maximize-restore icon/button");
     if (firstWindow.isMaximized()) {
         firstWindow.unmaximize();
     }
@@ -112,14 +111,131 @@ document.getElementById("win-maximize-restore-icon").onclick = function () {
     }
 }
 document.getElementById("win-close-icon").onclick = function () {
+    logger.debug("win-close icon/button");
     firstWindow.close();
 }
 document.getElementById('win-about-icon').onclick = function () {
+    logger.debug("win-about icon/button");
     aboutCreatFunc();
 }
+/////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////// WINDOW VIEW BUTTONS FUNCTIONALITY
+
+/* Top navigation bar */
 
 document.getElementById("check-app-updates-button").onclick = function () {
+    logger.debug("check-app-updates button");
     autoUpdater.checkForUpdates();
+}
+
+document.getElementById("addfilebutton").onclick = function () {
+    logger.debug("addfile button");
+    //
+}
+
+document.getElementById("projinfobutton").onclick = function () {
+    logger.debug("projinfo button");
+    toggleViewMode(12);
+    toggleViewMode(10);
+}
+
+document.getElementById("projstartbutton").onclick = function () {
+    logger.debug("projectstart button");
+    toggleViewMode(1);
+    toggleViewMode(9);
+}
+
+document.getElementById("saveprojbutton").onclick = function () {
+    logger.debug("saveproject button");
+    //save project
+}
+
+document.getElementById("closeprojbutton").onclick = function () {
+    logger.debug("closeproject button");
+    //
+}
+
+document.getElementById("settingsbutton").onclick = function () {
+    logger.debug("settings button");
+    toggleViewMode(7);
+    toggleViewMode(10);
+}
+
+document.getElementById("loginbutton").onclick = function () {
+    logger.debug("login button");
+    $("#logreg-reg-button").val("login");
+    toggleViewMode(5);
+    toggleViewMode(10);
+}
+
+
+/* Create Proj div */
+
+document.getElementById("new-proj-create-button").onclick = function () {
+    logger.debug("new-proj-create-button");
+    createProjAsync();
+}
+
+/* Start div */
+
+document.getElementById("create-proj-button").onclick = function () {
+    logger.debug("create-proj-button");
+    toggleViewMode(10);
+    toggleViewMode(13);
+}
+
+document.getElementById("open-proj-button").onclick = function () {
+    logger.debug("open-proj-button");
+    //open dialog here to choose directory, or create directory if nothing is present. then recall function
+}
+
+/* Preview div */
+document.getElementById("secAmodetoggle").onclick = function () {
+    logger.debug("secAmodetoggle button");
+    console.log("toggle A");
+    toggleViewMode(2);
+    toggleViewMode(9);
+    /*
+    console.log($("#footer-nav-btn1").val());
+    console.log($("#footer-nav-btn1").text());
+    $("#footer-nav-btn1").val("VALUE!");
+    $("#footer-nav-btn1").text("TEXT!");
+    console.log("###########################");
+    console.log($("#footer-nav-btn1").val());
+    console.log($("#footer-nav-btn1").text());
+    */
+}
+
+document.getElementById("secBmodetoggle").onclick = function () {
+    logger.debug("secBmodetoggle button");
+    console.log("toggle B");
+    toggleViewMode(3);
+    toggleViewMode(9);
+}
+
+document.getElementById("secCmodetoggle").onclick = function () {
+    logger.debug("secCmodetoggel button");
+    console.log("toggle C");
+    toggleViewMode(4);
+    toggleViewMode(9);
+}
+
+/* Login/Register div */
+
+document.getElementById("logreg-reg-button").onclick = function () {
+    logger.debug("logreg-reg-button");
+    if ($(this).val() === "login") {
+        toggleViewMode(6);
+        toggleViewMode(10);
+        $(this).val("register");
+    }
+    else if ($(this).val() === "register") {
+            // register here
+    }
+    else{
+        //ummm... SUPRISE! :D
+    }
 }
 
 //window.onload = function () {
@@ -152,46 +268,9 @@ tionStart == "number")
         getHighlightedWords();
     };
 */
-document.getElementById("subB1").onclick = function () {
-    toggleViewMode(2);
-    toggleViewMode(9);
-}
-document.getElementById("subB2").onclick = function () {
-    toggleViewMode(3);
-    toggleViewMode(9);
-}
-document.getElementById("subB3").onclick = function () {
-    toggleViewMode(4);
-    toggleViewMode(9);
-}
-document.getElementById("subB4").onclick = function () {
-    toggleViewMode(1);
-    toggleViewMode(9);
-}
-document.getElementById("subB5").onclick = function () {
-    toggleViewMode(0);
-    toggleViewMode(10);
-}
-document.getElementById("subB6").onclick = function () {
-    toggleViewMode(5);
-    toggleViewMode(10);
-}
-document.getElementById("subB7").onclick = function () {
-    toggleViewMode(6);
-    toggleViewMode(10);
-}
-document.getElementById("subB8").onclick = function () {
-    toggleViewMode(7);
-    toggleViewMode(10);
-}
-document.getElementById("subB9").onclick = function () {
-    toggleViewMode(8);
-}
-document.getElementById("subB10").onclick = function () {
-    toggleViewMode(12);
-    toggleViewMode(10);
-}
-///////////////////
+
+/* Index div footer */
+
 document.getElementById("subB1").onclick = function () {
     toggleViewMode(2);
     toggleViewMode(9);
@@ -232,28 +311,304 @@ document.getElementById("subB10").onclick = function () {
     toggleViewMode(10);
 }
 
+///// OTHER
+
+document.getElementById("footer-nav-btn1").onclick = function () {
+    var value = $(this).val();
+    logger.debug("btn1: "+value);
+}
+document.getElementById("footer-nav-btn2").onclick = function () {
+    var value = $(this).val();
+    logger.debug("btn2: " +value);
+}
+
+document.getElementById("footer-nav-btn3").onclick = function () {
+    var value = $(this).val();
+    logger.debug("btn3: " +value);
+}
+document.getElementById("footer-nav-btn4").onclick = function () {
+    var value = $(this).val();
+    logger.debug("btn4: " +value);
+}
+
+document.getElementById("footer-nav-btn5").onclick = function () {
+    var value = $(this).val();
+    logger.debug("btn5: " +value);
+}
+document.getElementById("footer-nav-btn6").onclick = function () {
+    var value = $(this).val();
+    logger.debug("btn6: " +value);
+}
+
+/* Index div right side */
+
+//
+
+/* Index div left side */
+
+//
+
+/* Settings div */
+
+//
+
+/* Info div */
+
+//
+
+///////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////// FUNCTIONS
+function createProjAsync() {
+    logger.debug("createProjAsync");
+    var project_name = $("#new-proj-create-input").val();
+    console.log(project_name);
+    ipcRenderer.on('async-create-project-reply', (event, arg) => {
+        console.log("RETURNED FROM APP: " + arg);
+        if (true){//arg) {
+            console.log("HEREHERHEHREHHERRERERERER");
+            var opened = openAndViewProject(project_name);
+
+            if (opened) {
+                console.log("OPENED :DDDDDDDD");
+            }
+        }
+    })
+    ipcRenderer.send('async-create-project', project_name);
+}
+
+function openAndViewProject(proj_name) {
+    logger.debug("openAndViewProject");
+
+    var regex_filepath_val = /^[^\\/:\*\?"<>\|]+$/;
+    var docpath = remote.app.getPath('documents');
+
+    if (proj_name === undefined) {
+        // Projectname not defined
+        return false;
+    }
+    else if (proj_name.lenght === 0 || proj_name.lenght > 100) {
+        // Projectname length 0 or over 100 characters
+        return false;
+    }
+    else if (!regex_filepath_val.test(proj_name)) {
+        // Projectname not allowed
+        return false;
+    }
+    else if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
+        if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
+            if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name))) {
+                if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source'))) {
+                    if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp'))) {
+                        if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\' + proj_name + '.json'))) {
+
+                            //$("#titlebar-appname").text("DECSV {Alpha version " + remote.app.getVersion() + "}");
+                            var open_options = {
+                                name: proj_name,
+                                cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name)
+                            }
+                            const open_store = new Store(open_options);
+
+                            var created_on = new Date(open_store.get("created-on", null));
+                            console.log(created_on);
+
+                            var source_files = open_store.get("source-files", null);
+                            console.log(source_files);
+                            for (var i = 0; i < source_files.length; i++){
+                                console.log(i + "  " + source_files[i]);
+                            }
+
+                            var temp_files = open_store.get("temp-files", null);
+                            console.log(temp_files);
+                            for (var k in temp_files){
+                                console.log("1: "+k);
+                                if (temp_files.hasOwnProperty(k)) {
+                                    console.log("2: "+temp_files[k]);
+                                }
+                            }
+
+                            var kw_per_file = open_store.get("kw-per-file", null);
+                            console.log(kw_per_file);
+
+                            
+                            for (var k in kw_per_file) {
+                                console.log("#1: " + k);
+                                console.log(k);
+                                if (kw_per_file.hasOwnProperty(k)) {
+                                    console.log("#2: " + kw_per_file[k]);
+                                    console.log(kw_per_file[k]);
+
+
+                                    for (var j in kw_per_file[k]) {
+                                        console.log("#3: " + j);
+                                        if (kw_per_file[k].hasOwnProperty(j)) {
+                                            console.log("#4: "+kw_per_file[k][j]);
+                                        }
+                                    }
+
+
+                                }
+                            }
+
+                            var proj_notes = open_store.get("notes", null);
+                            console.log(proj_notes);
+                            for (var i = 0; i < proj_notes.length; i++) {
+                                console.log(i + "  " + proj_notes[i]);
+                            }
+
+                            logger.info("Opened project " + proj_name + "...");
+                            return true;
+                        }
+                        else {
+                            // No project properties file!
+                            return false;
+                        }
+                    }
+                    else {
+                        // No temp folder!
+                        return false;
+                    }
+                }
+                else {
+                    // No source folder!
+                    return false;
+                }
+            }
+            else {
+                // Project does not exist!
+                return false;
+            }
+        }
+        else {
+            // Projects-folder not present!
+            return false;
+        }
+    }
+    else {
+        // Application-folder (at Documents) not present!
+        return false;
+    }
+}
+
+function updateCensoredList() {
+    logger.debug("updateCensoredList");
+    //
+}
+
+function updateChosenKeywordsList(keywords) {
+    logger.debug("updateChoseKeywordsList");
+    //
+}
+
+// mode 0 = remove, mode 1 = re-add
+function adjustSelectKeywordList(terms, mode) {
+    logger.debug("adjustSelectKeywordList");
+    //
+}
+
+function updateNotesList(notes) {
+    logger.debug("updateNotesList");
+    //
+}
+
+function adjustNoteLlist(note) {
+    logger.debug("adjustNoteList");
+    //
+}
+
+function adjustCensoredWordList(word, mode) {
+    logger.debug("adjustCensoredWordList");
+    //
+}
 
 /* These set up SELECT boxes :) */
 function set_KW_choose_selector() {
+    logger.debug("set_KW_choose_selector");
     $("#KW-selector").select2({
         language: "current_lang",
-        placeholder: 'Select an option',
+        placeholder: i18n.__('select2-kw-add-ph'),
         allowClear: true
+    });
+    $('#KW-selector').on("select2:select", function (e) {
+        console.log(e);
+        console.log(this);
+        var kw_value = e.params.data.id;
+        var kw_text = e.params.data.text;
+        console.log(kw_value + " # " + kw_text);
+        $('#KW-selector').val(null).trigger("change");
+        $("#KW-selector option[value='" + kw_value + "']").attr('disabled', 'disabled');
+
+        var li_string = document.createTextNode(kw_text);
+        var li_node = document.createElement("li");
+        var span_node = document.createElement("span");
+
+        li_node.appendChild(li_string);
+        span_node.innerHTML = "&times;";
+
+        $(li_node).attr({
+            class: "w3-display-container",
+            "data-value": kw_value
+        });
+
+        $(span_node).attr({
+            style: "height: 100%;",
+            class: "w3-button w3-display-right",
+            onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
+            onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
+            onclick: "$(this.parentElement).remove();"
+        });
+
+        li_node.appendChild(span_node);
+
+        $('#chosen-kw-ul').append(li_node);
+
+        $("#KW-selector").select2({
+            language: "current_lang",
+            placeholder: i18n.__('select2-kw-add-ph'),
+            allowClear: true
+        });
     });
 }
 function set_app_lang_selector() {
+    logger.debug("set_app_lang_selector");
+    fs.readdirSync("./assets/translations/").forEach(file => {
+        if (file.split('.').pop() === "js") { return; }
+        var lang = getFullLangName(file.split('.')[0]);
+        if (lang === null) {
+            logger.error("Requested language not defined in getFullLangName function!! Using placeholder 'NOT_DEFINED'...");
+            lang = "NOT_DEFINED";
+        }
+        $("#app-lang-selector").append('<option value="' + file.split('.')[0] + '">' + lang + '</option>');
+    });
+
     $("#app-lang-selector").select2({
         language: "current_lang",
-        placeholder: "Select language",
-        allowClear: false
+        placeholder: i18n.__('select2-app-lang-ph'),
+        allowClear: false,
+        minimumResultsForSearch: Infinity
     });
 }
+function getFullLangName(lang_short) {
+    logger.debug("getFullLangName");
+    var lang_full = null;
+
+    switch (lang_short) {
+        case "en":
+            lang_full = "English";
+            break;
+        case "fi":
+            lang_full = "Suomi";
+            break;
+        default:
+            //
+    } 
+    return lang_full;
+}
 function set_kw_list_available_select() {
+    logger.debug("set_kw_list_available_select");
     $("#kw-list-available-choose").select2({
         language: "current_lang",
-        placeholder: "Choose keyword lists",
+        placeholder: i18n.__('select2-kw-list-ph'),
         allowClear: true
     });
 }
@@ -267,13 +622,14 @@ function set_kw_list_available_select() {
     // Input "6" =  "register" view
     // Input "7" =  "settings" view
     // Input "8" =  "confirmation(disabled)" view
-    // Input "12" =  "information" view
+    // Input "12" = "information" view
+    // Input "13" = "create project" view
 
     // Input "9" = enable sidepanels (under toppanel) and toppanel (under navbar)
     // Input "10" = disable sidepanels (under toppanel) and toppanel (under navbar)
     // Input "11" = toggle footer NOT USED!!!!!!
 function toggleViewMode(mode) {
-    logger.debug("toggled viewing mode:"+mode);
+    logger.debug("toggleViewMode: "+mode);
     if (mode === 0) {
         $("#start-div").addClass("is-shown");
         $("#preview-div").removeClass("is-shown");
@@ -283,6 +639,7 @@ function toggleViewMode(mode) {
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").removeClass("is-shown");
         $("#information-div").removeClass("is-shown");
+        $("#create-proj-div").removeClass("is-shown");
     }
     else if (mode === 1) {
         $("#start-div").removeClass("is-shown");
@@ -293,6 +650,7 @@ function toggleViewMode(mode) {
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").removeClass("is-shown");
         $("#information-div").removeClass("is-shown");
+        $("#create-proj-div").removeClass("is-shown");
 
         $('#a-censored-words').removeClass('no-display');
         $('#b-censored-words').removeClass('no-display');
@@ -307,6 +665,7 @@ function toggleViewMode(mode) {
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").removeClass("is-shown");
         $("#information-div").removeClass("is-shown");
+        $("#create-proj-div").removeClass("is-shown");
 
         $('#a-censored-words').removeClass('no-display');
         $('#b-censored-words').addClass('no-display');
@@ -321,6 +680,7 @@ function toggleViewMode(mode) {
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").removeClass("is-shown");
         $("#information-div").removeClass("is-shown");
+        $("#create-proj-div").removeClass("is-shown");
 
         $('#a-censored-words').addClass('no-display');
         $('#b-censored-words').removeClass('no-display');
@@ -335,6 +695,7 @@ function toggleViewMode(mode) {
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").removeClass("is-shown");
         $("#information-div").removeClass("is-shown");
+        $("#create-proj-div").removeClass("is-shown");
 
         $('#a-censored-words').addClass('no-display');
         $('#b-censored-words').addClass('no-display');
@@ -349,6 +710,7 @@ function toggleViewMode(mode) {
         $("#logreg-div").addClass("is-shown");
         $("#settings-div").removeClass("is-shown");
         $("#information-div").removeClass("is-shown");
+        $("#create-proj-div").removeClass("is-shown");
 
         $("#loginchoices_1").removeClass("no-display");
         $("#loginchoices_2").removeClass("no-display");
@@ -365,6 +727,7 @@ function toggleViewMode(mode) {
         $("#logreg-div").addClass("is-shown");
         $("#settings-div").removeClass("is-shown");
         $("#information-div").removeClass("is-shown");
+        $("#create-proj-div").removeClass("is-shown");
 
         $("#loginchoices_1").addClass("no-display");
         $("#loginchoices_2").removeClass("no-display");
@@ -381,6 +744,7 @@ function toggleViewMode(mode) {
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").addClass("is-shown");
         $("#information-div").removeClass("is-shown");
+        $("#create-proj-div").removeClass("is-shown");
     }
     else if (mode === 8) {
         $(".w3-button").toggleClass("element-disabled");
@@ -410,6 +774,18 @@ function toggleViewMode(mode) {
         $("#logreg-div").removeClass("is-shown");
         $("#settings-div").removeClass("is-shown");
         $("#information-div").addClass("is-shown");
+        $("#create-proj-div").removeClass("is-shown");
+    }
+    else if (mode === 13) {
+        $("#start-div").removeClass("is-shown");
+        $("#preview-div").removeClass("is-shown");
+        $("#edita-div").removeClass("is-shown");
+        $("#editb-div").removeClass("is-shown");
+        $("#editc-div").removeClass("is-shown");
+        $("#logreg-div").removeClass("is-shown");
+        $("#settings-div").removeClass("is-shown");
+        $("#information-div").removeClass("is-shown");
+        $("#create-proj-div").addClass("is-shown");
     }
     else {
         // If you end up here, blame the incompetent programmer
@@ -417,6 +793,7 @@ function toggleViewMode(mode) {
     }
 }
 
+/*
 function continueQueue() {
     var files_left = window.fileQueue.length;
     if (files_left >= 1) {
@@ -442,7 +819,9 @@ function continueQueue() {
         logger.error("Unable to continue into the next file in queue!");
     }
 }
+*/
 
+/*
 function updateFileQueue(files) {
     //console.log(files);
     var filename = null;
@@ -458,7 +837,9 @@ function updateFileQueue(files) {
     }
     return filename;
 }
+*/
 
+///NEEDS UPDATE
 function clearElements() {
     $("#secAcontent").empty();
     $("#secBcontent").empty();
@@ -473,43 +854,31 @@ function clearElements() {
     $("#aside-subID-value").empty();
     $("#aside-subTIME-value").empty();
 }
-
-//updateprompt
-if (enable_onclicks){
-document.getElementById("update-prompt").onclick = function () {
-    autoUpdater.checkForUpdates();
+///NEEDS UPDATE
+function addFilePrompt() {
+    var docpath = remote.app.getPath('documents');
+    var options = {
+        title: window.i18n.__('open-file-prompt-window-title'),
+        defaultPath: path.join(docpath, 'SLIPPS DECSV\\Projects'),
+        filters: [
+            { name: 'Spreadsheet', extensions: ['csv', 'xls', 'xlsx'] }
+        ],
+        properties: ['openFile',
+            'multiSelections'
+        ]
     }
-    }
+    function callback(fileNames) {
 
-    /* setting listener for open file -button */
-//openfileprompt
-if (enable_onclicks) {
-    document.getElementById('open-file-prompt').onclick = function () {
-        //console.log("OPEN CLICKED");
-        var options = {
-            title: window.i18n.__('open-file-prompt-window-title'),
-            //defaultPath: THIS MUST BE SET!
-            filters: [
-                { name: 'Spreadsheet', extensions: ['csv', 'xls', 'xlsx'] }
-            ],
-            properties: ['openFile',
-                'multiSelections'
-            ]
+        if (fileNames !== undefined) {
+            //console.log(fileNames);
+            readFile(fileNames);
+            return;
         }
-        function callback(fileNames) {
-
-            if (fileNames !== undefined) {
-                //console.log(fileNames);
-                readFile(fileNames);
-                toggleViewMode(0);
-                return;
-            }
-            logger.warn("No file(s) chosen to be opened!");
-        }
-        dialog.showOpenDialog(firstWindow, options, callback);
+        logger.warn("No file(s) chosen to be opened!");
     }
+    dialog.showOpenDialog(firstWindow, options, callback);
 }
-//portalpromt
+///NEEDS UPDATE
 if (enable_onclicks) {
     document.getElementById('portal-prompt').onclick = function () {
         //console.log("HUEHHUEHUHE");
@@ -525,7 +894,7 @@ if (enable_onclicks) {
     }
 }
 
-//savefileprompt
+///NEEDS UPDATE
 if (enable_onclicks) {
     document.getElementById("save-file-prompt").onclick = function () {
         //console.log("SAVE CLICKED");
@@ -553,42 +922,7 @@ if (enable_onclicks) {
     }
 }
 
-//navigation between sections ABCKF
-if (enable_onclicks) {
-    document.getElementById('fromA2B').onclick = function () {
-        toggleViewMode(11);
-    }
-
-    document.getElementById('fromB2A').onclick = function () {
-        toggleViewMode(11);
-    }
-
-    document.getElementById('fromB2C').onclick = function () {
-        toggleViewMode(12);
-    }
-
-    document.getElementById('fromC2B').onclick = function () {
-        toggleViewMode(12);
-    }
-
-    document.getElementById('fromC2K').onclick = function () {
-        toggleViewMode(13);
-    }
-
-    document.getElementById('fromK2C').onclick = function () {
-        toggleViewMode(13);
-    }
-
-    document.getElementById('fromF2K').onclick = function () {
-        toggleViewMode(14);
-    }
-
-    document.getElementById('fromK2F').onclick = function () {
-        toggleViewMode(14);
-    }
-}
-
-
+///NEEDS UPDATE
 /* Turns .word with .censored class into " **** " */
 function removeCensored() {
     //Section A
@@ -691,6 +1025,7 @@ function parseCSV2Array(csv) {
     return result;
 }
 
+///NEEDS UPDATE
 /* This function parses data for textareas that are CURRENTLY USED
         => Will be changed */
 function showQuizData(data) {
@@ -716,6 +1051,7 @@ function showQuizData(data) {
     return result;
 }
 
+///NEEDS UPDATE
 /* This function puts C section answers into right places */
 function showCsecData(section_data) {
     //console.log("#############");
@@ -728,6 +1064,7 @@ function showCsecData(section_data) {
     }
 }
 
+///NEEDS UPDATE
 /* This function shows pre-selected words from the file */
 function loadKeyWords(keys) {
     for (var i = 0; i < keys.length; i++) {
@@ -738,6 +1075,7 @@ function loadKeyWords(keys) {
     updateKeywordsList();
 }
 
+///NEEDS UPDATE
 function updateKeywordsList() {
     var elements = [];
     $("#aside-key-list li").each(function (i) {
@@ -752,6 +1090,7 @@ function updateKeywordsList() {
     }
 }
 
+///NEEDS UPDATE
 function updateCensoredList() {
     $("#final-censoredwords-list").empty();
     //Section A
@@ -772,6 +1111,7 @@ function updateCensoredList() {
     });
 }
 
+///NEEDS UPDATE
 /* True if is found, false otherwise */
 function testKeywordList(word) {
 
@@ -787,6 +1127,7 @@ function testKeywordList(word) {
     return found;
 }
 
+///NEEDS UPDATE
 // mode 0 = paint all words as "keys"; mode 1 = remove "keys" marks from words
 function paintEmAll(word, mode) {
     //Section A
@@ -817,6 +1158,7 @@ function paintEmAll(word, mode) {
 
 }
 
+///NEEDS UPDATE
 // SETTING UP SELECTING KEYWORDS
 function setupKeywordSelect(arr_l, keys_arr) {
     $("#secAcontent").html(function (index, oldHtml) {
@@ -880,6 +1222,7 @@ function setupKeywordSelect(arr_l, keys_arr) {
     }
 }
 
+///NEEDS UPDATE
 // make array that will be then used to make new csv file
 function parse_content2Array() {
 
@@ -911,8 +1254,10 @@ function parse_content2Array() {
     return finalData;
 }
 
+///NEEDS UPDATE
 /* THIS IS SETTING UP UI TRANSLATION */
 function setupTranslations() {
+    logger.debug("setupTranslations(init.js)");
     logger.info("Loading translations into UI...");
     /* Start */
     //
@@ -924,7 +1269,8 @@ function setupTranslations() {
     $("#titlebar-appname").text("DECSV {Alpha version " + remote.app.getVersion() + "}");
 }
 
-function readFile(file) { //does this need this? , encoding
+///NEEDS UPDATE
+function readFile(file) {
 
     /* check file-extension and name */
     var output_data = [];
@@ -976,8 +1322,8 @@ function readFile(file) { //does this need this? , encoding
         //console.log("setting data");
         window.currentFileContent = output_data;
             
-        keys = showQuizData(output_data);
-        setupKeywordSelect(output_data[1].length, keys);
+        keys = showQuizData(output_data); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        setupKeywordSelect(output_data[1].length, keys);// ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     }
 
@@ -1000,8 +1346,8 @@ function readFile(file) { //does this need this? , encoding
             //console.log("setting data");
             window.currentFileContent = output_data;
             var keys = null;
-            keys = showQuizData(output_data);
-            setupKeywordSelect(output_data[1].length, keys);
+            keys = showQuizData(output_data); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            setupKeywordSelect(output_data[1].length, keys); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         });
 
     }

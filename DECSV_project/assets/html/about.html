@@ -6,7 +6,7 @@
 
     <script>window.logger = require('electron-log');</script>
     <script>window.$ = require('jquery');</script>
-    <script>window.i18n = new (require('../translations/i18n'));</script>
+    <script>window.i18n = new (require('../translations/i18n')); logger.debug("setupTranslations(about.html)");</script>
 
     <link rel="stylesheet" href="../css/w3.css">
     <link rel="stylesheet" href="../css/custom.css">
@@ -32,7 +32,7 @@
         <div style="text-align:center;">
             <img draggable="false" id="logo" style="display:block;margin:auto;-webkit-user-select: none;" src="../images/logo_noname.png" />
             <h1 style="font-family:sans-serif;font-style:italic;font-size:40px;color:#187dc1;-webkit-user-select: none;">SLIPPS</h1>
-            <h1 style="font-family:sans-serif;font-style:italic;color:#187dc1;-webkit-user-select: none;">DECSV</h1>
+            <h1 style="transform: translateY(-30px);font-family:sans-serif;font-style:italic;color:#187dc1;-webkit-user-select: none;">DECSV</h1>
         </div>
         <div>
             <p>This is about section, where some basic information about the application will be shown to the user, like quick reference to functionality of the UI.</p>
