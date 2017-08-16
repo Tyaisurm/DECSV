@@ -51,23 +51,23 @@
 
     <div style="min-height:68px;" class="w3-bar w3-gray w3-bottombar w3-border-white disable-select">
 
-        <div id="addfilebutton" class="w3-bar-item w3-button">
+        <div id="addfilebutton" class="w3-bar-item w3-button no-display">
             <img draggable="false" id="nav-file-icon" class="navbar-image" src="../ui_icons/appbar.add.png" />
             <p class="navbar-text">Add Files</p>
         </div>
-        <div id="projinfobutton" class="w3-bar-item w3-button">
+        <div id="projinfobutton" class="w3-bar-item w3-button no-display">
             <img draggable="false" id="nav-proj-info-icon" class="navbar-image" src="../ui_icons/appbar.information.circle.png" />
-            <p class="navbar-text">Project Info</p>
+            <p class="navbar-text">Summary</p>
         </div>
-        <div id="projstartbutton" class="w3-bar-item w3-button">
+        <div id="projstartbutton" class="w3-bar-item w3-button no-display">
             <img draggable="false" id="nav-proj-start-icon" class="navbar-image" src="../ui_icons/appbar.edit.box.png" />
             <p class="navbar-text">Edit</p>
         </div>
-        <div id="saveprojbutton" class="w3-bar-item w3-button">
+        <div id="saveprojbutton" class="w3-bar-item w3-button no-display">
             <img draggable="false" id="nav-save-icon" class="navbar-image" src="../ui_icons/appbar.save.png" />
             <p class="navbar-text">Save Project</p>
         </div>
-        <div id="closeprojbutton" class="w3-bar-item w3-button">
+        <div id="closeprojbutton" class="w3-bar-item w3-button no-display">
             <img draggable="false" id="nav-closeproj-icon" class="navbar-image" src="../ui_icons/appbar.close-dark.png" />
             <p class="navbar-text">Close project</p>
         </div>
@@ -78,7 +78,12 @@
         </div>
         <div id="check-app-updates-button" class="w3-bar-item w3-button">
             <img draggable="false" id="nav-update-icon" class="navbar-image" src="../ui_icons/appbar.reset.png" />
-            <p class="navbar-text">Check for updates</p>
+            <p id="navbar-check-updates-text" class="navbar-text">Check for updates</p>
+        </div>
+
+        <div id="back-to-start-button" class="w3-bar-item w3-button">
+            <img draggable="false" id="nav-start-icon" class="navbar-image" src="../ui_icons/appbar.home.variant.enter.png" />
+            <p id="" class="navbar-text">Back to start</p>
         </div>
 
         <div id="loginbutton" class="w3-bar-item w3-button w3-right">
@@ -112,7 +117,7 @@
                     <p style="margin-top:0;" class="w3-bar-item w3-left">Files in Project:</p>
                 </div>
                 <div style="flex:1;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
-                    <ul class="w3-ul">
+                    <ul id="proj-files-ul" class="w3-ul">
                         <li class="w3-green w3-hover-blue w3-display-container">File1.csv</li>
                         <li class="w3-green w3-hover-blue w3-display-container">File2.csv</li>
                         <li class="w3-green w3-hover-blue w3-display-container">File3.csv</li>
@@ -131,7 +136,7 @@
                     <p style="margin-top:0;" class="w3-bar-item w3-left">Project Notes:</p>
                 </div>
                 <div style="flex:1;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
-                    <ul class="w3-ul">
+                    <ul id="proj-notes-ul" class="w3-ul">
                         <li class="w3-hover-blue w3-display-container">Lorem<span onclick="$(this.parentElement).remove();" class="w3-button w3-display-right">&times;</span></li>
                         <li class="w3-hover-blue w3-display-container">Ipsum<span onclick="$(this.parentElement).remove();" class="w3-button w3-display-right">&times;</span></li>
                     </ul> 
@@ -146,7 +151,7 @@
             <div style="height:10%;font-size:smaller;margin:auto;" class="section-half">
                 <div class="w3-bar">
                     <p class="w3-bar-item" style="margin: 0; padding-bottom:0;">Submission ID: 13</p>
-                    <p class="w3-bar-item" style="margin: 0; padding-top:0;">Submission Date: 2017-08-09T12:46:54.043Z</p>
+                    <p class="w3-bar-item" style="margin: 0; padding-top:0;">Submission Date: 05.07.2017 15:41</p>
                 </div>
             </div>
             <div style="height:10%;" class="section-half">
@@ -177,7 +182,7 @@
                     <p style="margin-top:0;" class="w3-bar-item w3-left">Chosen Keywords:</p>
                 </div>
                 <div style="flex:1;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
-                    <ul id="chosen-kw-ul" class="w3-ul">
+                    <ul id="file-chosen-kw-ul" class="w3-ul">
                         
                     </ul> 
                 </div>
@@ -242,21 +247,21 @@
             <div class="w3-rest w3-container w3-display-container"style="min-height:68.28px;">
                 <div class="w3-display-left">
                     <p class="">
-                        <button id="footer-nav-btn1" class="w3-button w3-blue w3-round-large slipps-footer-btn">Button 1</button>
-                        <button id="footer-nav-btn2" class="w3-button w3-blue w3-round-large slipps-footer-btn">Button 2</button>
+                        <button id="footer-nav-btn1" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display">Button 1</button>
+                        <button id="footer-nav-btn2" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display">Button 2</button>
 
                     </p>
                 </div>
                 <div class="w3-display-middle">
                     <p class="">
-                        <button id="footer-nav-btn3" class="w3-button w3-blue w3-round-large slipps-footer-btn">Button 3</button>
-                        <button id="footer-nav-btn4" class="w3-button w3-blue w3-round-large slipps-footer-btn">Button 4</button>
+                        <button id="footer-nav-btn3" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display">Button 3</button>
+                        <button id="footer-nav-btn4" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display">Button 4</button>
                     </p>
                 </div>
                 <div class="w3-display-right">
                     <p class="">
-                        <button id="footer-nav-btn5" class="w3-button w3-blue w3-round-large slipps-footer-btn">Button 5</button>
-                        <button id="footer-nav-btn6" class="w3-button w3-blue w3-round-large slipps-footer-btn">Button 6</button>
+                        <button id="footer-nav-btn5" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display">Button 5</button>
+                        <button id="footer-nav-btn6" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display">Button 6</button>
                     </p>
                 </div>
             </div>

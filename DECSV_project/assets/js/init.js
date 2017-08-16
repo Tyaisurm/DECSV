@@ -126,12 +126,30 @@ document.getElementById('win-about-icon').onclick = function () {
 
 document.getElementById("check-app-updates-button").onclick = function () {
     logger.debug("check-app-updates button");
-    autoUpdater.checkForUpdates();
+    $("#check-app-updates-button").addClass("element-disabled");
+
+    ipcRenderer.on('check-updates-reply', (event, arg) => {
+        console.log("RETURNED FROM APP: " + arg);
+        if (arg === 0) {
+            $("#navbar-check-updates-text").text("Checking updates...");
+        }
+        else if (arg === 1){
+            $("#navbar-check-updates-text").text("Downloading update...");
+        }
+        else if (arg === 2){
+            $("#check-app-updates-button").removeClass("element-disabled");
+            $("#navbar-check-updates-text").text("Check for updates");
+        }
+        ipcRenderer.removeAllListeners('check-updates-reply');
+    });
+    ipcRenderer.send("check-updates", "");
 }
 
 document.getElementById("addfilebutton").onclick = function () {
     logger.debug("addfile button");
     //
+    var proj_name = window.currentProject;
+    addFilesPrompt(proj_name);
 }
 
 document.getElementById("projinfobutton").onclick = function () {
@@ -153,7 +171,11 @@ document.getElementById("saveprojbutton").onclick = function () {
 
 document.getElementById("closeprojbutton").onclick = function () {
     logger.debug("closeproject button");
-    //
+    //confirmation, saving etc.
+    window.currentProject = undefined;
+    setViewButtonSets("project-closed");
+    toggleViewMode(0);
+    toggleViewMode(10);
 }
 
 document.getElementById("settingsbutton").onclick = function () {
@@ -162,9 +184,14 @@ document.getElementById("settingsbutton").onclick = function () {
     toggleViewMode(10);
 }
 
+document.getElementById("back-to-start-button").onclick = function () {
+    logger.debug("to start button");
+    toggleViewMode(0);
+    toggleViewMode(10);
+}
+
 document.getElementById("loginbutton").onclick = function () {
     logger.debug("login button");
-    $("#logreg-reg-button").val("login");
     toggleViewMode(5);
     toggleViewMode(10);
 }
@@ -172,10 +199,6 @@ document.getElementById("loginbutton").onclick = function () {
 
 /* Create Proj div */
 
-document.getElementById("new-proj-create-button").onclick = function () {
-    logger.debug("new-proj-create-button");
-    createProjAsync();
-}
 
 /* Start div */
 
@@ -187,6 +210,33 @@ document.getElementById("create-proj-button").onclick = function () {
 
 document.getElementById("open-proj-button").onclick = function () {
     logger.debug("open-proj-button");
+
+    var docpath = remote.app.getPath('documents');
+    var options = {
+        title: i18n.__('open-project-prompt-window-title'),
+        defaultPath: path.join(docpath, "SLIPPS DECSV\\Projects\\"), //This need verifications!!!
+        properties: ['openDirectory'
+        ]
+    }
+    function callback(pname) {
+
+        if (pname !== undefined) {
+            var projname = pname[0].split("\\").pop();
+            logger.debug("PROJECT NAME: " + projname);
+            var opened_res = openAndViewProject(projname);
+            //readFile(fileNames);
+            if (opened_res[0]) {
+                logger.debug("OPENED EXISTING PROJECT");
+            }
+            else {
+                logger.debug("FAILED TO OPEN EXISTING PROJECT!");
+                logger.debug("REASON: "+opened_res[1]);
+            }
+            return;
+        }
+        logger.warn("No project chosen to be opened!");
+    }
+    dialog.showOpenDialog(firstWindow, options, callback);
     //open dialog here to choose directory, or create directory if nothing is present. then recall function
 }
 
@@ -223,20 +273,6 @@ document.getElementById("secCmodetoggle").onclick = function () {
 
 /* Login/Register div */
 
-document.getElementById("logreg-reg-button").onclick = function () {
-    logger.debug("logreg-reg-button");
-    if ($(this).val() === "login") {
-        toggleViewMode(6);
-        toggleViewMode(10);
-        $(this).val("register");
-    }
-    else if ($(this).val() === "register") {
-            // register here
-    }
-    else{
-        //ummm... SUPRISE! :D
-    }
-}
 
 //window.onload = function () {
     /*
@@ -311,11 +347,15 @@ document.getElementById("subB10").onclick = function () {
     toggleViewMode(10);
 }
 
-///// OTHER
+///// OTHER FOOTER
 
 document.getElementById("footer-nav-btn1").onclick = function () {
     var value = $(this).val();
-    logger.debug("btn1: "+value);
+    logger.debug("btn1: " + value);
+    if (value === "preview"){
+        $(this).text("Previous file");
+    }
+    //preview move to previous file
 }
 document.getElementById("footer-nav-btn2").onclick = function () {
     var value = $(this).val();
@@ -324,20 +364,231 @@ document.getElementById("footer-nav-btn2").onclick = function () {
 
 document.getElementById("footer-nav-btn3").onclick = function () {
     var value = $(this).val();
-    logger.debug("btn3: " +value);
+    logger.debug("btn3: " + value);
+    //create project createProjAsync();
+    //save settings
+    //edit ABC save
+    if (value === "editA") {
+        toggleViewMode(1);
+        toggleViewMode(9);
+        // save A edits and update preview
+    }
+    else if (value === "editB") {
+        toggleViewMode(1);
+        toggleViewMode(9);
+        // save B edits and update preview
+    }
+    else if (value === "editC") {
+        toggleViewMode(1);
+        toggleViewMode(9);
+        // save C edits and update preview
+    }
+    else if (value === "login") {
+        //login
+    }
+    else if (value === "register") {
+    }
+    else if (value === "settings"){
+    }
+    else if (value === "create-proj") {
+        logger.debug("new-proj-create-button");
+        var project_name = $("#new-proj-create-input").val();
+        createProjAsync(project_name);
+        //create project
+    }
 }
 document.getElementById("footer-nav-btn4").onclick = function () {
     var value = $(this).val();
-    logger.debug("btn4: " +value);
+    logger.debug("btn4: " + value);
+
+    //cancel project creation
+    //cancel settings
+    //edit ABC cancel
+    if (value === "editA") {
+        toggleViewMode(1);
+        toggleViewMode(9);
+        // cancel editmode A
+    }
+    else if (value === "editB") {
+        toggleViewMode(1);
+        toggleViewMode(9);
+        //cancel editmode B
+    }
+    else if (value === "editC") {
+        toggleViewMode(1);
+        toggleViewMode(9);
+        //cancel editmode C
+    }
+    else if (value === "settings") {
+        //cancel (aka. clear all values) modified settings
+    }
+    else if (value === "register") {
+        toggleViewMode(5);
+        toggleViewMode(10);
+    }
+    
 }
 
 document.getElementById("footer-nav-btn5").onclick = function () {
     var value = $(this).val();
-    logger.debug("btn5: " +value);
+    logger.debug("btn5: " + value);
+
+    if (value === "preview") {
+        // Toggle done and not done
+    }
+    else if (value === "login") {
+        toggleViewMode(6);
+        toggleViewMode(10);
+        // register view
+    }
+    
 }
 document.getElementById("footer-nav-btn6").onclick = function () {
     var value = $(this).val();
-    logger.debug("btn6: " +value);
+    logger.debug("btn6: " + value);
+    
+    if (value === "preview") {
+        // Move to next file
+    }
+    else if (value === "login") {
+        // forgot PW view (VIEW NOT IMPLEMENTED!!!)
+    }
+}
+
+function setFooterBtnValue(value) {
+    logger.debug("setFooterBtnValue");
+    logger.debug("Value: "+value);
+    $("#footer-nav-btn1").val(value);
+    $("#footer-nav-btn2").val(value);
+    $("#footer-nav-btn3").val(value);
+    $("#footer-nav-btn4").val(value);
+    $("#footer-nav-btn5").val(value);
+    $("#footer-nav-btn6").val(value);
+}
+
+function setViewButtonSets(view) {
+    logger.debug("setViewButtonSets");
+    logger.debug("View: "+view);
+    if (view === "preview") {
+        $("#footer-nav-btn1").removeClass("no-display");
+        $("#footer-nav-btn2").addClass("no-display");
+        $("#footer-nav-btn3").addClass("no-display");
+        $("#footer-nav-btn4").addClass("no-display");
+        $("#footer-nav-btn5").removeClass("no-display");
+        $("#footer-nav-btn6").removeClass("no-display");
+
+        $("#footer-nav-btn1").text("Previous file");
+        $("#footer-nav-btn5").text("Mark as Done / Not Done");
+        $("#footer-nav-btn6").text("Next file");
+    }
+    else if (view === "login"){
+        $("#footer-nav-btn1").addClass("no-display");
+        $("#footer-nav-btn2").addClass("no-display");
+        $("#footer-nav-btn3").removeClass("no-display");
+        $("#footer-nav-btn4").addClass("no-display");
+        $("#footer-nav-btn5").removeClass("no-display");
+        $("#footer-nav-btn6").removeClass("no-display");
+
+        $("#footer-nav-btn3").text("Login");
+        $("#footer-nav-btn5").text("Register");
+        $("#footer-nav-btn6").text("Forgot Password?");
+    }
+    else if (view === "register"){
+        $("#footer-nav-btn1").addClass("no-display");
+        $("#footer-nav-btn2").addClass("no-display");
+        $("#footer-nav-btn3").removeClass("no-display");
+        $("#footer-nav-btn4").removeClass("no-display");
+        $("#footer-nav-btn5").addClass("no-display");
+        $("#footer-nav-btn6").addClass("no-display");
+
+        $("#footer-nav-btn3").text("Register");
+        $("#footer-nav-btn4").text("Cancel");
+    }
+    else if (view === "editA") {
+        $("#footer-nav-btn1").addClass("no-display");
+        $("#footer-nav-btn2").addClass("no-display");
+        $("#footer-nav-btn3").removeClass("no-display");
+        $("#footer-nav-btn4").removeClass("no-display");
+        $("#footer-nav-btn5").addClass("no-display");
+        $("#footer-nav-btn6").addClass("no-display");
+
+        $("#footer-nav-btn3").text("Save");
+        $("#footer-nav-btn4").text("Cancel");
+    }
+    else if (view === "editB") {
+        $("#footer-nav-btn1").addClass("no-display");
+        $("#footer-nav-btn2").addClass("no-display");
+        $("#footer-nav-btn3").removeClass("no-display");
+        $("#footer-nav-btn4").removeClass("no-display");
+        $("#footer-nav-btn5").addClass("no-display");
+        $("#footer-nav-btn6").addClass("no-display");
+
+        $("#footer-nav-btn3").text("Save");
+        $("#footer-nav-btn4").text("Cancel");
+    }
+    else if (view === "editC") {
+        $("#footer-nav-btn1").addClass("no-display");
+        $("#footer-nav-btn2").addClass("no-display");
+        $("#footer-nav-btn3").removeClass("no-display");
+        $("#footer-nav-btn4").removeClass("no-display");
+        $("#footer-nav-btn5").addClass("no-display");
+        $("#footer-nav-btn6").addClass("no-display");
+
+        $("#footer-nav-btn3").text("Save");
+        $("#footer-nav-btn4").text("Cancel");
+    }
+    else if (view === "create-proj") {
+        $("#footer-nav-btn1").addClass("no-display");
+        $("#footer-nav-btn2").addClass("no-display");
+        $("#footer-nav-btn3").removeClass("no-display");
+        $("#footer-nav-btn4").addClass("no-display");
+        $("#footer-nav-btn5").addClass("no-display");
+        $("#footer-nav-btn6").addClass("no-display");
+
+        $("#footer-nav-btn2").text("");
+        $("#footer-nav-btn3").text("Create project");
+    }
+    else if (view === "start") {
+        $("#footer-nav-btn1").addClass("no-display");
+        $("#footer-nav-btn2").addClass("no-display");
+        $("#footer-nav-btn3").addClass("no-display");
+        $("#footer-nav-btn4").addClass("no-display");
+        $("#footer-nav-btn5").addClass("no-display");
+        $("#footer-nav-btn6").addClass("no-display");
+    }
+    else if (view === "information") {
+        $("#footer-nav-btn1").addClass("no-display");
+        $("#footer-nav-btn2").addClass("no-display");
+        $("#footer-nav-btn3").addClass("no-display");
+        $("#footer-nav-btn4").addClass("no-display");
+        $("#footer-nav-btn5").addClass("no-display");
+        $("#footer-nav-btn6").addClass("no-display");
+    }
+    else if (view === "settings") {
+        $("#footer-nav-btn1").addClass("no-display");
+        $("#footer-nav-btn2").addClass("no-display");
+        $("#footer-nav-btn3").removeClass("no-display");
+        $("#footer-nav-btn4").removeClass("no-display");
+        $("#footer-nav-btn5").addClass("no-display");
+        $("#footer-nav-btn6").addClass("no-display");
+
+        $("#footer-nav-btn3").text("Save");
+        $("#footer-nav-btn4").text("Cancel");
+    }
+    else if (view === "project-open") {
+        $("#addfilebutton").removeClass("no-display");
+        $("#projinfobutton").removeClass("no-display");
+        $("#projstartbutton").removeClass("no-display");
+        $("#saveprojbutton").removeClass("no-display");
+        $("#closeprojbutton").removeClass("no-display");
+    }
+    else if (view === "project-closed") {
+        $("#addfilebutton").addClass("no-display");
+        $("#projinfobutton").addClass("no-display");
+        $("#projstartbutton").addClass("no-display");
+        $("#saveprojbutton").addClass("no-display");
+        $("#closeprojbutton").addClass("no-display");
+    }
 }
 
 /* Index div right side */
@@ -359,22 +610,72 @@ document.getElementById("footer-nav-btn6").onclick = function () {
 ///////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////// FUNCTIONS
-function createProjAsync() {
+function createProjAsync(project_name) {
     logger.debug("createProjAsync");
-    var project_name = $("#new-proj-create-input").val();
-    console.log(project_name);
     ipcRenderer.on('async-create-project-reply', (event, arg) => {
-        console.log("RETURNED FROM APP: " + arg);
-        if (true){//arg) {
-            console.log("HEREHERHEHREHHERRERERERER");
-            var opened = openAndViewProject(project_name);
+        //console.log("RETURNED FROM APP: ");
+        //console.log(arg);
+        logger.debug("ASYNC RETURNED (CREATE PROJECT)");
+        if (arg[0]){
+            var opened_res = openAndViewProject(project_name);
 
-            if (opened) {
-                console.log("OPENED :DDDDDDDD");
+            if (opened_res[0]) {
+                logger.debug("OPENED CREATED PROJECT");
+            }
+            else {
+                logger.debug("FAILED TO OPEN CREATED PROJECT!");
+                logger.debug("REASON: "+opened_res[1]);
             }
         }
+        else {
+            var reason = arg[1];
+            logger.debug("FAILED TO CREATE NEW PROJECT!! REASON: "+reason);
+        }
+        ipcRenderer.removeAllListeners('async-create-project-reply');
     })
     ipcRenderer.send('async-create-project', project_name);
+}
+
+function sourceFiles2ProjAsync(files) { // Last object of "files" will be name of the project where files will be added to
+    logger.debug("sourceFiles2ProjAsync");
+    var proj_name = files[files.length - 1];
+    var docpath = remote.app.getPath('documents');
+
+    var f2p_options = {
+        name: proj_name,
+        cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\')
+    }
+    const f2p_store = new Store(f2p_options);
+    var pre_dirfiles = f2p_store.get('source-files', []);
+    logger.debug(pre_dirfiles);
+
+    ipcRenderer.on('async-import-files-reply', (event, arg) => {
+        logger.debug("BACK FROM APP");
+        var dirfiles = fs.readdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source\\'));
+        logger.debug(docpath);
+        logger.debug(dirfiles);
+        //console.log("RETURNED FROM APP: ");
+        //console.log(arg);
+        if (arg) {
+            // do something if importing was successful
+            logger.debug("DONE IMPORTING SOURCE FILES!");
+        }
+        else {
+            logger.debug("ERROR WHILE IMPORTING!");
+        }
+        
+        f2p_store.set("source-files", dirfiles);
+
+        ipcRenderer.removeAllListeners('async-import-files-reply');
+    });
+    logger.debug("SENDING ASYNC TO MAIN APP!");
+    var send_arg = [];
+    send_arg.push(files);
+    send_arg.push(pre_dirfiles);
+    logger.debug("##################################");
+    logger.debug(files);
+    logger.debug(pre_dirfiles);
+    ipcRenderer.send('async-import-files', send_arg);
 }
 
 function openAndViewProject(proj_name) {
@@ -382,18 +683,22 @@ function openAndViewProject(proj_name) {
 
     var regex_filepath_val = /^[^\\/:\*\?"<>\|]+$/;
     var docpath = remote.app.getPath('documents');
+    var reason = [];
 
     if (proj_name === undefined) {
         // Projectname not defined
-        return false;
+        reason.push(false, "Project name not defined!");
+        return reason;
     }
     else if (proj_name.lenght === 0 || proj_name.lenght > 100) {
         // Projectname length 0 or over 100 characters
-        return false;
+        reason.push(false, "Name should have 1-100 characters!");
+        return reason;
     }
     else if (!regex_filepath_val.test(proj_name)) {
         // Projectname not allowed
-        return false;
+        reason.push(false, 'Name should not contain <>:"/\|?*');
+        return reason;
     }
     else if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
         if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
@@ -433,11 +738,8 @@ function openAndViewProject(proj_name) {
                             
                             for (var k in kw_per_file) {
                                 console.log("#1: " + k);
-                                console.log(k);
                                 if (kw_per_file.hasOwnProperty(k)) {
                                     console.log("#2: " + kw_per_file[k]);
-                                    console.log(kw_per_file[k]);
-
 
                                     for (var j in kw_per_file[k]) {
                                         console.log("#3: " + j);
@@ -455,69 +757,96 @@ function openAndViewProject(proj_name) {
                             for (var i = 0; i < proj_notes.length; i++) {
                                 console.log(i + "  " + proj_notes[i]);
                             }
+                            window.currentProject = proj_name;
 
+                            // OPENING "PROJECT START" VIEW
+                            toggleViewMode(1);
+                            toggleViewMode(9);
+                            setViewButtonSets("project-open");
+                            ////////////////////
                             logger.info("Opened project " + proj_name + "...");
-                            return true;
+                            reason.push(true);
+                            return reason;
                         }
                         else {
                             // No project properties file!
-                            return false;
+                            reason.push(false, "Project properties file missing!");
+                            return reason;
                         }
                     }
                     else {
                         // No temp folder!
-                        return false;
+                        reason.push(false, "Temp-folder missing!");
+                        return reason;
                     }
                 }
                 else {
                     // No source folder!
-                    return false;
+                    reason.push(false, "Source-folder missing!");
+                    return reason;
                 }
             }
             else {
                 // Project does not exist!
-                return false;
+                reason.push(false, "Project does not exist!");
+                return reason;
             }
         }
         else {
             // Projects-folder not present!
-            return false;
+            reason.push(false, "Projects-older missing!");
+            return reason;
         }
     }
     else {
         // Application-folder (at Documents) not present!
-        return false;
+        reason.push(false, "Application-folder missing!");
+        return reason;
     }
 }
 
-function updateCensoredList() {
-    logger.debug("updateCensoredList");
+// NEEDS UPDATE
+// Add given note into ul element
+function addProjNote(note) {
+    //
+    var kw_value = e.params.data.id;
+    var kw_text = e.params.data.text;
+    logger.debug("VALUE: " + kw_value + " # TEXT: " + kw_text);
+    $('#KW-selector').val(null).trigger("change");
+    $("#KW-selector option[value='" + kw_value + "']").attr('disabled', 'disabled');
+
+    var li_string = document.createTextNode(kw_text);
+    var li_node = document.createElement("li");
+    var span_node = document.createElement("span");
+
+    li_node.appendChild(li_string);
+    span_node.innerHTML = "&times;";
+
+    $(li_node).attr({
+        class: "w3-display-container",
+        "data-value": kw_value
+    });
+
+    $(span_node).attr({
+        style: "height: 100%;",
+        class: "w3-button w3-display-right",
+        onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
+        onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
+        onclick: "$(this.parentElement).remove();"
+    });
+
+    li_node.appendChild(span_node);
+
+    $('#file-chosen-kw-ul').append(li_node);
+}
+
+// NEEDS UPDATE
+// Add given filename + details into ul element
+function addProjFile(file) {
     //
 }
 
-function updateChosenKeywordsList(keywords) {
-    logger.debug("updateChoseKeywordsList");
-    //
-}
-
-// mode 0 = remove, mode 1 = re-add
-function adjustSelectKeywordList(terms, mode) {
-    logger.debug("adjustSelectKeywordList");
-    //
-}
-
-function updateNotesList(notes) {
-    logger.debug("updateNotesList");
-    //
-}
-
-function adjustNoteLlist(note) {
-    logger.debug("adjustNoteList");
-    //
-}
-
-function adjustCensoredWordList(word, mode) {
-    logger.debug("adjustCensoredWordList");
+function sortListElem(list) {  // REPLACED BY LIST.JS!!!!!!!!!! NPM
     //
 }
 
@@ -526,15 +855,14 @@ function set_KW_choose_selector() {
     logger.debug("set_KW_choose_selector");
     $("#KW-selector").select2({
         language: "current_lang",
-        placeholder: i18n.__('select2-kw-add-ph'),
-        allowClear: true
+        placeholder: i18n.__('select2-kw-add-ph')
     });
     $('#KW-selector').on("select2:select", function (e) {
-        console.log(e);
-        console.log(this);
+        //console.log(e);
+        //console.log(this);
         var kw_value = e.params.data.id;
         var kw_text = e.params.data.text;
-        console.log(kw_value + " # " + kw_text);
+        logger.debug("VALUE: "+kw_value + " # TEXT: " + kw_text);
         $('#KW-selector').val(null).trigger("change");
         $("#KW-selector option[value='" + kw_value + "']").attr('disabled', 'disabled');
 
@@ -555,23 +883,22 @@ function set_KW_choose_selector() {
             class: "w3-button w3-display-right",
             onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
             onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-            onclick: "$(this.parentElement).remove();"
+            onclick: "$(\"#KW-selector option[value = '" + kw_value + "']\").removeAttr('disabled', 'disabled'); $(this.parentElement).remove(); $(\"#KW-selector\").select2({language: \"current_lang\",placeholder: i18n.__('select2-kw-add-ph')});"
         });
 
         li_node.appendChild(span_node);
 
-        $('#chosen-kw-ul').append(li_node);
+        $('#file-chosen-kw-ul').append(li_node);
 
         $("#KW-selector").select2({
             language: "current_lang",
-            placeholder: i18n.__('select2-kw-add-ph'),
-            allowClear: true
+            placeholder: i18n.__('select2-kw-add-ph')
         });
     });
 }
 function set_app_lang_selector() {
     logger.debug("set_app_lang_selector");
-    fs.readdirSync("./assets/translations/").forEach(file => {
+    fs.readdirSync(path.join(__dirname,"..\\translations")).forEach(file => {
         if (file.split('.').pop() === "js") { return; }
         var lang = getFullLangName(file.split('.')[0]);
         if (lang === null) {
@@ -584,7 +911,6 @@ function set_app_lang_selector() {
     $("#app-lang-selector").select2({
         language: "current_lang",
         placeholder: i18n.__('select2-app-lang-ph'),
-        allowClear: false,
         minimumResultsForSearch: Infinity
     });
 }
@@ -608,8 +934,7 @@ function set_kw_list_available_select() {
     logger.debug("set_kw_list_available_select");
     $("#kw-list-available-choose").select2({
         language: "current_lang",
-        placeholder: i18n.__('select2-kw-list-ph'),
-        allowClear: true
+        placeholder: i18n.__('select2-kw-list-ph')
     });
 }
 
@@ -631,6 +956,9 @@ function set_kw_list_available_select() {
 function toggleViewMode(mode) {
     logger.debug("toggleViewMode: "+mode);
     if (mode === 0) {
+        setFooterBtnValue("start");
+        setViewButtonSets("start");
+
         $("#start-div").addClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -642,6 +970,9 @@ function toggleViewMode(mode) {
         $("#create-proj-div").removeClass("is-shown");
     }
     else if (mode === 1) {
+        setFooterBtnValue("preview");
+        setViewButtonSets("preview");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").addClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -657,6 +988,9 @@ function toggleViewMode(mode) {
         $('#c-censored-words').removeClass('no-display');
     }
     else if (mode === 2) {
+        setFooterBtnValue("editA");
+        setViewButtonSets("editA");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").addClass("is-shown");
@@ -672,6 +1006,9 @@ function toggleViewMode(mode) {
         $('#c-censored-words').addClass('no-display');
     }
     else if (mode === 3) {
+        setFooterBtnValue("editB");
+        setViewButtonSets("editB");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -687,6 +1024,9 @@ function toggleViewMode(mode) {
         $('#c-censored-words').addClass('no-display');
     }
     else if (mode === 4) {
+        setFooterBtnValue("editC");
+        setViewButtonSets("editC");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -702,6 +1042,9 @@ function toggleViewMode(mode) {
         $('#c-censored-words').removeClass('no-display');
     }
     else if (mode === 5) {
+        setFooterBtnValue("login");
+        setViewButtonSets("login");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -719,6 +1062,9 @@ function toggleViewMode(mode) {
         $("#registerchoices_2").addClass("no-display");
     }
     else if (mode === 6) {
+        setFooterBtnValue("register");
+        setViewButtonSets("register");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -736,6 +1082,9 @@ function toggleViewMode(mode) {
         $("#registerchoices_2").removeClass("no-display");
     }
     else if (mode === 7) {
+        setFooterBtnValue("settings");
+        setViewButtonSets("settings");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -766,6 +1115,9 @@ function toggleViewMode(mode) {
         //$("#window-footer").toggleClass("no-display");
     }
     else if (mode === 12) {
+        setFooterBtnValue("information");
+        setViewButtonSets("information");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -777,6 +1129,9 @@ function toggleViewMode(mode) {
         $("#create-proj-div").removeClass("is-shown");
     }
     else if (mode === 13) {
+        setFooterBtnValue("create-proj");
+        setViewButtonSets("create-proj");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -854,12 +1209,12 @@ function clearElements() {
     $("#aside-subID-value").empty();
     $("#aside-subTIME-value").empty();
 }
-///NEEDS UPDATE
-function addFilePrompt() {
+
+function addFilesPrompt(project_name) {
     var docpath = remote.app.getPath('documents');
     var options = {
-        title: window.i18n.__('open-file-prompt-window-title'),
-        defaultPath: path.join(docpath, 'SLIPPS DECSV\\Projects'),
+        title: i18n.__('open-file-prompt-window-title'),
+        defaultPath: docpath,
         filters: [
             { name: 'Spreadsheet', extensions: ['csv', 'xls', 'xlsx'] }
         ],
@@ -871,7 +1226,9 @@ function addFilePrompt() {
 
         if (fileNames !== undefined) {
             //console.log(fileNames);
-            readFile(fileNames);
+            //readFile(fileNames);
+            fileNames.push(project_name);
+            sourceFiles2ProjAsync(fileNames);
             return;
         }
         logger.warn("No file(s) chosen to be opened!");
@@ -1275,7 +1632,7 @@ function readFile(file) {
     /* check file-extension and name */
     var output_data = [];
     var file_ext = file.split('.').pop();
-    var file_name = file.split('/').pop();
+    var file_name = file.split('/').pop(); //THIS IS WRONG!!!! \\ is right
 
     //console.log("################################################");
     //console.log(file_ext);

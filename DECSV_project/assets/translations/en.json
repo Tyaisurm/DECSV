@@ -29,6 +29,9 @@
   "conf-no": "No",
   "conf-ok": "Ok",
 
+  "open-file-prompt-window-title": "Open file",
+  "open-project-prompt-window-title": "Open project",
+
   "restore-conf-title": "Restore",
   "restore-conf-message": "Would you like to restore previous session?",
   "restore-conf-detail": "The program would show you the state where you left it when you closed it last time.",

@@ -53,21 +53,22 @@ const { ipcMain } = require('electron')
 
 // create project
 ipcMain.on('async-create-project', (event, arg) => {
-    var returns_from = createNewProject(arg);
-    var sending_back = returns_from;
-    event.sender.send('async-create-project-reply', sending_back)
-})
+    logger.debug("async-create-project (at app.js)");
+    var sending_back = createNewProject(arg);
+    event.sender.send('async-create-project-reply', sending_back);
+});
 
+// NEEDS UPDATE
 // delete project
 ipcMain.on('async-delete-project', (event, arg) => {
-    console.log(arg);
+    logger.debug("async-delete-project (at app.js)");
     event.sender.send('async-delete-project-reply', 'pong')
 })
 
 // import files to project folder
 ipcMain.on('async-import-files', (event, arg) => {
-    console.log(arg);
-    event.sender.send('async -import-files', 'pong')
+    logger.debug("async-import-files (at app.js)");
+    srcFiles2Proj(arg[0], event, arg[1]);
 })
 
 ////////////////////////////////////////////////////////////
@@ -132,21 +133,25 @@ function createAppStructure() {
 //createNewProject("ää");
 
 function createNewProject(proj_name) {
+    var reason = [];
     logger.debug("createNewProject");
     var regex_filepath_val = /^[^\\/:\*\?"<>\|]+$/;
     var docpath = app.getPath('documents');
 
     if (proj_name === undefined) {
         // Projectname not defined
-        return false;
+        reason.push(false, "No name defined!");
+        return reason;
     }
     else if (proj_name.lenght === 0 || proj_name.lenght > 100) {
         // Projectname length 0 or over 100 characters
-        return false;
+        reason.push(false, "Name should have 1-100 characters!");
+        return reason;
     }
     else if (!regex_filepath_val.test(proj_name)) {
         // Projectname not allowed
-        return false;
+        reason.push(false, 'Name should not contain <>:"/\|?*');
+        return reason;
     }
     else if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
         if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
@@ -175,26 +180,31 @@ function createNewProject(proj_name) {
                     fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp'));
                 }
                 logger.info("Created project " + proj_name + "...");
-                return true;
+                reason.push(true);
+                return reason;
             }
             else {
                 // Project with same name exists!
-                return false;
+                reason.push(false, "Project with same name exits!");
+                return reason;
             }
         }
         else {
             // Projects-folder not present!
             createDocStructure();
-            return false;
+            reason.push(false, "Projects-older missing! Try again.");
+            return reason;
         }
     }
     else {
         // Application-folder (at Documents) not present!
         createDocStructure();
-        return false;
+        reason.push(false, "Application-folder missing! Try again.");
+        return reason;
     }
 }
 
+// NEEDS UPDATE
 function removeProject(proj_name) {
     logger.debug("removeProject");
     if (proj_name.lenght === 0 || proj_name.lenght > 100) {
@@ -226,8 +236,76 @@ function removeProject(proj_name) {
 
 }
 
-function openProject() {
-    //
+function srcFiles2Proj(files,event,ready_src) {
+    logger.debug("srcFiles2Proj");
+    var docpath = app.getPath('documents');
+    var proj_name = files.pop();
+
+    /* This still needs verifications about folders if they exists */
+
+    var source = null;
+    var dest = null;
+    var dest_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source\\');
+    var readStream = null;
+    var writeStream = null;
+    var result = true;
+    var filename = null;
+    var rcounter = 0;
+    var wcounter = 0;
+    var check = false;
+
+    if (fs.existsSync(dest_base)) {
+        if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name))) {
+
+            // Loop through the array of files to be imported
+            for (var i = 0; i < files.length; i++) {
+                source = files[i];
+                filename = files[i].split('\\').pop();
+                logger.debug("FILENAME: " + filename);
+                logger.debug("ready_SRC: " + ready_src);
+                // Check if file to be imported is already mentioned in project config file
+                for (var k = 0; k < ready_src.length; k++){
+                    if (ready_src[k] === filename) { check = true; break;}
+                }
+                logger.debug(check);
+                if (check){ continue;}
+
+                dest = path.join(dest_base, filename);
+                logger.debug("DEST: "+dest);
+                readStream = fs.createReadStream(source);
+                writeStream = fs.createWriteStream(dest);
+
+                readStream.once('error', (err) => {
+                    logger.error("Error while reading source file!");
+                    logger.error(err);
+                    rcounter++;
+                    result = false;
+                });
+
+                readStream.once('end', () => {
+                    logger.info("Reading source file completed");
+                    rcounter++;
+                });
+
+                writeStream.on('finish', function () {
+                    logger.info("Writing source file completed");
+                    wcounter++;
+                    if (rcounter === files.length) {
+                        logger.debug("sending back now");
+                        event.sender.send('async-import-files-reply', result);
+                    }
+                });
+                logger.debug("Before reading and writing...");
+                readStream.pipe(writeStream);
+            }
+        }
+        else {
+            // Project data .json not present!
+        }
+    }
+    else {
+        // project source folder or other folders not present!
+    }
 }
 
 
@@ -275,6 +353,7 @@ function createWin() {
         backgroundColor: '#dadada',
         show: false
     });
+    //mainWindow.toggleDevTools();
     mainWindowState.manage(mainWindow);
 
     let win2_url = url.format({
@@ -375,28 +454,24 @@ app.on('quit', function () {
     logger.info("quitting application...");
 });
 
+///////////////////
+
+ipcMain.on("check-updates", (event, arg) => {
+
 autoUpdater.on('checking-for-update', function () {
     logger.info("Checking for updates...");
-
-
-    var options = {
-        type: 'info',
-        title: "Checking for updates",
-        message: app.getVersion().toString() + " is the current version",
-        buttons: ["ok"]
-    };
-
-    dialog.showMessageBox(options, function (index) {
-        //
-    });
+    logger.info("Current version: " + app.getVersion().toString());
+    event.sender.send("check-updates-reply", 0);
 });
 autoUpdater.on('update-available', function () {
     logger.info("Update available!");
+
+    event.sender.send("check-updates-reply", 1);
     var options = {
         type: 'info',
         title: "Update available",
         message: "Update found to be available",
-        detail: "Update will be downloaded automatically if possible",
+        detail: "Update will be tried to be downloaded automatically",
         buttons: ["ok"]
     };
 
@@ -406,11 +481,14 @@ autoUpdater.on('update-available', function () {
 });
 autoUpdater.on('error', function (err) {
     logger.error("Error in autoUpdater! " + err.message);
+
+    event.sender.send("check-updates-reply", 2);
+    clearUpdaterListeners();
     var options = {
         type: 'info',
-        title: "ERRORR!",
-        message: "Error has happened in AutoUpdater",
-        detail: "This was the Error:\r\n" + err.message,
+        title: "Error",
+        message: "Error while updating",
+        detail: "Unable to check for updates!",
         buttons: ["ok"]
     };
 
@@ -420,6 +498,9 @@ autoUpdater.on('error', function (err) {
 });
 autoUpdater.on('update-not-available', function () {
     logger.info("Update not available!");
+
+    event.sender.send("check-updates-reply", 2);
+    clearUpdaterListeners();
     var options = {
         type: 'info',
         title: "No update",
@@ -435,21 +516,20 @@ autoUpdater.on('update-not-available', function () {
 
 autoUpdater.on('update-downloaded', function (ev, relNot, relNam, relDat, updUrl) {
     logger.info("Update has been downloaded!");
-    console.log(ev);
-    console.log(relNot);
-    console.log(relNam);
-    console.log(relDat);
-    console.log(updUrl);
+    logger.debug(relNot,relNam,relDat,updUrl);
+    event.sender.send("check-updates-reply", 2);
+    clearUpdaterListeners();
     var options = {
         type: 'info',
-        title: "Update ready to install",
-        message: "Install the downloaded update?",
-        detail: "Information:\r\nev: " + ev + "\r\nrelNot: " + relNot + "\r\nrelNam: " + relNam + "\r\nrelDat: " + relDat + "\r\nupdUrl: " + updUrl,
+        title: "Update downloaded",
+        message: "New version "+relNam+" is ready to be installed",
+        detail: "Would you like to close the application and update?",
         buttons: ["yes", "no"]
     };
 
     dialog.showMessageBox(options, function (index) {
         if (index === 0) {
+            app.showExitPrompt = false;
             autoUpdater.quitAndInstall();
         }
         else {
@@ -457,8 +537,17 @@ autoUpdater.on('update-downloaded', function (ev, relNot, relNam, relDat, updUrl
         }
     });
 });
+logger.debug("CALLING CHECKFORUPDATES!!!");
+    autoUpdater.checkForUpdates();
+});
 
-
+function clearUpdaterListeners() {
+    autoUpdater.removeAllListeners('checking-for-update');
+    autoUpdater.removeAllListeners('update-available')
+    autoUpdater.removeAllListeners('error')
+    autoUpdater.removeAllListeners('update-not-available')
+    autoUpdater.removeAllListeners('update-downloaded')
+}
 
 global.createAboutWin = function () {
     if (aboutWindow === null) {
