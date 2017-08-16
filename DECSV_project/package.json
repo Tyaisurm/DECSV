@@ -1,19 +1,27 @@
 {
   "name": "decsv",
   "productName": "DECSV",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "SLIPPS survey results review and edit application.",
   "main": "app.js",
   "scripts": {
     "start": "electron .",
     "pack-win": "electron-builder --win --ia32 --dir",
     "dist-win": "electron-builder --win --ia32",
-    "dist-multi": "electron-builder -mwl"
+    "dist-multi": "electron-builder -mwl",
+    "release": "build --win --ia32 -p always"
   },
   "build": {
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Tyaisurm",
+        "repo": "DECSV"
+      }
+    ],
     "appId": "com.squirrel.decsv.DECSV",
     "win": {
-      "target": "squirrel",
+      "target": "nsis",
       "icon": "./build/icon.ico"
     },
     "mac": {
@@ -22,7 +30,7 @@
     },
     "squirrelWindows": {
       "iconUrl": "https://github.com/Tyaisurm/DECSV/blob/master/DECSV_project/build/icon.ico?raw=true",
-      "remoteReleases": "https://github.com/Tyaisurm/testing",
+      "remoteReleases": "https://github.com/Tyaisurm/DECSV",
       "loadingGif": "./build/install-spinner.gif"
     }
   },

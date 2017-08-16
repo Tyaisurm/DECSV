@@ -5,7 +5,7 @@ const BrowserWindow = electron.BrowserWindow;
 const path = require('path');
 const url = require('url');
 const fs = require('fs');
-const autoUpdater = electron.autoUpdater;
+const autoUpdater = require("electron-updater").autoUpdater;
 const dialog = electron.dialog;
 const windowStateKeeper = require('electron-window-state');
 const Store = require('electron-store');
@@ -19,6 +19,7 @@ if (require('electron-squirrel-startup')) { app.quit(); }
 ///////////////////////////////
 logger.transports.file.level = "info";
 logger.transports.console.level = "silly";
+autoUpdater.logger = logger;
 ///////////////////////////////
 
 const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
@@ -444,8 +445,8 @@ app.on('activate', function () {
 });
 
 /* AUTOUPDATER */
-var updatePath = "http://testing-tyaisurm.c9users.io/update/win32/" + app.getVersion().toString();
-autoUpdater.setFeedURL(updatePath);
+//var updatePath = "http://testing-tyaisurm.c9users.io/update/win32/" + app.getVersion().toString();
+//autoUpdater.setFeedURL(updatePath);
 
 app.on('will-quit', function () {
     logger.info("application will quit...");
@@ -458,13 +459,14 @@ app.on('quit', function () {
 
 ipcMain.on("check-updates", (event, arg) => {
 
-autoUpdater.on('checking-for-update', function () {
+    autoUpdater.on('checking-for-update', function () {
     logger.info("Checking for updates...");
     logger.info("Current version: " + app.getVersion().toString());
     event.sender.send("check-updates-reply", 0);
 });
-autoUpdater.on('update-available', function () {
+autoUpdater.on('update-available', function (info) {
     logger.info("Update available!");
+    logger.info(info);
 
     event.sender.send("check-updates-reply", 1);
     var options = {
@@ -496,8 +498,9 @@ autoUpdater.on('error', function (err) {
         //
     });
 });
-autoUpdater.on('update-not-available', function () {
+autoUpdater.on('update-not-available', function (info) {
     logger.info("Update not available!");
+    logger.info(info);
 
     event.sender.send("check-updates-reply", 2);
     clearUpdaterListeners();
@@ -514,15 +517,15 @@ autoUpdater.on('update-not-available', function () {
     });
 });
 
-autoUpdater.on('update-downloaded', function (ev, relNot, relNam, relDat, updUrl) {
+autoUpdater.on('update-downloaded', function (info){//ev, relNot, relNam, relDat, updUrl) {
     logger.info("Update has been downloaded!");
-    logger.debug(relNot,relNam,relDat,updUrl);
+    logger.info(info);
     event.sender.send("check-updates-reply", 2);
     clearUpdaterListeners();
     var options = {
         type: 'info',
         title: "Update downloaded",
-        message: "New version "+relNam+" is ready to be installed",
+        message: "New version is ready to be installed",
         detail: "Would you like to close the application and update?",
         buttons: ["yes", "no"]
     };
@@ -537,16 +540,25 @@ autoUpdater.on('update-downloaded', function (ev, relNot, relNam, relDat, updUrl
         }
     });
 });
-logger.debug("CALLING CHECKFORUPDATES!!!");
-    autoUpdater.checkForUpdates();
+
+autoUpdater.on('download-progress', function (progressObj) {
+    let log_message = "Download speed: " + progressObj.bytesPerSecond;
+    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+    logger.info(progressObj);
+    logger.info(log_message);
+   });
+    logger.debug("CALLING CHECKFORUPDATES!!!");
+   autoUpdater.checkForUpdates();
 });
 
 function clearUpdaterListeners() {
     autoUpdater.removeAllListeners('checking-for-update');
-    autoUpdater.removeAllListeners('update-available')
-    autoUpdater.removeAllListeners('error')
-    autoUpdater.removeAllListeners('update-not-available')
-    autoUpdater.removeAllListeners('update-downloaded')
+    autoUpdater.removeAllListeners('update-available');
+    autoUpdater.removeAllListeners('error');
+    autoUpdater.removeAllListeners('update-not-available');
+    autoUpdater.removeAllListeners('update-downloaded');
+    autoUpdater.removeAllListeners('download-progress');
 }
 
 global.createAboutWin = function () {
