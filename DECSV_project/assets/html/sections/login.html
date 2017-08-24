@@ -3,35 +3,37 @@
         <div align="center">
             <div class="w3-panel">
 
-                <h1>Register/login/forgot password</h1>
+                <h1 id="login-register-title"></h1>
 
-                <div id="loginchoices_1" class="loginchoices">
+                <div id="loginchoices_1" class="">
                     <label class="w3-text-blue"><b>Username</b></label>
-                    <input style="max-width: 300px;" class="w3-input w3-border" type="text" maxlength="20">
+                    <input id="login-username" style="max-width: 300px;" class="w3-input w3-border" type="text" maxlength="20">
                 </div>
 
-                <div id="registerchoices_1" class="registerchoices">
+                <div id="registerchoices_1" class="">
                 <label class="w3-text-blue"><b>Username</b></label>
-                <input style="max-width: 300px;" class="w3-input w3-border" type="text" maxlength="20">
+                <input id="register-username" style="max-width: 300px;" class="w3-input w3-border" type="text" maxlength="20">
                 <label class="w3-text-blue"><b>Email</b></label>
-                <input style="max-width: 300px;" class="w3-input w3-border" type="email" maxlength="255">
+                <input id="register-email" style="max-width: 300px;" class="w3-input w3-border" type="email" maxlength="255">
                 <label class="w3-text-blue"><b>Real name</b></label>
-                <input style="max-width: 300px;" class="w3-input w3-border" type="text" maxlength="255">
+                <input id="register-realname" style="max-width: 300px;" class="w3-input w3-border" type="text" maxlength="255">
                 </div>
 
-                <div id="loginchoices_2"  class="loginchoices">
+                <div id="loginchoices_2"  class="">
                     <label class="w3-text-blue"><b>Password</b></label>
-                    <input style="max-width: 300px;" class="w3-input w3-border" type="password" maxlength="20">
+                    <input id="login-pass" style="max-width: 300px;" class="w3-input w3-border" type="password" maxlength="20">
                 </div>
-                <div id="registerchoices_2" class="registerchoices">
+                <div id="registerchoices_2" class="">
                     <label class="w3-text-blue"><b>Retype password</b></label>
-                    <input style="max-width: 300px;" class="w3-input w3-border" type="password" maxlength="20">
+                    <input id="register-retype-pass" style="max-width: 300px;" class="w3-input w3-border" type="password" maxlength="20">
+                </div>
+                <div id="forgot_password_choices" class="">
+                    <label class="w3-text-blue"><b>Please enter email used with account</b></label>
+                    <input id="forgot-email" style="max-width: 300px;" class="w3-input w3-border" type="email" maxlength="255">
                 </div>
 
             </div>
             <div class="w3-panel">
-                <div id="loginchoices_3" class="loginchoices">
-                </div>
                 <p>ERROR-notification</p>
             </div>
         </div>

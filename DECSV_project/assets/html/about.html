@@ -7,37 +7,35 @@
     <script>window.logger = require('electron-log');</script>
     <script>window.$ = require('jquery');</script>
     <script>window.i18n = new (require('../translations/i18n')); logger.debug("setupTranslations(about.html)");</script>
-
     <link rel="stylesheet" href="../css/w3.css">
     <link rel="stylesheet" href="../css/custom.css">
 
 </head>
-<body>
+<body style="overflow:hidden">
 
     <div id="top-titlebar" class="drag disable-select"></div>
 
-    <header style="height:32px;" class="w3-display-container w3-blue disable-select">
+    <header style="min-height:32px;max-height:32px;" class="w3-display-container w3-blue disable-select">
 
         <div id="titlebar-left-corner" class="w3-display-topleft w3-bar">
             <img draggable="false" id="slipps-title-icon" class="w3-bar-item" src="../ui_icons/SLIPPS.logo-76.png" />
             <p id="titlebar-appname" class="w3-bar-item">DECSV - About</p>
         </div>
-        <div id="titlebar-window-controls" style="width:48px;" class="w3-bar w3-display-topright no-drag">
-            <img draggable="false" id="win-close-icon" class="w3-bar-item w3-button corner-buttons w3-hover-red" src="../ui_icons/appbar.close.png" />
+        <div id="titlebar-window-controls" style="width:58px;" class="w3-bar w3-display-topright no-drag">
+            <img draggable="false" id="win-close-icon" class="w3-bar-item w3-button corner-buttons w3-hover-red" style="padding: 3px 16px;" src="../ui_icons/appbar.close.png" />
         </div>
     </header>
 
     <div class="w3-container">
-
-        <div style="text-align:center;">
-            <img draggable="false" id="logo" style="display:block;margin:auto;-webkit-user-select: none;" src="../images/logo_noname.png" />
-            <h1 style="font-family:sans-serif;font-style:italic;font-size:40px;color:#187dc1;-webkit-user-select: none;">SLIPPS</h1>
-            <h1 style="transform: translateY(-30px);font-family:sans-serif;font-style:italic;color:#187dc1;-webkit-user-select: none;">DECSV</h1>
-        </div>
-        <div>
-            <p>This is about section, where some basic information about the application will be shown to the user, like quick reference to functionality of the UI.</p>
-        </div>
-
+            <div style="text-align:center;">
+                <img draggable="false" id="logo" style="display:block;margin:auto;-webkit-user-select: none;" src="../images/logo_noname.png" />
+                <h1 style="font-family:sans-serif;font-style:italic;font-size:40px;color:#187dc1;-webkit-user-select: none;">SLIPPS</h1>
+                <h1 style="transform: translateY(-30px);font-family:sans-serif;font-style:italic;color:#187dc1;-webkit-user-select: none;">DECSV</h1>
+            </div>
+    </div>
+    <div class="w3-container">
+        <p id="about-version"></p>
+        <p>This is about section, where some basic information about the application will be shown to the user, like quick reference to functionality of the UI.</p>
     </div>
 
     <script>require('../js/about');</script>

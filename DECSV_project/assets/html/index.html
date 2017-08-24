@@ -49,7 +49,7 @@
         </div>
     </header>
 
-    <div style="min-height:68px;" class="w3-bar w3-gray w3-bottombar w3-border-white disable-select">
+    <div id="upper-nav-bar" style="min-height:68px;" class="w3-bar w3-gray w3-bottombar w3-border-white disable-select">
 
         <div id="addfilebutton" class="w3-bar-item w3-button no-display">
             <img draggable="false" id="nav-file-icon" class="navbar-image" src="../ui_icons/appbar.add.png" />
@@ -76,10 +76,6 @@
             <img draggable="false" id="nav-settings-icon" class="navbar-image" src="../ui_icons/appbar.settings.png" />
             <p class="navbar-text">Settings</p>
         </div>
-        <div id="check-app-updates-button" class="w3-bar-item w3-button">
-            <img draggable="false" id="nav-update-icon" class="navbar-image" src="../ui_icons/appbar.reset.png" />
-            <p id="navbar-check-updates-text" class="navbar-text">Check for updates</p>
-        </div>
 
         <div id="back-to-start-button" class="w3-bar-item w3-button">
             <img draggable="false" id="nav-start-icon" class="navbar-image" src="../ui_icons/appbar.home.variant.enter.png" />
@@ -104,7 +100,7 @@
             <p style="font-size:11px;">File Contents</p>
         </div>
         <div class="w3-rest w3-gray w3-container">
-            <p style="overflow-x:hidden;text-overflow:ellipsis;white-space:nowrap; font-size:11px;">Current File: {CURRENT FILE}</p>
+            <p style="overflow-x:hidden;text-overflow:ellipsis;white-space:nowrap; font-size:11px;">Current File: NONE</p>
         </div>
     </div>
 
@@ -137,8 +133,7 @@
                 </div>
                 <div style="flex:1;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
                     <ul id="proj-notes-ul" class="w3-ul">
-                        <li class="w3-hover-blue w3-display-container">Lorem<span onclick="$(this.parentElement).remove();" class="w3-button w3-display-right">&times;</span></li>
-                        <li class="w3-hover-blue w3-display-container">Ipsum<span onclick="$(this.parentElement).remove();" class="w3-button w3-display-right">&times;</span></li>
+
                     </ul> 
                 </div>
             </div>
@@ -195,21 +190,21 @@
                 <div style="flex:1;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
                     <div id="a-censored-words">
                         <p style="font-size: smaller;">Section A</p>
-                        <ul class="w3-ul">
+                        <ul id="file-censored-A-ul" class="w3-ul">
                             <li class="w3-display-container">Lorem</li>
                             <li class="w3-display-container">Ipsum</li>
                         </ul>
                     </div>
                     <div id="b-censored-words">
                         <p style="font-size: smaller;">Section B</p>
-                        <ul class="w3-ul">
+                        <ul id="file-censored-B-ul" class="w3-ul">
                             <li class="w3-display-container">Lorem</li>
                             <li class="w3-display-container">Ipsum</li>
                         </ul>
                     </div>
                     <div id="c-censored-words">
                         <p style="font-size: smaller;">Section C</p>
-                        <ul class="w3-ul">
+                        <ul id="file-censored-C-ul" class="w3-ul">
                             <li class="w3-display-container">Lorem</li>
                             <li class="w3-display-container">Ipsum</li>
                         </ul>
@@ -224,18 +219,6 @@
     </div>
 
     <footer id="window-footer" class="w3-gray w3-container w3-topbar w3-border-white disable-select">
-        <p class="no-display">
-            <button id="subB1" class="w3-button w3-blue w3-round-large">Edit A</button>
-            <button id="subB2" class="w3-button w3-blue w3-round-large">Edit B</button>
-            <button id="subB3" class="w3-button w3-blue w3-round-large">Edit C</button>
-            <button id="subB4" class="w3-button w3-blue w3-round-large">Preview</button>
-            <button id="subB5" class="w3-button w3-blue w3-round-large">Start</button>
-            <button id="subB6" class="w3-button w3-blue w3-round-large">Login</button>
-            <button id="subB7" class="w3-button w3-blue w3-round-large">Register</button>
-            <button id="subB8" class="w3-button w3-blue w3-round-large">Settings</button>
-            <button id="subB9" class="w3-button w3-blue w3-round-large">Disable (TOGGLE)</button>
-            <button id="subB10" class="w3-button w3-blue w3-round-large">Information</button>
-        </p>
 
         <div id="" class="w3-row disable-select">
             <div style="width:240px;" class="w3-col w3-container w3-left w3-center">

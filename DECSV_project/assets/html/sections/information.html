@@ -1,52 +1,52 @@
 ﻿<template class="phase-template">
-    <div id="information-div" class="section">
-        <h1>Project Summary</h1>
+    <div id="information-div" class="section" style="display:flex;flex-direction:column;">
         <div class="w3-container">
-            <div class="w3-bar">
-                <p  class="w3-bar-item">Project Name:</p>
-                <p  class="w3-bar-item">project1</p>
+            <h1>Project Summary</h1>
+            <div class="">
+                <p id="proj-info-name" class=""></p>
+                <p id="proj-info-created" class=""></p>
             </div> 
-
-            <div class="w3-bar">
-                <p  class="w3-bar-item">Created at:</p>
-                <p  class="w3-bar-item">04.07.2017 15:41</p>
-            </div>
-            <div class="w3-bar">
-            <div class="w3-bar-item">
-                <p>Files in Project:</p>
-                <div style="width:500px;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
-                    <ul class="w3-ul">
-                        <li class="w3-green w3-display-container">File1.csv</li>
-                        <li class="w3-green w3-display-container">File2.csv</li>
-                        <li class="w3-green w3-display-container">File3.csv</li>
-                        <li class="w3-blue w3-display-container">File4.csv</li>
-                        <li class="w3-display-container">File5.csv</li>
-                        <li class="w3-display-container">File6.csv</li>
-                        <li class="w3-display-container">File7.csv</li>
-                        <li class="w3-display-container">File8.csv</li>
-                        <li class="w3-display-container">File9.csv</li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="w3-bar-item">
-                <p>Keywords used in this project:</p>
-                <div style="width:500px;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
-                    <ul style="-webkit-user-select:auto;" class="w3-ul">
-                        <li class="w3-display-container">Lorem</li>
-                        <li class="w3-display-container">Ipsum</li>
-                        <li class="w3-display-container">On</li>
-                        <li class="w3-display-container">Testiteksti</li>
-                        <li class="w3-display-container">ASD1</li>
-                        <li class="w3-display-container">ASD2</li>
-                        <li class="w3-display-container">ASD3</li>
-                        <li class="w3-display-container">ASD4</li>
-                        <li class="w3-display-container">ASD5</li>
-                    </ul>
-                </div>
-            </div>
+        </div>
+        <div class="w3-bar w3-container" style="flex-grow:1;width:100%;">
+            <div style="margin:auto;">
+                <div class="w3-bar-item" style="width:50%;">
+                    <div style="text-align: center;">
+                        <p>Files in current project:</p>
+                        <div style="max-width:500px;height:300px;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;margin:auto;" class="w3-border w3-border-black w3-white">
+                            <ul id="proj-info-files-ul" class="w3-ul">
+                                <li class="w3-green w3-display-container">File1.csv</li>
+                                <li class="w3-green w3-display-container">File2.csv</li>
+                                <li class="w3-green w3-display-container">File3.csv</li>
+                                <li class="w3-blue w3-display-container">File4.csv</li>
+                                <li class="w3-display-container">File5.csv</li>
+                                <li class="w3-display-container">File6.csv</li>
+                                <li class="w3-display-container">File7.csv</li>
+                                <li class="w3-display-container">File8.csv</li>
+                                <li class="w3-display-container">File9.csv</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
 
+                <div class="w3-bar-item" style="width:50%;">
+                    <div style="text-align: center;">
+                        <p>Keywords used in current project:</p>
+                        <div style="max-width:500px;height:300px;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;margin:auto;" class="w3-border w3-border-black w3-white">
+                            <ul id="proj-info-kw-ul" style="-webkit-user-select:auto;" class="w3-ul">
+                                <li class="w3-display-container">Lorem</li>
+                                <li class="w3-display-container">Ipsum</li>
+                                <li class="w3-display-container">On</li>
+                                <li class="w3-display-container">Testiteksti</li>
+                                <li class="w3-display-container">ASD1</li>
+                                <li class="w3-display-container">ASD2</li>
+                                <li class="w3-display-container">ASD3</li>
+                                <li class="w3-display-container">ASD4</li>
+                                <li class="w3-display-container">ASD5</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>

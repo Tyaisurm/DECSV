@@ -136,6 +136,8 @@ function createAppStructure() {
 function createNewProject(proj_name) {
     var reason = [];
     logger.debug("createNewProject");
+    logger.debug(proj_name);
+    logger.debug(proj_name.length);
     var regex_filepath_val = /^[^\\/:\*\?"<>\|]+$/;
     var docpath = app.getPath('documents');
 
@@ -144,14 +146,14 @@ function createNewProject(proj_name) {
         reason.push(false, "No name defined!");
         return reason;
     }
-    else if (proj_name.lenght === 0 || proj_name.lenght > 100) {
+    else if (proj_name.length === 0 || proj_name.length > 100) {
         // Projectname length 0 or over 100 characters
         reason.push(false, "Name should have 1-100 characters!");
         return reason;
     }
     else if (!regex_filepath_val.test(proj_name)) {
         // Projectname not allowed
-        reason.push(false, 'Name should not contain <>:"/\|?*');
+        reason.push(false, 'Name should not contain <>:"/\\|?*');
         return reason;
     }
     else if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
@@ -208,7 +210,7 @@ function createNewProject(proj_name) {
 // NEEDS UPDATE
 function removeProject(proj_name) {
     logger.debug("removeProject");
-    if (proj_name.lenght === 0 || proj_name.lenght > 100) {
+    if (proj_name.length === 0 || proj_name.length > 100) {
         // Projectname length 0 or over 100 characters
         return false;
     }
@@ -249,7 +251,8 @@ function srcFiles2Proj(files,event,ready_src) {
     var dest_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source\\');
     var readStream = null;
     var writeStream = null;
-    var result = true;
+    var result = [];
+    result[0] = true;
     var filename = null;
     var rcounter = 0;
     var wcounter = 0;
@@ -269,7 +272,10 @@ function srcFiles2Proj(files,event,ready_src) {
                     if (ready_src[k] === filename) { check = true; break;}
                 }
                 logger.debug(check);
-                if (check){ continue;}
+                if (check) {
+                    logger.warn("Tried to import file with same name as already existing '"+filename+"'. Skipping file import...");
+                    continue;
+                }
 
                 dest = path.join(dest_base, filename);
                 logger.debug("DEST: "+dest);
@@ -277,10 +283,11 @@ function srcFiles2Proj(files,event,ready_src) {
                 writeStream = fs.createWriteStream(dest);
 
                 readStream.once('error', (err) => {
-                    logger.error("Error while reading source file!");
-                    logger.error(err);
+                    logger.error("Error while reading source file while importing!");
+                    logger.error(err.message);
                     rcounter++;
-                    result = false;
+                    result[0] = false;
+                    result.push("Error reading source file while importing");
                 });
 
                 readStream.once('end', () => {
@@ -288,8 +295,14 @@ function srcFiles2Proj(files,event,ready_src) {
                     rcounter++;
                 });
 
+                writeStream.on('error', function () {
+                    logger.info("Error while writing source file while importing!");
+                    result[0] = false;
+                    result.push("Error writing to target file while importing");
+                });
+
                 writeStream.on('finish', function () {
-                    logger.info("Writing source file completed");
+                    logger.info("Writing source file completed while importing");
                     wcounter++;
                     if (rcounter === files.length) {
                         logger.debug("sending back now");
@@ -301,10 +314,18 @@ function srcFiles2Proj(files,event,ready_src) {
             }
         }
         else {
+            logger.error();
+            result[0] = false;
+            result.push("Project properties does not exist!");
+            event.sender.send('async-import-files-reply', result);
             // Project data .json not present!
         }
     }
     else {
+        logger.error();
+        result[0] = false;
+        result.push("Project's source-folder (or other) does not exist!");
+        event.sender.send('async-import-files-reply', result);
         // project source folder or other folders not present!
     }
 }
@@ -445,7 +466,7 @@ app.on('activate', function () {
 });
 
 /* AUTOUPDATER */
-//var updatePath = "http://testing-tyaisurm.c9users.io/update/win32/" + app.getVersion().toString();
+// WARN DO NOT USE THESE! var updatePath = "http://testing-tyaisurm.c9users.io/update/win32/" + app.getVersion().toString();
 //autoUpdater.setFeedURL(updatePath);
 
 app.on('will-quit', function () {
@@ -456,19 +477,31 @@ app.on('quit', function () {
 });
 
 ///////////////////
+    // 0 = checking
+    // 1 = update found
+    // 2 = no update available
+    // 3 = error
+    // 4 = downloading %
+    // 5 = downloaded
 
 ipcMain.on("check-updates", (event, arg) => {
 
-    autoUpdater.on('checking-for-update', function () {
-    logger.info("Checking for updates...");
+autoUpdater.on('checking-for-update', function () {
     logger.info("Current version: " + app.getVersion().toString());
-    event.sender.send("check-updates-reply", 0);
+    //console.log(event);
+    var arr = [];
+    arr.push(0);
+    event.sender.send("check-updates-reply", arr);
 });
 autoUpdater.on('update-available', function (info) {
     logger.info("Update available!");
-    logger.info(info);
-
+    var ver = info.version;
+    var relDat = info.releaseDate;
+    var relNote = info.releaseNotes;
+    var arr = [];
+    arr.push(1, ver, relDat, relNote);
     event.sender.send("check-updates-reply", 1);
+    /*
     var options = {
         type: 'info',
         title: "Update available",
@@ -480,12 +513,15 @@ autoUpdater.on('update-available', function (info) {
     dialog.showMessageBox(options, function (index) {
         //
     });
+    */
 });
-autoUpdater.on('error', function (err) {
-    logger.error("Error in autoUpdater! " + err.message);
-
-    event.sender.send("check-updates-reply", 2);
+    autoUpdater.on('error', function (err) {
+        logger.error("Failed to get updates!");
+    var arr = [];
+    arr.push(3);
+    event.sender.send("check-updates-reply", arr);
     clearUpdaterListeners();
+    /*
     var options = {
         type: 'info',
         title: "Error",
@@ -497,13 +533,16 @@ autoUpdater.on('error', function (err) {
     dialog.showMessageBox(options, function (index) {
         //
     });
+    */
 });
 autoUpdater.on('update-not-available', function (info) {
     logger.info("Update not available!");
     logger.info(info);
-
-    event.sender.send("check-updates-reply", 2);
+    var arr = [];
+    arr.push(2);
+    event.sender.send("check-updates-reply", arr);
     clearUpdaterListeners();
+    /*
     var options = {
         type: 'info',
         title: "No update",
@@ -515,18 +554,23 @@ autoUpdater.on('update-not-available', function (info) {
     dialog.showMessageBox(options, function (index) {
         //
     });
+    */
 });
 
 autoUpdater.on('update-downloaded', function (info){//ev, relNot, relNam, relDat, updUrl) {
     logger.info("Update has been downloaded!");
-    logger.info(info);
-    event.sender.send("check-updates-reply", 2);
+    var ver = info.version;
+    var relDat = info.releaseDate;
+    var relNote = info.releaseNotes;
+    var arr = [];
+    arr.push(5, ver, relDat, relNote);
+    event.sender.send("check-updates-reply", arr);
     clearUpdaterListeners();
     var options = {
         type: 'info',
         title: "Update downloaded",
-        message: "New version is ready to be installed",
-        detail: "Would you like to close the application and update?",
+        message: "New version "+ver+" is ready to be installed",
+        detail: "Would you like to close the application and update?\r\n\r\nVersion: " + ver + "\r\nRelease date: " + new Date(relDat) +"\r\n"+relNote,
         buttons: ["yes", "no"]
     };
 
@@ -542,11 +586,9 @@ autoUpdater.on('update-downloaded', function (info){//ev, relNot, relNam, relDat
 });
 
 autoUpdater.on('download-progress', function (progressObj) {
-    let log_message = "Download speed: " + progressObj.bytesPerSecond;
-    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-    logger.info(progressObj);
-    logger.info(log_message);
+    var arr = [];
+    arr.push(4, progressObj);
+    event.sender.send("check-updates-reply", arr);
    });
     logger.debug("CALLING CHECKFORUPDATES!!!");
    autoUpdater.checkForUpdates();

@@ -9,6 +9,7 @@ thiswindow.on('blur', function () { $("html").css("opacity", "0.5"); });
 document.getElementById("win-close-icon").onclick = function () {
     thiswindow.close();
 }
+$("#about-version").text("Version: Alpha " + remote.app.getVersion());
 
 /* THIS IS SETTING UP UI TRANSLATION */
 function setupTranslations() {

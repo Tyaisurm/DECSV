@@ -160,6 +160,11 @@ ul {
     margin:0;
 }
 
+#upper-nav-bar .w3-button{
+    width:116px;
+    height:62px;
+}
+
 .navbar-image {
     height: 30px;
 }
