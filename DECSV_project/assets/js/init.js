@@ -108,11 +108,14 @@ document.getElementById("win-close-icon").onclick = function () {
         var dataB = $("#edit-B-orig-text").html();
         var dataC = $("#edit-C-orig-text").html();
         var dataKW = [];
+
         $("#file-chosen-kw-ul li").each(function (i) {
             var value = $(this).attr("data-value");
+            $(this).find('span').remove();
             var name = $(this).text();
             dataKW.push([value, name]);
         });
+
         var notes = [];
         $("#proj-notes-ul li").each(function (i) {
             var text = $(this).text();
@@ -359,11 +362,14 @@ document.getElementById("closeprojbutton").onclick = function () {
                 var dataB = $("#edit-B-orig-text").html();
                 var dataC = $("#edit-C-orig-text").html();
                 var dataKW = [];
+
                 $("#file-chosen-kw-ul li").each(function (i) {
                     var value = $(this).attr("data-value");
+                    $(this).find('span').remove();
                     var name = $(this).text();
                     dataKW.push([value, name]);
                 });
+
                 var notes = [];
                 $("#proj-notes-ul li").each(function (i) {
                     var text = $(this).text();
