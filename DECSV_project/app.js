@@ -498,8 +498,8 @@ app.on('ready', function () {
     }
     const store = new Store(options);
     var firstuse = store.get('first-use');
-    logger.debug(firstuse);
-    logger.debug(typeof(firstuse));
+    //logger.debug(firstuse);
+    //logger.debug(typeof(firstuse));
     if (firstuse) {
         logger.info("######################################################");
         logger.info("WELCOME! This app is now started for the first time :)");
@@ -713,15 +713,15 @@ function transformSrc2Temp(proj_name, event) {
                     name: proj_name,
                     cwd: proj_base
                 }
-                logger.debug("proj_name and proj_base: "+proj_name+" & "+proj_base);
+                //logger.debug("proj_name and proj_base: "+proj_name+" & "+proj_base);
                 const s2t_store = new Store(s2t_options);
 
                 var sourceF = s2t_store.get('source-files', []);
                 var tempF = s2t_store.get('temp-files', {});
                 var newtempF = tempF;
-                logger.debug("SOURCEF AND TEMPF");
-                logger.debug(sourceF);
-                logger.debug(tempF);
+                //logger.debug("SOURCEF AND TEMPF");
+                //logger.debug(sourceF);
+                //logger.debug(tempF);
                 var fileT = "";
                 var fileS = "";
                 var secChtml = "";
@@ -734,23 +734,23 @@ function transformSrc2Temp(proj_name, event) {
                 const proj_store = new Store(proj_options);
 
                 for (var i = 0; i < sourceF.length; i++){
-                    logger.debug("sourceF length: " + sourceF.length);
-                    logger.debug("loop nro: "+i);
+                    //logger.debug("sourceF length: " + sourceF.length);
+                    //logger.debug("loop nro: "+i);
                     fileS = sourceF[i];
-                    logger.debug("FILES ORIG: " + fileS);
+                    //logger.debug("FILES ORIG: " + fileS);
                     for (var k in tempF) {
                         //console.log("1: ");
                         //console.log(k); // source file name
-                        logger.debug("FILET SOURCE: " + k);
+                        //logger.debug("FILET SOURCE: " + k);
                         if (tempF.hasOwnProperty(k)) {
-                            logger.debug("TEMPF had own property!");
+                            //logger.debug("TEMPF had own property!");
                             //console.log(tempF[k].file); // temp file name
                             fileT = tempF[k].file;
-                            logger.debug("FILET TEMP: "+fileT);
+                            //logger.debug("FILET TEMP: "+fileT);
                         }
                         if (fileT.toString() === fileS.toString()) {
-                            logger.debug("FILE EXISTS!!!");
-                            logger.debug(fileT.toString() + " and " + fileS.toString());
+                            //logger.debug("FILE EXISTS!!!");
+                            //logger.debug(fileT.toString() + " and " + fileS.toString());
                             break;
                         }
                     }
@@ -763,11 +763,11 @@ function transformSrc2Temp(proj_name, event) {
                         //createshitz
                         if (fs.existsSync(path.join(src_base, fileS))) {
 
-                            logger.debug("before reading");
+                            //logger.debug("before reading");
                             var returnArr = readFile(path.join(src_base, fileS), function () {
                                 //
                             });
-                            logger.debug("AFTER reading");
+                            //logger.debug("AFTER reading");
 
                             var dataArray = returnArr[1];
                             if (returnArr[0]) {
@@ -827,7 +827,7 @@ function transformSrc2Temp(proj_name, event) {
 
                         for (var line = 1; line < 15; line++) {
                             var j = line + 3;
-                            logger.debug("creating Question line: "+line);
+                            //logger.debug("creating Question line: "+line);
                             var questID = "secC-Q-" + line;
                             
                             /*
@@ -838,10 +838,10 @@ function transformSrc2Temp(proj_name, event) {
                                 .replace(/'/g, "&#039;");
                             */
                             var elemCQ = '<p class="w3-blue w3-container ' + questID + '" style="width:100%;"></p>'; // no text here, because it will be placed in UI, not in file
-                            logger.debug(elemCQ);
+                            //logger.debug(elemCQ);
                             var ansID = "secC-Q-" + line + "-cont";
-                            logger.debug("ADDIN Q LINE");
-                            logger.debug(ansID);
+                            //logger.debug("ADDIN Q LINE");
+                            //logger.debug(ansID);
                             var ansText = "";
                             if (dataArray[1][j] !== undefined) {
                                 ansText = dataArray[1][j].replace(/&/g, "&amp;")
@@ -880,18 +880,18 @@ function transformSrc2Temp(proj_name, event) {
                         newtempF["temp#" + fileS + ".json"] = {};
                         newtempF["temp#" + fileS + ".json"]["file"] = fileS;
                         newtempF["temp#" + fileS + ".json"]["done"] = false;
-                        logger.debug("TESTING TYPEOF: " + typeof (newtempF["temp#" + fileS + ".json"]["done"]))
+                        //logger.debug("TESTING TYPEOF: " + typeof (newtempF["temp#" + fileS + ".json"]["done"]))
                         proj_store.set('temp-files', newtempF);
-                        logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]);
-                        logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]);
-                        logger.debug(typeof(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]));
+                        //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]);
+                        //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]);
+                        //logger.debug(typeof(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]));
                         var successFile = [];
                         successFile.push(fileS, "temp#" + fileS + ".json", false);
                         successArray.push(successFile);
                     }
                 }
                 logger.debug(">>>>>>>DONE WITH LOOP");
-                logger.debug(i);
+                //logger.debug(i);
                 var sendArray = [];
                 sendArray.push(true);
                 sendArray.push(successArray);

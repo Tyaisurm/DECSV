@@ -268,16 +268,16 @@ document.getElementById("projinfobutton").onclick = function () {
         var allkw = [];
         for (var k in obj) {
             if (obj.hasOwnProperty(k)) {
-                logger.debug("KW FILE OBJ HAS OWN PROPERTY");
+                //logger.debug("KW FILE OBJ HAS OWN PROPERTY");
                 var fileArr = obj[k];
-                logger.debug(fileArr);
-                logger.debug(fileArr.length);
+                //logger.debug(fileArr);
+                //logger.debug(fileArr.length);
                 for (var h = 0; h < fileArr.length; h++){
                     var keyW = fileArr[h];
                     var kw_id = fileArr[h][0];
                     var kw_actual = fileArr[h][1];
-                    logger.debug("### KW ARRAY");
-                    logger.debug(keyW);
+                    //logger.debug("### KW ARRAY");
+                    //logger.debug(keyW);
                     allkw.push([kw_id,kw_actual]);
                 }
             }
@@ -288,8 +288,8 @@ document.getElementById("projinfobutton").onclick = function () {
         var check = false;
         for (i = 0; i < allkw.length; i++) {
             check = false;
-            logger.debug("COMPARING ARRAYS");
-            logger.debug(allkw[i]);
+            //logger.debug("COMPARING ARRAYS");
+            //logger.debug(allkw[i]);
             var current = allkw[i];
             
             for (var t = 0; t < uniq.length; t++){
@@ -304,10 +304,10 @@ document.getElementById("projinfobutton").onclick = function () {
             }
         }
         for (var j = 0; j < uniq.length; j++){
-            logger.debug("CREATING LIST OT PROJ SUMMARY");
+            //logger.debug("CREATING LIST OT PROJ SUMMARY");
             var li_string = document.createTextNode(uniq[j][1]);
             var li_node = document.createElement("li");
-            logger.debug(uniq[j][1]);
+            //logger.debug(uniq[j][1]);
             li_node.appendChild(li_string);
 
             $(li_node).attr({
@@ -995,14 +995,14 @@ function updateFileList(proj_name) {
     try {
         $("#proj-files-ul").empty();
         for (var k in tempfiles) {
-            logger.debug("Looping through tempfiles...");
+            //logger.debug("Looping through tempfiles...");
             if (tempfiles.hasOwnProperty(k)) {
                 var filetemp = k;
                 var fileorig = tempfiles[k]["file"];
                 var filedone = tempfiles[k]["done"];
-                logger.debug("FROM TEMP FILE IN UPDATEFILELIST");
-                logger.debug(filedone);
-                logger.debug(typeof(filedone));
+                //logger.debug("FROM TEMP FILE IN UPDATEFILELIST");
+                //logger.debug(filedone);
+                //logger.debug(typeof(filedone));
                 var fileArr = [];
                 fileArr.push(fileorig, filetemp, filedone);
                 // filearr 0 = fileoriginal, 1 = filetemp, 2 = filedonestatus
@@ -1219,9 +1219,9 @@ function addProjFile(fileArr) {
     //console.log(document.createElement("li"));
     var classes = "w3-display-container";
     li_node.appendChild(li_string);
-    logger.debug("BEFORE USAGE AT ADDPROJFILE");
-    logger.debug(fileArr[2]);
-    logger.debug(typeof (fileArr[2]));
+    //logger.debug("BEFORE USAGE AT ADDPROJFILE");
+    //logger.debug(fileArr[2]);
+    //logger.debug(typeof (fileArr[2]));
     if (fileArr[2]){
         classes = classes + " w3-green";
     }
@@ -1263,8 +1263,8 @@ function addProjFile(fileArr) {
         var value = $(this).attr("data-value");
         $(this).find('span').remove();
         var name = $(this).text();
-        logger.debug("THIS IS AFTER REMOVAL!!!!");
-        logger.debug(name);
+        //logger.debug("THIS IS AFTER REMOVAL!!!!");
+        //logger.debug(name);
 
         dataKW.push([value, name]);
     });
@@ -1369,7 +1369,7 @@ function openAndShowFile(fileObj) {
     $(".secB-Q").text(i18n.__("secB-Q"));
     for (var k = 1; k < 15; k++) {
         $(".secC-Q-" + k).text(i18n.__("secC-Q-" + k));
-        logger.debug("round: secC-Q-" + k);
+        //logger.debug("round: secC-Q-" + k);
     }
 
     $("#preview-subid").text("Submission ID: " + store.get("subID"));
@@ -1379,7 +1379,7 @@ function openAndShowFile(fileObj) {
     // loop start
     var listofkw = store.get("kw", []);
     logger.debug("starting file-kwlist compare...");
-    logger.debug(listofkw);
+    //logger.debug(listofkw);
 
     //$("#KW-selector").select2("destroy");
 
@@ -1387,7 +1387,7 @@ function openAndShowFile(fileObj) {
         var kw_value = listofkw[j][0];
         var kw_text = listofkw[j][1];
 
-        logger.debug("1# VALUE: " + kw_value + " # TEXT: " + kw_text);
+        //logger.debug("1# VALUE: " + kw_value + " # TEXT: " + kw_text);
 
         var li_string = document.createTextNode(kw_text);
         var li_node = document.createElement("li");
@@ -1408,29 +1408,29 @@ function openAndShowFile(fileObj) {
             onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
             onclick: "$(\"#KW-selector option[value = '" + kw_value + "']\").removeAttr('disabled', 'disabled'); $(this.parentElement).remove(); $(\"#KW-selector\").select2({language: \"current_lang\",placeholder: i18n.__('select2-kw-add-ph')});"
         });
-        logger.debug("2# VALUE: " + kw_value + " # TEXT: " + kw_text);
+        //logger.debug("2# VALUE: " + kw_value + " # TEXT: " + kw_text);
         li_node.appendChild(span_node);
 
         $('#file-chosen-kw-ul').append(li_node);
 
         // would like to add "red" bgc if element does not exist in current kw-selector. currently only disables those already in there
-        logger.debug("3# VALUE: " + kw_value + " # TEXT: " + kw_text);
-        logger.debug($("#KW-selector option"));
+        //logger.debug("3# VALUE: " + kw_value + " # TEXT: " + kw_text);
+        //logger.debug($("#KW-selector option"));
         $("#KW-selector option").each(function (i) {
             if ($(this).val() === kw_value){
                 //
-                logger.debug("YEEEEEEEEE :)");
+                //logger.debug("YEEEEEEEEE :)");
                 $(this).attr('disabled','disabled');
                 return false;
             }
             else {
                 //
-                logger.debug("Nuuuuuuuuu :c");
+                //logger.debug("Nuuuuuuuuu :c");
             }
             
         });
 
-        logger.debug("5# VALUE: " + kw_value + " # TEXT: " + kw_text);
+        //logger.debug("5# VALUE: " + kw_value + " # TEXT: " + kw_text);
     }
     // end loop, init element again
     $("#KW-selector").prop("disabled", false);
@@ -1570,7 +1570,7 @@ function updateSettingsUI() {
             list_name = kw_local_list[j]["name"];// list's name from row 0 (within the file. actual, showable name)
             lang = list_name.split(' - ')[0];
             langlast = list_name.substring(lang.length + 3, list_name.length);
-            logger.debug("list_id: "+list_id);
+            //logger.debug("list_id: "+list_id);
             //list_date = new Date(kw_local_list[k]["date"]); // list's update date
         }
 
@@ -1581,8 +1581,8 @@ function updateSettingsUI() {
         else {
             logger.info("The list '" + list_id + "' is not loaded/local!");
             if (lang_groups.indexOf(lang) > -1) {
-                logger.debug("already have a GROUP in kw list: " + lang);
-                logger.debug("creating option-element: " + langlast);
+                //logger.debug("already have a GROUP in kw list: " + lang);
+                //logger.debug("creating option-element: " + langlast);
                 var option_elem = document.createElement("option");
                 var option_string = document.createTextNode(langlast);
                 $(option_elem).append(option_string);
@@ -1590,15 +1590,15 @@ function updateSettingsUI() {
                 $("#kw-list-available-choose optgroup[label='" + lang + "']").append(option_elem);
             }
             else {
-                logger.debug("GROUP will be added to kw list: " + lang);
-                logger.debug("creating optgroup-element: " + lang);
+                //logger.debug("GROUP will be added to kw list: " + lang);
+                //logger.debug("creating optgroup-element: " + lang);
                 var optgroup_elem = document.createElement("optgroup");
                 $(optgroup_elem).attr({
                     label: lang
                 });
                 $("#kw-list-available-choose").append(optgroup_elem);
 
-                logger.debug("creating option-element: " + langlast);
+                //logger.debug("creating option-element: " + langlast);
                 var option_elem = document.createElement("option");
                 var option_string = document.createTextNode(langlast);
                 $(option_elem).append(option_string);
@@ -1640,7 +1640,7 @@ function saveSettings() {
     $("#settings-local-kw-lists .kw-list-enabled").each(function (i) {
         var kw_list_id = $(this).attr("data-id");
         enabledKW.push(kw_list_id);
-        logger.debug("ADDED: " + kw_list_id);
+        //logger.debug("ADDED: " + kw_list_id);
     });
     store2.set("enabled-keywordlists", enabledKW);
 
@@ -1658,7 +1658,7 @@ function setupKWSelector() {
     $("#settings-local-kw-lists .kw-list-enabled").each(function (i) {
         var kw_list_id = $(this).attr("data-id");
         enabledKW.push(kw_list_id);
-        logger.debug("ADDED: " + kw_list_id);
+        //logger.debug("ADDED: " + kw_list_id);
     });
 
     var kw_base = path.join(apppath, 'keywordlists');
@@ -1666,40 +1666,40 @@ function setupKWSelector() {
     var kw_current_group = "";
     logger.debug("GOING TO LOOP enabledKW now....");
     for (var i = 0; i < enabledKW.length; i++) {
-        logger.debug("Round: " + i);
+        //logger.debug("Round: " + i);
 
         let loadedlist = [];
         if (fs.existsSync(path.join(kw_base, enabledKW[i] + '.json'))) {
             logger.info("KW file '" + enabledKW[i] + "' located!");
             try {
-                logger.debug("TRYING TO GET KW FILE CONTENTS AND LOOP 'EM");
+                //logger.debug("TRYING TO GET KW FILE CONTENTS AND LOOP 'EM");
                 loadedlist = require(path.join(kw_base, enabledKW[i] + '.json'));
                 for (var k in loadedlist) {
-                    logger.debug("in loop now. current: " + k);
+                    //logger.debug("in loop now. current: " + k);
                     if (loadedlist.hasOwnProperty(k)) {
                         var kw_tag = k;
                         var kw_itself = loadedlist[k];
                         if (Object.keys(loadedlist).indexOf(k) === 0) {//loadedlist.indexof(k) === 0) {// skipping 0, because that is the name
-                            logger.debug(kw_itself);
+                            //logger.debug(kw_itself);
                             kw_current_group = kw_itself;//.substring(kw_itself.split(' - ')[0].length + 3, kw_itself.length);
-                            logger.debug("First line! taking name...: " + kw_current_group);
+                            //logger.debug("First line! taking name...: " + kw_current_group);
                             continue;
                         }
                         if (kw_groups.indexOf(kw_current_group) > -1) {
-                            logger.debug("Group seems to exist: " + kw_current_group);
+                            //logger.debug("Group seems to exist: " + kw_current_group);
                             var option_elem = document.createElement("option");
                             var option_text = document.createTextNode(kw_itself);
-                            logger.debug("KW ITSELF: " + kw_itself);
-                            logger.debug("KW TAG: " + kw_tag);
+                            //logger.debug("KW ITSELF: " + kw_itself);
+                            //logger.debug("KW TAG: " + kw_tag);
                             $(option_elem).attr({
                                 value: kw_tag
                             });
                             $(option_elem).append(option_text);
                             $("#KW-selector optgroup[label='" + kw_current_group + "']").append(option_elem);
-                            logger.debug("#KW-selector optgroup[label='" + kw_current_group + "']");
+                            //logger.debug("#KW-selector optgroup[label='" + kw_current_group + "']");
                         }
                         else {
-                            logger.debug("Group seems to NOT exist: " + kw_current_group);
+                            //logger.debug("Group seems to NOT exist: " + kw_current_group);
                             kw_groups.push(kw_current_group);
                             var optgroup_elem = document.createElement("optgroup");
                             $(optgroup_elem).attr({
@@ -1709,14 +1709,14 @@ function setupKWSelector() {
 
                             var option_elem = document.createElement("option");
                             var option_text = document.createTextNode(kw_itself);
-                            logger.debug("KW ITSELF: " + kw_itself);
-                            logger.debug("KW TAG: " + kw_tag);
+                            //logger.debug("KW ITSELF: " + kw_itself);
+                            //logger.debug("KW TAG: " + kw_tag);
                             $(option_elem).attr({
                                 value: kw_tag
                             });
                             $(option_elem).append(option_text);
                             $("#KW-selector optgroup[label='" + kw_current_group + "']").append(option_elem);
-                            logger.debug("#KW-selector optgroup[label='" + kw_current_group + "']");
+                            //logger.debug("#KW-selector optgroup[label='" + kw_current_group + "']");
                         }
                     }
                 }
@@ -1766,7 +1766,7 @@ function set_KW_choose_selector() {
         //console.log(this);
         var kw_value = e.params.data.id;
         var kw_text = e.params.data.text;
-        logger.debug("VALUE: "+kw_value + " # TEXT: " + kw_text);
+        //logger.debug("VALUE: "+kw_value + " # TEXT: " + kw_text);
         $('#KW-selector').val(null).trigger("change");
         $("#KW-selector option[value='" + kw_value + "']").attr('disabled', 'disabled');
 
