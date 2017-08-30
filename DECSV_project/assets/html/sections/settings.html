@@ -5,7 +5,7 @@
             <p class="w3-bar-item w3-border-bottom w3-border-black">Application</p>
             <div class="w3-bar">
                 <div class="w3-bar-item w3-bar" style="width:50%;display:flex;flex-direction:column;">
-                    <p class="w3-bar-item" style="transform:translateX(-13px);">Current language: English</p>
+                    <p id="settings-app-lang-name" class="w3-bar-item" style="transform:translateX(-13px);">Current language: English</p>
                     <select style="width:200px;" id="app-lang-selector" class="w3-bar-item">
                         <option></option>
                     </select>
@@ -30,37 +30,21 @@
                 <div class="w3-bar-item" style="width: 50%;display:flex;flex-direction:column;">
                     <p>Local (already downloaded) lists:</p>
                     <div style="flex-grow:1;width: 100%;max-width: 600px;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
-                        <ul class="w3-ul">
-                            <li class="w3-hover-blue w3-display-container kw-list-enabled">list 1<span onclick="$(this.parentElement).toggleClass('kw-list-enabled'); $(this).toggleClass('w3-red'); $(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="mark_enabled w3-green w3-button w3-display-right">&radic;</span></li>
-                            <li class="w3-hover-blue w3-display-container kw-list-enabled">list 2<span onclick="$(this.parentElement).toggleClass('kw-list-enabled');$(this).toggleClass('w3-red');$(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="mark_enabled w3-green w3-button w3-display-right">&radic;</span></li>
-                            <li class="w3-hover-blue w3-display-container kw-list-enabled">list 3<span onclick="$(this.parentElement).toggleClass('kw-list-enabled');$(this).toggleClass('w3-red');$(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="mark_enabled w3-green w3-button w3-display-right">&radic;</span></li>
-                            <li class="w3-hover-blue w3-display-container">list 4<span onclick="$(this.parentElement).toggleClass('kw-list-enabled');$(this).toggleClass('w3-red');$(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="w3-red w3-button w3-display-right">&times;</span></li>
-                            <li class="w3-hover-blue w3-display-container">list 5<span onclick="$(this.parentElement).toggleClass('kw-list-enabled');$(this).toggleClass('w3-red');$(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="w3-red w3-button w3-display-right">&times;</span></li>
+                        <ul id="settings-local-kw-lists" class="w3-ul">
+                            
                         </ul>
                     </div>
                 </div>
                 <div class="w3-bar-item" style="width: 50%;display: flex;flex-direction: column;">
-                    <p class="">Select keyword lists you would like to download (will be shown in the local list below):</p>
+                    <p class="">Select keyword lists you would like to download (already downloaded won't be shown)):</p>
                     <select style="width:100%;min-width:300px;max-width:100%;" id="kw-list-available-choose" multiple="multiple">
-                        <option></option>
-                        <optgroup label="Main">
-                            <option value="testvalue1">English</option>
-                            <option value="testvalue2">Finnish</option>
-                            <option value="testvalue2">Swedish</option>
-                        </optgroup>
-                        <optgroup label="Special - EN">
-                            <option value="testvalue3">Nursery</option>
-                            <option value="testvalue4">Elder Care</option>
-                        </optgroup>
-                        <optgroup label="Special - FI">
-                            <option value="testvalue3">Test Option THIS ONE IS TOO LONG TO FIT INTO SINGLE LINE SO IT WRAPS INTO MULTIPLE LINES!!!</option>
-                            <option value="testvalue4">Olen erikoinen</option>
-                        </optgroup>
+                        
                     </select>
-                    <div id="downloadandupdatekeywords" class="w3-button" style="width:200px;margin-top:50px;margin-bottom:auto;margin-left:auto;margin-right:auto;">
+                    <div id="downloadandupdatekeywords" class="w3-button" style="width:200px;margin-top:50px;margin-left:auto;margin-right:auto;">
                         <img draggable="false" id="danduKW-file-icon" class="navbar-image" src="../ui_icons/appbar.download.png" />
                         <p class="navbar-text">Download & update keyword lists</p>
                     </div>
+                    <p id="settings-kw-update-date" style="text-align:center;">Latest successfull update: ----</p>
                 </div>
             </div>
         </div>

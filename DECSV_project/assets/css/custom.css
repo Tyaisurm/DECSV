@@ -288,6 +288,7 @@ li {
 
 .censored {
     text-decoration: line-through;
+    text-shadow: 0 0 9px rgba(255,0,0,1);
 }
 
 .underlined {
@@ -300,4 +301,8 @@ li {
 
     .word:hover {
         text-shadow: 0 0 9px rgba(255,0,0,1);
+    }
+
+    .word.censored {
+        text-shadow: 0 0 9px #2196F3 !important;
     }

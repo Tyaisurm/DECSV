@@ -23,18 +23,14 @@
   "secKtitle": "Tagging",
   "secFtitle": "Review",
   "quit-conf-title": "Confirmation",
-  "quit-conf-message": "Are you sure you want to quit?",
-  "quit-conf-detail": "Unsaved changes will be lost.",
+  "quit-conf-message": "Close application?",
+  "quit-conf-detail": "Are you sure you want to close the application?",
   "conf-yes": "Yes",
   "conf-no": "No",
   "conf-ok": "Ok",
 
   "open-file-prompt-window-title": "Open file",
   "open-project-prompt-window-title": "Open project",
-
-  "restore-conf-title": "Restore",
-  "restore-conf-message": "Would you like to restore previous session?",
-  "restore-conf-detail": "The program would show you the state where you left it when you closed it last time.",
 
   "current-keys": "Added keywords:",
   "current-censored": "Words to be censored:",

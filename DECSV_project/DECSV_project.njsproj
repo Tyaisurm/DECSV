@@ -160,10 +160,12 @@
     <Content Include="__licenses\electron-log_license.txt" />
     <Content Include="__licenses\electron-squirrel-startup_license.txt" />
     <Content Include="__licenses\electron-store_license.txt" />
+    <Content Include="__licenses\electron-updater_license.txt" />
     <Content Include="__licenses\electron-window-state_license.txt" />
     <Content Include="__licenses\electron_license.txt" />
     <Content Include="__licenses\jquery_license.txt" />
     <Content Include="__licenses\js-xlsx_license.txt" />
+    <Content Include="__licenses\list.js_license.txt" />
     <Content Include="__licenses\rimraf_license.txt" />
     <Content Include="__licenses\select2_license.txt" />
     <Content Include="__licenses\WindowsIcons_license.txt" />

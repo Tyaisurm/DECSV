@@ -17,13 +17,15 @@ students, in order to review data from SLIPPS surveys.
 **Used packages/libraries/frameworks:**
 - electron (MIT License. Has node.js, chromium and v8)
 - electron-builder (MIT License)
-- electron-builder-squirrel-windows (MIT License) NO LICENSE FILE!!! (plugin to electron builder)
+- electron-builder-squirrel-windows (MIT License) NO LICENSE FILE! (plugin to electron builder)
 
 - electron-log (MIT License)
 - electron-squirrel-startup (Apache License 2.0)
 - electron-store (MIT License)
+- electron-updater (MIT License)
 - electron-window-state (MIT License)
 - jquery (MIT License)
+- list.js (MIT License)
 - rimraf (ISC License)
 - select2 (MIT License)
 - js-xlsx (xlsx) (Apache License 2.0)

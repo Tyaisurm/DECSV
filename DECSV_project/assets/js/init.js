@@ -4,7 +4,6 @@ const BrowserWindow = remote.BrowserWindow;
 const dialog = remote.dialog;
 const firstWindow = remote.getCurrentWindow();
 const fs = require('fs');
-const XLSX = require('xlsx');
 const http = require("http");
 const shell = remote.shell;
 const autoUpdater = remote.autoUpdater;
@@ -73,7 +72,8 @@ setupTranslations();
 set_KW_choose_selector();
 set_app_lang_selector();
 set_kw_list_available_select();
-
+updateSettingsUI();
+setupKWSelector();
 ///////////////////////////////////////////////////////// WINDOW CONTROL BUTTONS FUNCTIONALITY
 if (firstWindow.isMaximized()) { document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.window.restore.png"; } // just to make sure when opening 
 firstWindow.on('focus', function () { $("html").css("opacity", "1");});
@@ -96,6 +96,31 @@ document.getElementById("win-maximize-restore-icon").onclick = function () {
 }
 document.getElementById("win-close-icon").onclick = function () {
     logger.debug("win-close icon/button");
+    $('#proj-files-ul li.w3-yellow').each(function (i) {
+        var done = ($(this).attr('data-done') === "true");
+
+        $("#edit-A-orig-text .secA-Q").empty();
+        $("#edit-B-orig-text .secB-Q").empty();
+        for (var k = 1; k < 15; k++) {
+            $("#edit-C-orig-text .secC-Q-" + k).empty();
+        }
+        var dataA = $("#edit-A-orig-text").html();
+        var dataB = $("#edit-B-orig-text").html();
+        var dataC = $("#edit-C-orig-text").html();
+        var dataKW = [];
+        $("#file-chosen-kw-ul li").each(function (i) {
+            var value = $(this).attr("data-value");
+            var name = $(this).text();
+            dataKW.push([value, name]);
+        });
+        var notes = [];
+        $("#proj-notes-ul li").each(function (i) {
+            var text = $(this).text();
+            notes.push(text);
+        });
+
+        saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
+    });
     firstWindow.close();
 }
 document.getElementById('win-about-icon').onclick = function () {
@@ -195,6 +220,21 @@ document.getElementById("check-app-updates-button").onclick = function () {
     ipcRenderer.send("check-updates", "");
 }
 
+document.getElementById("downloadandupdatekeywords").onclick = function () {
+    logger.debug("downloadandupdatekeywords button");
+    var loadable_kw_lists = $("#kw-list-available-choose").val();
+    logger.debug("WOULD be downloading: " + loadable_kw_lists);
+
+    var local_kw_lists = [];
+    $("#settings-local-kw-lists li").each(function (i) {
+        local_kw_lists.push($(this).attr("data-id"));
+    });
+    logger.debug("WOULD be updating: " + local_kw_lists);
+    
+    //checkAndUpdateKWLists();
+    // REMEMBER TO SET "NAME" TO KW LISTS properties-file FROM THE FIRST ELEMENT within the .json file, when you have downloaded them!!!!!!
+}
+
 document.getElementById("addfilebutton").onclick = function () {
     logger.debug("addfile button");
     //
@@ -204,6 +244,81 @@ document.getElementById("addfilebutton").onclick = function () {
 
 document.getElementById("projinfobutton").onclick = function () {
     logger.debug("projinfo button");
+    $("#proj-info-files-ul").empty();
+    $("#proj-info-files-ul").html($("#proj-files-ul").html());
+    $("#proj-info-files-ul li").removeAttr("onclick");
+    $("#proj-info-files-ul li").removeAttr("style");
+    $("#proj-info-files-ul li").removeAttr("data-temp");
+    $("#proj-info-files-ul li").removeAttr("data-done");
+    $("#proj-info-files-ul li").removeAttr("onmouseover");
+    $("#proj-info-files-ul li").removeAttr("onmouseout");
+    var value = $("#footer-nav-btn4").val();
+    if (value === "information"){
+        // do NOTHING
+    }
+    else {
+        var docpath = remote.app.getPath('documents');
+        var proj_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + window.currentProject + '\\');
+        var options = {
+            name: window.currentProject,
+            cwd: proj_base
+        }
+        const store = new Store(options);
+        var obj = store.get('kw-per-file', {});
+        var allkw = [];
+        for (var k in obj) {
+            if (obj.hasOwnProperty(k)) {
+                logger.debug("KW FILE OBJ HAS OWN PROPERTY");
+                var fileArr = obj[k];
+                logger.debug(fileArr);
+                logger.debug(fileArr.length);
+                for (var h = 0; h < fileArr.length; h++){
+                    var keyW = fileArr[h];
+                    var kw_id = fileArr[h][0];
+                    var kw_actual = fileArr[h][1];
+                    logger.debug("### KW ARRAY");
+                    logger.debug(keyW);
+                    allkw.push([kw_id,kw_actual]);
+                }
+            }
+        }
+        ////////
+        $('#proj-info-kw-ul').empty();
+        var uniq = [];
+        var check = false;
+        for (i = 0; i < allkw.length; i++) {
+            check = false;
+            logger.debug("COMPARING ARRAYS");
+            logger.debug(allkw[i]);
+            var current = allkw[i];
+            
+            for (var t = 0; t < uniq.length; t++){
+                if (uniq[t][0] === current[0]){
+                    check = true;
+                    break;
+                }
+            }
+
+            if (!check) {
+                uniq.push(current);
+            }
+        }
+        for (var j = 0; j < uniq.length; j++){
+            logger.debug("CREATING LIST OT PROJ SUMMARY");
+            var li_string = document.createTextNode(uniq[j][1]);
+            var li_node = document.createElement("li");
+            logger.debug(uniq[j][1]);
+            li_node.appendChild(li_string);
+
+            $(li_node).attr({
+                class: "w3-display-container",
+                "data-id": uniq[j][0]
+            });
+
+            $('#proj-info-kw-ul').append(li_node);
+        }
+        
+    }
     toggleViewMode(12);
     toggleViewMode(10);
 }
@@ -221,17 +336,72 @@ document.getElementById("saveprojbutton").onclick = function () {
 
 document.getElementById("closeprojbutton").onclick = function () {
     logger.debug("closeproject button");
-    //confirmation, saving etc.
-    window.currentProject = undefined;
-    setViewButtonSets("project-closed");
-    clearElements();
-    $("#titlebar-appname").text("DECSV {Alpha version " + remote.app.getVersion() + "}")
-    toggleViewMode(0);
-    toggleViewMode(10);
+    var options = {
+        type: 'info',
+        title: "Confirmation",
+        message: "Close project " + window.currentProject+"?",
+        detail: "Are you sure you want to close this project?",
+        buttons: [i18n.__('conf-yes', true), i18n.__('conf-no', true)]
+    };
+
+    dialog.showMessageBox(firstWindow, options, function (index) {
+        if (index === 0) {
+            //save before closing
+            $('#proj-files-ul li.w3-yellow').each(function (i) {
+                var done = ($(this).attr('data-done') === "true");
+
+                $("#edit-A-orig-text .secA-Q").empty();
+                $("#edit-B-orig-text .secB-Q").empty();
+                for (var k = 1; k < 15; k++) {
+                    $("#edit-C-orig-text .secC-Q-" + k).empty();
+                }
+                var dataA = $("#edit-A-orig-text").html();
+                var dataB = $("#edit-B-orig-text").html();
+                var dataC = $("#edit-C-orig-text").html();
+                var dataKW = [];
+                $("#file-chosen-kw-ul li").each(function (i) {
+                    var value = $(this).attr("data-value");
+                    var name = $(this).text();
+                    dataKW.push([value, name]);
+                });
+                var notes = [];
+                $("#proj-notes-ul li").each(function (i) {
+                    var text = $(this).text();
+                    notes.push(text);
+                });
+                $("#preview-third-1").addClass("no-display");
+                $("#preview-third-2").addClass("no-display");
+                $("#preview-third-3").addClass("no-display");
+                $("#preview-third-start").removeClass("no-display");
+                saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
+            });
+            //
+            window.currentProject = undefined;
+            window.currentFile = undefined;
+            window.currentFileContent = undefined;
+            setViewButtonSets("project-closed");
+            clearElements();
+            $("#titlebar-appname").text("DECSV {Alpha version " + remote.app.getVersion() + "}")
+            $("#preview-cur-file-name").text("Current file: NONE");
+            $("#preview-subid").text("Submission ID:");
+            $("#preview-subdate").text("Submission Date:");
+            toggleViewMode(0);
+            toggleViewMode(10);
+        }
+    });
 }
 
 document.getElementById("settingsbutton").onclick = function () {
     logger.debug("settings button");
+    if ($('#footer-nav-btn3').val() === "settings") {
+        // do nothing. you are already at settings...
+    }
+    else {
+        // CHECK SETTINGS FROM FILES > and update view like you wanted to
+        $("#app-lang-selector").val(null).trigger("change");
+        $("#kw-list-available-choose").val(null).trigger("change");
+        updateSettingsUI();
+    }
     toggleViewMode(7);
     toggleViewMode(10);
 }
@@ -379,16 +549,25 @@ document.getElementById("footer-nav-btn3").onclick = function () {
         toggleViewMode(1);
         toggleViewMode(9);
         // save A edits and update preview
+        $("#edit-A-orig-text").html($("#edit-A-edit-text").html());
+        updatePreview();
+        updateCensoredList();
     }
     else if (value === "editB") {
         toggleViewMode(1);
         toggleViewMode(9);
         // save B edits and update preview
+        $("#edit-B-orig-text").html($("#edit-B-edit-text").html());
+        updatePreview();
+        updateCensoredList();
     }
     else if (value === "editC") {
         toggleViewMode(1);
         toggleViewMode(9);
         // save C edits and update preview
+        $("#edit-C-orig-text").html($("#edit-C-edit-text").html());
+        updatePreview();
+        updateCensoredList();
     }
     else if (value === "login") {
         //login
@@ -397,8 +576,23 @@ document.getElementById("footer-nav-btn3").onclick = function () {
         //register
     }
     else if (value === "settings") {
-        //save
-    }
+        var options = {
+            type: 'info',
+            title: "Confirmation",
+            message: "Save these settings?",
+            detail: "If you set language, it will take effect on next startup.",
+            buttons: [i18n.__('conf-yes', true), i18n.__('conf-no', true)]
+        };
+
+        dialog.showMessageBox(firstWindow, options, function (index) {
+            if (index === 0) {
+                saveSettings();
+            }
+            else {
+            }
+        });
+        //save settings
+s    }
     else if (value === "create-proj") {
         logger.debug("new-proj-create-button");
         var project_name = $("#new-proj-create-input").val();
@@ -420,20 +614,32 @@ document.getElementById("footer-nav-btn4").onclick = function () {
         toggleViewMode(1);
         toggleViewMode(9);
         // cancel editmode A
+        $("#edit-A-edit-text").html($("#edit-A-orig-text").html());
+        setupCensorSelect();
     }
     else if (value === "editB") {
         toggleViewMode(1);
         toggleViewMode(9);
         //cancel editmode B
+        $("#edit-B-edit-text").html($("#edit-B-orig-text").html());
+        setupCensorSelect();
     }
     else if (value === "editC") {
         toggleViewMode(1);
         toggleViewMode(9);
         //cancel editmode C
+        $("#edit-C-edit-text").html($("#edit-C-orig-text").html());
+        setupCensorSelect();
     }
     else if (value === "register") {
         toggleViewMode(5);
         toggleViewMode(10);
+    }
+    else if (value === "settings") {
+        $("#app-lang-selector").val(null).trigger("change");
+        $("#kw-list-available-choose").val(null).trigger("change");
+        updateSettingsUI();
+        // revert changes in settings
     }
     else if (value === "forgotPW") {
 
@@ -449,6 +655,20 @@ document.getElementById("footer-nav-btn5").onclick = function () {
 
     if (value === "preview") {
         // Toggle done and not done
+        $('#proj-files-ul li.w3-yellow').each(function (i) {
+            //
+            if ($(this).attr("data-done") === "true") {
+                $(this).attr({
+                    "data-done": false
+                });
+            }
+            else {
+                $(this).attr({
+                    "data-done": true
+                });
+            }
+            setViewButtonSets("preview");
+        });
     }
     else if (value === "login") {
         toggleViewMode(6);
@@ -493,8 +713,22 @@ function setViewButtonSets(view) {
         $("#footer-nav-btn6").removeClass("no-display");
 
         $("#footer-nav-btn1").text("Previous file");
-        $("#footer-nav-btn5").text("Mark as Done / Not Done");
         $("#footer-nav-btn6").text("Next file");
+
+        $('#proj-files-ul li.w3-yellow').each(function (i) { 
+            if ($(this).attr("data-done") === "true") {
+                $("#footer-nav-btn5").text("Mark as Not Done");
+            }
+            else {
+                $("#footer-nav-btn5").text("Mark as Done");
+            }
+        });
+
+        if (window.currentFile === undefined) {
+            $("#footer-nav-btn1").addClass("no-display");
+            $("#footer-nav-btn5").addClass("no-display");
+            $("#footer-nav-btn6").addClass("no-display");
+        }
     }
     else if (view === "login"){
         $("#footer-nav-btn1").addClass("no-display");
@@ -582,11 +816,12 @@ function setViewButtonSets(view) {
         $("#footer-nav-btn1").addClass("no-display");
         $("#footer-nav-btn2").addClass("no-display");
         $("#footer-nav-btn3").removeClass("no-display");
-        $("#footer-nav-btn4").addClass("no-display");
+        $("#footer-nav-btn4").removeClass("no-display");
         $("#footer-nav-btn5").addClass("no-display");
         $("#footer-nav-btn6").addClass("no-display");
 
         $("#footer-nav-btn3").text("Save");
+        $("#footer-nav-btn4").text("Cancel");
     }
     else if (view === "project-open") {
         $("#addfilebutton").removeClass("no-display");
@@ -681,7 +916,7 @@ function sourceFiles2ProjAsync(files) { // Last object of "files" will be name o
     logger.debug(pre_dirfiles);
 
     ipcRenderer.on('async-import-files-reply', (event, arg) => {
-        logger.debug("BACK FROM APP");
+        logger.debug("BACK FROM APP - import files into project");
         var dirfiles = fs.readdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source\\'));
         logger.debug(docpath);
         logger.debug(dirfiles);
@@ -695,20 +930,91 @@ function sourceFiles2ProjAsync(files) { // Last object of "files" will be name o
             logger.debug("ERROR WHILE IMPORTING!");
             var reason = arg[1];
             // SHOW REASON TO USER!
-        }
-        
+        }       
+        logger.debug("STORE SOURCE: "+f2p_store.get("source-files","NONE!!!!"));
         f2p_store.set("source-files", dirfiles);
-
         ipcRenderer.removeAllListeners('async-import-files-reply');
+
+        ipcRenderer.on('async-transform-files-reply', (event, arg) => {
+            logger.debug("BACK FROM APP - returned from transforming src files to temp");
+            if (arg[0]) {
+                logger.info("SRC to TEMP conversion success!");
+                // successfully ended the temp conversion
+                logger.debug("SUCCESS AND FAIL ARRAYS");
+                logger.debug(arg[1]);//success array
+                logger.debug(arg[2]);//fail array
+                // filearr 0 = fileoriginal, 1 = filetemp, 2 = filedonestatus
+
+                // fileS,"temp#"+fileS+".json",false
+                for (var a = 0; a < arg[1].length; a++) {
+                    var fileArr = [];
+                    fileArr.push(arg[1][a][0], arg[1][a][1],arg[1][a][2]);
+                    addProjFile(fileArr);
+                }
+            }
+            else {
+                logger.error("SRC to TEMP conversion failed!");
+                //folders missing
+            }
+            var testing_opt = {
+                name: "temp#"+arg[1][0],
+                cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp\\')
+            }
+            /*
+            const testing_store = new Store(testing_opt);
+            var teststring = testing_store.get("c","AHAHAHAHAHAHAHAH");
+            //THIS IS FOR TESTING
+            $("#edita-div").addClass("is-shown");
+            $("#edit-A-edit-text").html(teststring);
+            */
+
+            //updateFileList(proj_name);
+            ipcRenderer.removeAllListeners('async-transform-files-reply');
+        });
+        ipcRenderer.send('async-transform-files', proj_name);
     });
     logger.debug("SENDING ASYNC TO MAIN APP!");
     var send_arg = [];
     send_arg.push(files);
     send_arg.push(pre_dirfiles);
-    logger.debug("##################################");
+    logger.debug("########### LISTING FILELIST GOING TO BE SENT");
     logger.debug(files);
     logger.debug(pre_dirfiles);
     ipcRenderer.send('async-import-files', send_arg);
+}
+
+function updateFileList(proj_name) {
+    logger.debug("updateFilesList");
+    var docpath = remote.app.getPath('documents');
+    var filelist_options = {
+        name: proj_name,
+        cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\')
+    }
+    const fl_store = new Store(filelist_options);
+    var tempfiles = fl_store.get("temp-files", {});
+    try {
+        $("#proj-files-ul").empty();
+        for (var k in tempfiles) {
+            logger.debug("Looping through tempfiles...");
+            if (tempfiles.hasOwnProperty(k)) {
+                var filetemp = k;
+                var fileorig = tempfiles[k]["file"];
+                var filedone = tempfiles[k]["done"];
+                logger.debug("FROM TEMP FILE IN UPDATEFILELIST");
+                logger.debug(filedone);
+                logger.debug(typeof(filedone));
+                var fileArr = [];
+                fileArr.push(fileorig, filetemp, filedone);
+                // filearr 0 = fileoriginal, 1 = filetemp, 2 = filedonestatus
+                addProjFile(fileArr);
+            }
+        }
+    }
+    catch (err){
+        //
+        logger.error("Error trying to read list of temp files (updating list)!");
+        logger.error(err.message);
+    }
 }
 
 function openAndViewProject(proj_name) {
@@ -759,13 +1065,16 @@ function openAndViewProject(proj_name) {
                                 console.log(i + "  " + source_files[i]);
                             }
 
-                            var temp_files = open_store.get("temp-files", null);
+                            var temp_files = open_store.get("temp-files", {});
                             console.log(temp_files);
 
                             for (var k in temp_files) {
-                                console.log("1: " + k);
+                                console.log("1: ");
+                                console.log(k);
                                 if (temp_files.hasOwnProperty(k)) {
-                                    console.log("2: " + temp_files[k]);
+                                    console.log("2: ");
+                                    console.log(temp_files[k]);
+                                    console.log(temp_files[k].file);
                                 }
                             }
 
@@ -774,28 +1083,23 @@ function openAndViewProject(proj_name) {
 
 
                             for (var k in kw_per_file) {
-                                console.log("#1: " + k);
+                                console.log("#1: ");
+                                console.log(k);
                                 if (kw_per_file.hasOwnProperty(k)) {
-                                    console.log("#2: " + kw_per_file[k]);
-
-                                    for (var j in kw_per_file[k]) {
-                                        console.log("#3: " + j);
-                                        if (kw_per_file[k].hasOwnProperty(j)) {
-                                            console.log("#4: " + kw_per_file[k][j]);
-                                        }
-                                    }
-
-
+                                    console.log("#2: ");
+                                    console.log(kw_per_file[k]);
                                 }
                             }
 
                             var proj_notes = open_store.get("notes", null);
-                            console.log("NOTES: " + proj_notes);
+                            console.log("NOTES: ");
+                            console.log(proj_notes);
                             for (var i = 0; i < proj_notes.length; i++) {
                                 console.log(i + "  " + proj_notes[i]);
                                 addProjNote(proj_notes[i]);
                             }
                             window.currentProject = proj_name;
+                            updateFileList(proj_name);
                             /*
                             // TESTING
                             open_store.set("temp-files.source1.file", "temp#source1.json");
@@ -891,12 +1195,561 @@ function addProjNote(note) {
     $('#proj-notes-ul').append(li_node);
 }
 
-// NEEDS UPDATE
 // Add given filename + details into ul element
-function addProjFile(file) {
-    //
+function addProjFile(fileArr) {
+    logger.debug("addProjFile");
+    logger.debug(fileArr);
+    /*
+    <li class="w3-green w3-hover-blue w3-display-container">File1.csv</li>
+        <li class="w3-green w3-hover-blue w3-display-container">File2.csv</li>
+        <li class="w3-green w3-hover-blue w3-display-container">File3.csv</li>
+        <li class="w3-yellow w3-hover-blue w3-display-container">File4.csv</li>
+        <li class="w3-hover-blue w3-display-container">File5.csv</li>
+        <li class="w3-hover-blue w3-display-container">File6.csv</li>
+        <li class="w3-hover-blue w3-display-container">File7.csv</li>
+        <li class="w3-hover-blue w3-display-container">File8.csv</li>
+        <li class="w3-hover-blue w3-display-container">File9.csv</li>
+    */
+    // filearr 0 = fileoriginal, 1 = filetemp, 2 = filedonestatus
+    var li_string = document.createTextNode(fileArr[0]);
+    //console.log("####################################################");
+    //console.log(li_string);
+    var li_node = document.createElement("li");
+    //console.log(li_node);
+    //console.log(document.createElement("li"));
+    var classes = "w3-display-container";
+    li_node.appendChild(li_string);
+    logger.debug("BEFORE USAGE AT ADDPROJFILE");
+    logger.debug(fileArr[2]);
+    logger.debug(typeof (fileArr[2]));
+    if (fileArr[2]){
+        classes = classes + " w3-green";
+    }
+    $(li_node).attr({
+        style: "cursor:pointer;",
+        class: classes,
+        onmouseover: "$(this).addClass('w3-hover-blue');",
+        onmouseout: "$(this).removeClass('w3-hover-blue');",
+        "data-temp": fileArr[1],
+        "data-done": fileArr[2]
+    });
+    $('#proj-files-ul').append(li_node);
+    $('#proj-files-ul li').off('click');
+    $('#proj-files-ul li').on('click', function () {
+        logger.debug('CLICKED FILE :DDD');
+        var done = "";
+        if ($(this).hasClass("w3-yellow")) {
+            // do nothing
+            logger.info("Tried to open already showed file!");
+        }
+        else {
+            logger.info("Switching files...");
+            $('#proj-files-ul li.w3-yellow').each(function (i) {
+                done = ($(this).attr('data-done') === "true");
+                $(this).removeClass('w3-yellow');
+            if ($(this).attr('data-done') === 'true') {
+                $(this).addClass('w3-green');
+            }
+            $("#edit-A-orig-text .secA-Q").empty();
+            $("#edit-B-orig-text .secB-Q").empty();
+    for (var k=1;k<15 ; k++) {
+        $("#edit-C-orig-text .secC-Q-" + k).empty();
+    }
+    var dataA = $("#edit-A-orig-text").html();
+    var dataB = $("#edit-B-orig-text").html();
+    var dataC = $("#edit-C-orig-text").html();
+    var dataKW = [];
+    $("#file-chosen-kw-ul li").each(function (i) {
+        var value = $(this).attr("data-value");
+        $(this).find('span').remove();
+        var name = $(this).text();
+        logger.debug("THIS IS AFTER REMOVAL!!!!");
+        logger.debug(name);
+
+        dataKW.push([value, name]);
+    });
+    var notes = [];
+    $("#proj-notes-ul li").each(function (i) {
+        var text = $(this).text();
+        notes.push(text);
+    });
+
+    saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
+        });
+        $(this).addClass('w3-yellow');
+        $(this).removeClass('w3-green');
+        $("#file-chosen-kw-ul").empty();
+        $("#KW-selector option").each(function (i) {
+            //
+            if (this.hasAttribute("disabled")) {
+                $(this).removeAttr("disabled");
+            }
+        });
+        $("#KW-selector").select2({
+            language: "current_lang",
+            placeholder: i18n.__('select2-kw-add-ph')
+        });
+        openAndShowFile(this);
+    }
+    });
 }
 
+function saveProject(file_name, proj_name, dataA, dataB, dataC, dataKW, notes, done) {
+    logger.debug("saveProject");
+    if ((file_name !== undefined) && (proj_name !== undefined)) {
+        logger.info("Starting saving data to temp and project files...");
+        //
+        var docpath = remote.app.getPath('documents');
+        // store for project properties
+        var options1 = {
+            name: proj_name,
+            cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name)
+        }
+        const store1 = new Store(options1);
+        // store for project temp file
+        var options2 = {
+            name: 'temp#'+file_name,
+            cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp\\')
+        }
+        const store2 = new Store(options2);
+
+        store2.set('a', dataA);
+        store2.set('b', dataB);
+        store2.set('c', dataC);
+        store2.set('kw', dataKW);
+        store2.set('done', done);
+
+        var origobj = store1.get('kw-per-file', {});
+        var filestatus = store1.get('temp-files', {})
+        filestatus['temp#' + file_name + '.json']['done'] = done;
+        origobj['temp#' + file_name + '.json'] = dataKW;
+        store1.set('temp-files', filestatus)
+        store1.set('kw-per-file', origobj);
+        store1.set('notes', notes);
+
+        logger.info("Saved data to temp-file 'temp#"+file_name+".json' and project '"+proj_name+"' properties file");
+    }
+    else {
+        logger.error("Tried to save file/project, when 'file_name' or 'proj_name' is undefined!");
+    }
+}
+function openAndShowFile(fileObj) {
+    logger.debug("openAndShowFile");
+    window.currentFile = $(fileObj).text();
+    window.fileDoneStatus = ($(fileObj).attr("data-done") === "true");
+    
+    $("#preview-cur-file-name").text("Current file: "+currentFile);
+    $("#preview-third-1").removeClass("no-display");
+    $("#preview-third-2").removeClass("no-display");
+    $("#preview-third-3").removeClass("no-display");
+    $("#preview-third-start").addClass("no-display");
+
+    $("#footer-nav-btn1").removeClass("no-display");
+    $("#footer-nav-btn5").removeClass("no-display");
+    $("#footer-nav-btn6").removeClass("no-display");
+
+    var docpath = remote.app.getPath('documents');
+    var temp_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + window.currentProject + '\\temp\\');
+    var options = {
+        name: "temp#" + $(fileObj).text(),
+        cwd: temp_base
+    }
+    const store = new Store(options);
+
+    $("#edit-A-edit-text").html(store.get("a",""));
+    $("#edit-A-orig-text").html(store.get("a",""));
+    $("#edit-B-edit-text").html(store.get("b",""));
+    $("#edit-B-orig-text").html(store.get("b",""));
+    $("#edit-C-edit-text").html(store.get("c",""));
+    $("#edit-C-orig-text").html(store.get("c",""));
+
+    window.currentFileContent = store.get("src-data",[]);
+
+    $(".secA-Q").text(i18n.__("secA-Q"));
+    $(".secB-Q").text(i18n.__("secB-Q"));
+    for (var k = 1; k < 15; k++) {
+        $(".secC-Q-" + k).text(i18n.__("secC-Q-" + k));
+        logger.debug("round: secC-Q-" + k);
+    }
+
+    $("#preview-subid").text("Submission ID: " + store.get("subID"));
+    $("#preview-subdate").text("Submission Date: " + store.get("subDATE"));
+
+    // HERE, YOU CHECK AND SETUP KEYWORDS FOR THIS SPECIFIC FILE (and restart select2) remember to remove all "disabled" attr before adding them!
+    // loop start
+    var listofkw = store.get("kw", []);
+    logger.debug("starting file-kwlist compare...");
+    logger.debug(listofkw);
+
+    //$("#KW-selector").select2("destroy");
+
+    for (var j = 0; j < listofkw.length; j++) {
+        var kw_value = listofkw[j][0];
+        var kw_text = listofkw[j][1];
+
+        logger.debug("1# VALUE: " + kw_value + " # TEXT: " + kw_text);
+
+        var li_string = document.createTextNode(kw_text);
+        var li_node = document.createElement("li");
+        var span_node = document.createElement("span");
+
+        li_node.appendChild(li_string);
+        span_node.innerHTML = "&times;";
+
+        $(li_node).attr({
+            class: "w3-display-container",
+            "data-value": kw_value
+        });
+
+        $(span_node).attr({
+            style: "height: 100%;",
+            class: "w3-button w3-display-right",
+            onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
+            onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
+            onclick: "$(\"#KW-selector option[value = '" + kw_value + "']\").removeAttr('disabled', 'disabled'); $(this.parentElement).remove(); $(\"#KW-selector\").select2({language: \"current_lang\",placeholder: i18n.__('select2-kw-add-ph')});"
+        });
+        logger.debug("2# VALUE: " + kw_value + " # TEXT: " + kw_text);
+        li_node.appendChild(span_node);
+
+        $('#file-chosen-kw-ul').append(li_node);
+
+        // would like to add "red" bgc if element does not exist in current kw-selector. currently only disables those already in there
+        logger.debug("3# VALUE: " + kw_value + " # TEXT: " + kw_text);
+        logger.debug($("#KW-selector option"));
+        $("#KW-selector option").each(function (i) {
+            if ($(this).val() === kw_value){
+                //
+                logger.debug("YEEEEEEEEE :)");
+                $(this).attr('disabled','disabled');
+                return false;
+            }
+            else {
+                //
+                logger.debug("Nuuuuuuuuu :c");
+            }
+            
+        });
+
+        logger.debug("5# VALUE: " + kw_value + " # TEXT: " + kw_text);
+    }
+    // end loop, init element again
+    $("#KW-selector").prop("disabled", false);
+    
+    $("#KW-selector").select2({
+        language: "current_lang",
+        placeholder: i18n.__('select2-kw-add-ph')
+    });
+    
+    $("#file-chosen-kw-ul").removeClass("element-disabled");
+    //
+
+    setupCensorSelect();
+    updatePreview();
+    updateCensoredList();
+    setViewButtonSets("preview");
+}
+
+function updatePreview() {
+    logger.debug("updatePreview");
+    //
+    $("#preview-preview-A").html($("#edit-A-orig-text").html());
+    $("#preview-preview-B").html($("#edit-B-orig-text").html());
+    $("#preview-preview-C").html($("#edit-C-orig-text").html());
+    removeCensored();
+    $("#preview-preview-A .secA-Q-allA").text($("#preview-preview-A .secA-Q-allA").text());
+    $("#preview-preview-B .secB-Q-allA").text($("#preview-preview-B .secB-Q-allA").text());
+
+    for (var i = 1; i < 15; i++) {
+        $("#preview-preview-C .secC-Q-allA .secC-Q-" + i + "-cont").text($("#preview-preview-C .secC-Q-allA .secC-Q-" + i + "-cont").text());
+    }
+}
+
+function updateSettingsUI() {
+    logger.debug("updateSettingsUI");
+    var apppath = remote.app.getPath('userData');
+    var options1 = {
+        name: "app-configuration",
+        cwd: apppath
+    }
+    const store1 = new Store(options1);
+
+    var options2 = {
+        name: "keyword-config",
+        cwd: path.join(apppath, 'keywordlists')
+    }
+    const store2 = new Store(options2);
+
+    var applang = store1.get("app-lang", "en");
+    $("#settings-app-lang-name").text("Current language: " + getFullLangName(applang));
+
+    var kw_update_latest = store2.get("last-successful-update", "----");
+    var kw_local_list = store2.get("local-keywordlists", {});
+    var kw_available_list = store2.get("available-keywordlists", {});
+    var enabled_kw_list = store2.get("enabled-keywordlists", []);
+    var kw_update_date = store2.get("last-successful-update", "----");
+    if ((kw_update_date !== null) && (kw_update_date !== "----")){
+        kw_update_date = new Date(kw_update_date);
+    }
+    else {
+        kw_update_date = "----";
+    }
+    $("#settings-kw-update-date").text("Latest successfull update: " + kw_update_date);
+    $("#kw-list-available-choose").empty();
+    $("#kw-list-available-choose").append(document.createElement("option"));
+    $('#settings-local-kw-lists').empty();
+
+    var localsArr = [];
+
+    //start loop (local lists)
+    for (var k in kw_local_list) { // var i = 0; i < enabled_kw_list.length; i++
+        let list_id = "";
+        let list_name = "";
+        let lang = "";
+        if (kw_local_list.hasOwnProperty(k)) {
+            list_id = k;// list's filename/identification
+            list_name = kw_local_list[k]["name"];// list's name from row 0 (within the file. actual, showable name)
+            lang = list_name.split(' - ')[0];
+            localsArr.push(k);
+            //list_date = new Date(kw_local_list[k]["date"]); // list's update date
+        }
+
+        var li_string = document.createTextNode(list_name);
+        var li_node = document.createElement("li");
+        var span_node = document.createElement("span");
+
+        li_node.appendChild(li_string);
+        logger.debug("is the local KW list within the 'enabled' list?");
+        logger.debug(enabled_kw_list);
+        logger.debug(list_id);
+        if (enabled_kw_list.indexOf(list_id) > -1) {
+            logger.debug("yes");
+            span_node.innerHTML = '&radic;';
+            $(span_node).attr({
+                onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
+                onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
+                class: "mark_enabled w3-green w3-button w3-display-right",
+                onclick: "$(this.parentElement).toggleClass('kw-list-enabled'); $(this).toggleClass('w3-red'); $(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { this.innerHTML = '&radic;'; } else { this.innerHTML = '&times;'; }; "
+            });
+            $(li_node).attr({
+                "data-id": list_id,
+                class: "w3-display-container kw-list-enabled"
+            });
+        }
+        else {
+            logger.debug("no");
+            span_node.innerHTML = '&times;';
+            $(span_node).attr({
+                onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
+                onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
+                class: "w3-red w3-button w3-display-right",
+                onclick: "$(this.parentElement).toggleClass('kw-list-enabled'); $(this).toggleClass('w3-red'); $(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { this.innerHTML = '&radic;'; } else { this.innerHTML = '&times;'; }; "
+            });
+            $(li_node).attr({
+                "data-id": list_id,
+                class: "w3-display-container"
+            });
+        }
+
+        li_node.appendChild(span_node);
+
+        logger.debug("settings local list elemnt into list....");
+        $('#settings-local-kw-lists').append(li_node);
+    }
+    //<li class="w3-hover-blue w3-display-container kw-list-enabled">list 3<span onclick="$(this.parentElement).toggleClass('kw-list-enabled');$(this).toggleClass('w3-red');$(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="mark_enabled w3-green w3-button w3-display-right">&radic;</span></li>
+    //<li class="w3-hover-blue w3-display-container">list 4<span onclick="$(this.parentElement).toggleClass('kw-list-enabled');$(this).toggleClass('w3-red');$(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="w3-red w3-button w3-display-right">&times;</span></li>
+    //end loop
+    var lang_groups = [];
+    for (var j in kw_available_list) {
+        let list_id = "";
+        let list_name = "";
+        let lang = "";
+        let langlast = "";
+
+        if (kw_available_list.hasOwnProperty(j)) {
+            list_id = j;// list's filename/identification
+            list_name = kw_local_list[j]["name"];// list's name from row 0 (within the file. actual, showable name)
+            lang = list_name.split(' - ')[0];
+            langlast = list_name.substring(lang.length + 3, list_name.length);
+            logger.debug("list_id: "+list_id);
+            //list_date = new Date(kw_local_list[k]["date"]); // list's update date
+        }
+
+        if (localsArr.indexOf(list_id) > -1){
+            logger.warn("The list '" + list_id + "' is already loaded/local!");
+            continue;
+        }
+        else {
+            logger.info("The list '" + list_id + "' is not loaded/local!");
+            if (lang_groups.indexOf(lang) > -1) {
+                logger.debug("already have a GROUP in kw list: " + lang);
+                logger.debug("creating option-element: " + langlast);
+                var option_elem = document.createElement("option");
+                var option_string = document.createTextNode(langlast);
+                $(option_elem).append(option_string);
+
+                $("#kw-list-available-choose optgroup[label='" + lang + "']").append(option_elem);
+            }
+            else {
+                logger.debug("GROUP will be added to kw list: " + lang);
+                logger.debug("creating optgroup-element: " + lang);
+                var optgroup_elem = document.createElement("optgroup");
+                $(optgroup_elem).attr({
+                    label: lang
+                });
+                $("#kw-list-available-choose").append(optgroup_elem);
+
+                logger.debug("creating option-element: " + langlast);
+                var option_elem = document.createElement("option");
+                var option_string = document.createTextNode(langlast);
+                $(option_elem).append(option_string);
+
+                $("#kw-list-available-choose optgroup[label='" + lang + "']").append(option_elem);
+
+            }
+        }
+    }
+
+    //
+    set_kw_list_available_select();
+    set_app_lang_selector();
+}
+
+function saveSettings() {
+    logger.debug("saveSettings");
+    var applang = $("#app-lang-selector").val();
+    var apppath = remote.app.getPath('userData');
+    var enabledKW = [];
+    var options1 = {
+        name: "app-configuration",
+        cwd: apppath
+    }
+    const store1 = new Store(options1);
+    if (applang !== "") {
+        store1.set("app-lang", applang);
+    }
+    else {
+        logger.info("No language chosen in settings...");
+    }
+
+    var options2 = {
+        name: "keyword-config",
+        cwd: path.join(apppath, 'keywordlists')
+    }
+    const store2 = new Store(options2);
+    logger.debug("getting enabled local lists...");
+    $("#settings-local-kw-lists .kw-list-enabled").each(function (i) {
+        var kw_list_id = $(this).attr("data-id");
+        enabledKW.push(kw_list_id);
+        logger.debug("ADDED: " + kw_list_id);
+    });
+    store2.set("enabled-keywordlists", enabledKW);
+
+    setupKWSelector();
+}
+
+function setupKWSelector() {
+    var enabledKW = [];
+    var apppath = remote.app.getPath('userData');
+
+    $("#KW-selector").empty();
+    $("#KW-selector").append(document.createElement("option"));
+
+    logger.debug("getting enabled local lists...");
+    $("#settings-local-kw-lists .kw-list-enabled").each(function (i) {
+        var kw_list_id = $(this).attr("data-id");
+        enabledKW.push(kw_list_id);
+        logger.debug("ADDED: " + kw_list_id);
+    });
+
+    var kw_base = path.join(apppath, 'keywordlists');
+    var kw_groups = [];
+    var kw_current_group = "";
+    logger.debug("GOING TO LOOP enabledKW now....");
+    for (var i = 0; i < enabledKW.length; i++) {
+        logger.debug("Round: " + i);
+
+        let loadedlist = [];
+        if (fs.existsSync(path.join(kw_base, enabledKW[i] + '.json'))) {
+            logger.info("KW file '" + enabledKW[i] + "' located!");
+            try {
+                logger.debug("TRYING TO GET KW FILE CONTENTS AND LOOP 'EM");
+                loadedlist = require(path.join(kw_base, enabledKW[i] + '.json'));
+                for (var k in loadedlist) {
+                    logger.debug("in loop now. current: " + k);
+                    if (loadedlist.hasOwnProperty(k)) {
+                        var kw_tag = k;
+                        var kw_itself = loadedlist[k];
+                        if (Object.keys(loadedlist).indexOf(k) === 0) {//loadedlist.indexof(k) === 0) {// skipping 0, because that is the name
+                            logger.debug(kw_itself);
+                            kw_current_group = kw_itself;//.substring(kw_itself.split(' - ')[0].length + 3, kw_itself.length);
+                            logger.debug("First line! taking name...: " + kw_current_group);
+                            continue;
+                        }
+                        if (kw_groups.indexOf(kw_current_group) > -1) {
+                            logger.debug("Group seems to exist: " + kw_current_group);
+                            var option_elem = document.createElement("option");
+                            var option_text = document.createTextNode(kw_itself);
+                            logger.debug("KW ITSELF: " + kw_itself);
+                            logger.debug("KW TAG: " + kw_tag);
+                            $(option_elem).attr({
+                                value: kw_tag
+                            });
+                            $(option_elem).append(option_text);
+                            $("#KW-selector optgroup[label='" + kw_current_group + "']").append(option_elem);
+                            logger.debug("#KW-selector optgroup[label='" + kw_current_group + "']");
+                        }
+                        else {
+                            logger.debug("Group seems to NOT exist: " + kw_current_group);
+                            kw_groups.push(kw_current_group);
+                            var optgroup_elem = document.createElement("optgroup");
+                            $(optgroup_elem).attr({
+                                label: kw_current_group
+                            });
+                            $("#KW-selector").append(optgroup_elem);
+
+                            var option_elem = document.createElement("option");
+                            var option_text = document.createTextNode(kw_itself);
+                            logger.debug("KW ITSELF: " + kw_itself);
+                            logger.debug("KW TAG: " + kw_tag);
+                            $(option_elem).attr({
+                                value: kw_tag
+                            });
+                            $(option_elem).append(option_text);
+                            $("#KW-selector optgroup[label='" + kw_current_group + "']").append(option_elem);
+                            logger.debug("#KW-selector optgroup[label='" + kw_current_group + "']");
+                        }
+                    }
+                }
+            } catch (err) {
+                logger.error("Failed to load '" + enabledKW[i] + ".json' KW file...");
+                logger.error(err.message);
+                $("#settings-local-kw-lists li['data-id'='" + enabledKW[i] + "'] span").trigger("click");
+            }
+        }
+        else {
+            logger.warn("No desired KW-file found in keywords directory!");
+            $("#settings-local-kw-lists li[data-id='" + enabledKW[i] + "'] span").trigger("click");
+        }
+    }
+    // here you update kw-selector in case of same words in current file
+    $("#file-chosen-kw-ul li").each(function (i) {//"#KW-selector"
+        logger.debug("TESTING IF THE CURRENT FILE SELECTED KW ARE PRESENT IN SELECT-LIST");
+        var kw_identificator = $(this).attr("data-value");
+        $("#KW-selector option").each(function (i) {
+            // FRIENDSHIP IS MAGIC!
+            if ($(this).attr("") === kw_identificator) {
+                // same and nice :3
+                $(this).attr("disabled", "disabled");
+            }
+        });
+    });
+    $("#KW-selector").select2({
+        language: "current_lang",
+        placeholder: i18n.__('select2-kw-add-ph')
+    });
+}
+
+// nEEDS UPDATE
 function sortListElem(list) {  // REPLACED BY LIST.JS!!!!!!!!!! NPM
     //
 }
@@ -946,6 +1799,7 @@ function set_KW_choose_selector() {
             placeholder: i18n.__('select2-kw-add-ph')
         });
     });
+    $('#KW-selector').prop("disabled", true);
 }
 function set_app_lang_selector() {
     logger.debug("set_app_lang_selector");
@@ -964,6 +1818,9 @@ function set_app_lang_selector() {
         placeholder: i18n.__('select2-app-lang-ph'),
         minimumResultsForSearch: Infinity
     });
+    ///////////////////////////// BECAUSE NOT YET WORKING
+    $("#app-lang-selector").prop("disabled", true);
+    ////////////////////////////
 }
 function getFullLangName(lang_short) {
     logger.debug("getFullLangName");
@@ -981,7 +1838,7 @@ function getFullLangName(lang_short) {
     } 
     return lang_full;
 }
-function set_kw_list_available_select() {
+function set_kw_list_available_select() { 
     logger.debug("set_kw_list_available_select");
     $("#kw-list-available-choose").select2({
         language: "current_lang",
@@ -1027,6 +1884,24 @@ function toggleViewMode(mode) {
         setFooterBtnValue("preview");
         setViewButtonSets("preview");
 
+        $("#addfilebutton").removeClass("element-disabled");
+        $("#saveprojbutton").removeClass("element-disabled");
+
+        $("#closeprojbutton").removeClass("element-disabled");
+        $("#projinfobutton").removeClass("element-disabled");
+        $("#loginbutton").removeClass("element-disabled");
+        $("#settingsbutton").removeClass("element-disabled");
+        $("#projstartbutton").removeClass("element-disabled");
+
+        if (window.currentFile === undefined) {
+            //$("#proj-files-ul").addClass("element-disabled");
+            $("#file-chosen-kw-ul").addClass("element-disabled");
+        }
+        else {
+            $("#proj-files-ul").removeClass("element-disabled");
+            $("#file-chosen-kw-ul").addClass("element-disabled");
+        }
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").addClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -1044,6 +1919,18 @@ function toggleViewMode(mode) {
     else if (mode === 2) {
         setFooterBtnValue("editA");
         setViewButtonSets("editA");
+
+        $("#addfilebutton").addClass("element-disabled");
+        $("#saveprojbutton").addClass("element-disabled");
+
+        $("#closeprojbutton").addClass("element-disabled");
+        $("#projinfobutton").addClass("element-disabled");
+        $("#loginbutton").addClass("element-disabled");
+        $("#settingsbutton").addClass("element-disabled");
+        $("#projstartbutton").addClass("element-disabled");
+
+        $("#proj-files-ul").addClass("element-disabled");
+        //$("#file-chosen-kw-ul").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
@@ -1063,6 +1950,18 @@ function toggleViewMode(mode) {
         setFooterBtnValue("editB");
         setViewButtonSets("editB");
 
+        $("#addfilebutton").addClass("element-disabled");
+        $("#saveprojbutton").addClass("element-disabled");
+
+        $("#closeprojbutton").addClass("element-disabled");
+        $("#projinfobutton").addClass("element-disabled");
+        $("#loginbutton").addClass("element-disabled");
+        $("#settingsbutton").addClass("element-disabled");
+        $("#projstartbutton").addClass("element-disabled");
+
+        $("#proj-files-ul").addClass("element-disabled");
+        //$("#file-chosen-kw-ul").addClass("element-disabled");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -1081,6 +1980,18 @@ function toggleViewMode(mode) {
         setFooterBtnValue("editC");
         setViewButtonSets("editC");
 
+        $("#addfilebutton").addClass("element-disabled");
+        $("#saveprojbutton").addClass("element-disabled");
+
+        $("#closeprojbutton").addClass("element-disabled");
+        $("#projinfobutton").addClass("element-disabled");
+        $("#loginbutton").addClass("element-disabled");
+        $("#settingsbutton").addClass("element-disabled");
+        $("#projstartbutton").addClass("element-disabled");
+
+        $("#proj-files-ul").addClass("element-disabled");
+        //$("#file-chosen-kw-ul").addClass("element-disabled");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -1098,6 +2009,9 @@ function toggleViewMode(mode) {
     else if (mode === 5) {
         setFooterBtnValue("login");
         setViewButtonSets("login");
+
+        $("#addfilebutton").addClass("element-disabled");
+        $("#saveprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
@@ -1123,6 +2037,9 @@ function toggleViewMode(mode) {
     else if (mode === 6) {
         setFooterBtnValue("register");
         setViewButtonSets("register");
+
+        $("#addfilebutton").addClass("element-disabled");
+        $("#saveprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
@@ -1152,6 +2069,9 @@ function toggleViewMode(mode) {
         setFooterBtnValue("settings");
         setViewButtonSets("settings");
 
+        $("#addfilebutton").addClass("element-disabled");
+        $("#saveprojbutton").addClass("element-disabled");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -1161,9 +2081,6 @@ function toggleViewMode(mode) {
         $("#settings-div").addClass("is-shown");
         $("#information-div").removeClass("is-shown");
         $("#create-proj-div").removeClass("is-shown");
-
-        $("#app-lang-selector").val(null).trigger("change");
-        $("#kw-list-available-choose").val(null).trigger("change");
     }
     else if (mode === 8) { //CURRENTLY NOT USED!
         $(".w3-button").toggleClass("element-disabled");
@@ -1188,6 +2105,9 @@ function toggleViewMode(mode) {
         setFooterBtnValue("information");
         setViewButtonSets("information");
 
+        $("#addfilebutton").addClass("element-disabled");
+        $("#saveprojbutton").addClass("element-disabled");
+
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
         $("#edita-div").removeClass("is-shown");
@@ -1211,11 +2131,17 @@ function toggleViewMode(mode) {
         $("#settings-div").removeClass("is-shown");
         $("#information-div").removeClass("is-shown");
         $("#create-proj-div").addClass("is-shown");
+
+        $("#new-proj-create-input").val("");
+        $("#create-proj-error").val("");
     }
     else if (mode === 14){
         //forgot password
         setFooterBtnValue("forgotPW");
         setViewButtonSets("forgotPW");
+
+        $("#addfilebutton").addClass("element-disabled");
+        $("#saveprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
@@ -1289,6 +2215,7 @@ function updateFileQueue(files) {
 */
 
 function clearElements() {
+    logger.debug("clearElements");
     $("#proj-files-ul").empty();
     $("#proj-notes-ul").empty();
     $("#file-chosen-kw-ul").empty();
@@ -1312,6 +2239,7 @@ function clearElements() {
 }
 
 function addFilesPrompt(project_name) {
+    logger.debug("addFilesPrompt");
     var docpath = remote.app.getPath('documents');
     var options = {
         title: i18n.__('open-file-prompt-window-title'),
@@ -1364,107 +2292,23 @@ if (enable_onclicks) {
     }
 }
 
-///NEEDS UPDATE
 /* Turns .word with .censored class into " **** " */
 function removeCensored() {
+    logger.debug("removeCensored");
     //Section A
-    $("#secAcontent .censored").each(function (i) {
+    $("#preview-preview-A .secA-Q-allA .censored").each(function (i) {
         $(this).text("*****");
     });
     //Section B
-    $("#secBcontent .censored").each(function (i) {
+    $("#preview-preview-B .secB-Q-allA .censored").each(function (i) {
         $(this).text("*****");
     });
     //Section C
 
-    $("#secCtext-content .censored").each(function (i) {
+    $("#preview-preview-C .secC-Q-allA .censored").each(function (i) {
         $(this).text("*****");
     });
 
-}
-
-// Return array of string values, or NULL if CSV string not well formed.
-function CSVtoArray(text) {
-    var re_valid = /^\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*(?:,\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*)*$/;
-    var re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
-    // Return NULL if input string is not well formed CSV string.
-    if (!re_valid.test(text)) {
-        return null;
-    }
-    var arr = [];                     // Initialize array to receive values.
-    text.replace(re_value, // "Walk" the string using replace with callback.
-        function (m0, m1, m2, m3) {
-            // Remove backslash from \' in single quoted values.
-            if (m1 !== undefined) arr.push(m1.replace(/\\'/g, "'"));
-            // Remove backslash from \" in double quoted values.
-            else if (m2 !== undefined) {
-                arr.push(m2.replace(/\\"/g, '"'));
-            }
-            else if (m3 !== undefined) {
-                arr.push(m3);
-            }
-            return ''; // Return empty string.
-        });
-    // Handle special case of empty last value.
-    if (/,\s*$/.test(text)) {
-        arr.push('');
-    }
-    return arr;
-}
-
-/* This function takes in raw data from read .csv file and turns it into arrays */
-function parseCSV2Array(csv) {
-    //console.log("RAW CSV DATA IN");
-    //console.log(csv);
-    var separators = ['\"\",\"\"', ',\"\"', '\"\"'];
-    var newlines = ['\r\n', '\n'];
-
-    //console.log(typeof (csv));
-    //var lines = csv.split("\n");
-    var lines = csv.split(new RegExp(newlines.join('|'), 'g'));
-    //console.log(JSON.stringify(lines[0]));
-
-    lines[0] = lines[0].substring(1, lines[0].length - 3);
-    //console.log(JSON.stringify(lines[0]));
-    lines[1] = lines[1].substring(1, lines[1].length - 3);
-    //console.log(JSON.stringify(lines[1]));
-    if (lines[2].length !== 0) {
-        lines[2] = lines[2].substring(1, lines[2].length - 3);
-    }
-
-    var headers = lines[0].split(new RegExp(separators.join('|'), 'g'));
-    var contents = lines[1].split(new RegExp(separators.join('|'), 'g'));
-    if (lines[2].length !== 0) {
-        var keys = lines[2].split(new RegExp(separators.join('|'), 'g'));
-    }
-    //console.log(">>>>>>>>>>>>>>>>>>>>>>>>HEADERS");
-    //console.log(headers);
-    //console.log(">>>>>>>>>>>>>>>>>>>>>>>>CONTENTS");
-    //console.log(contents);
-
-    var result = new Array(); //was Array(2)
-    var i = 0;
-    for (i = 0; i < 2; i++) {
-        result[i] = [];
-    }
-    if (lines[2].length !== 0) {
-        result[2] = [];
-    }
-
-    //result[0][0] = headers[0];
-    for (i = 0; i < headers.length; i++) {
-        result[0][i] = headers[i];
-    }
-    for (i = 0; i < contents.length; i++) {
-        result[1][i] = contents[i];
-    }
-    if (lines[2].length !== 0) {
-        for (i = 0; i < keys.length; i++) {
-            result[2][i] = keys[i];
-        }
-    }
-
-    return result;
 }
 
 ///NEEDS UPDATE
@@ -1532,24 +2376,25 @@ function updateKeywordsList() {
     }
 }
 
-///NEEDS UPDATE
 function updateCensoredList() {
-    $("#final-censoredwords-list").empty();
+    logger.debug("updateCensoredList");
+    $("#file-censored-A-ul").empty();
+    $("#file-censored-B-ul").empty();
+    $("#file-censored-C-ul").empty();
     //Section A
-    $("#secAcontent .censored").each(function (i) {
-        var to_appended = '<li class="list-censored-elem">' + $(this).text() + '</li>';
-        $("#final-censoredwords-list").append(to_appended);
+    $("#edit-A-orig-text .censored").each(function (i) {
+        var to_appended = '<li class="w3-display-container">' + $(this).text() + '</li>';
+        $("#file-censored-A-ul").append(to_appended);
     });
     //Section B
-    $("#secBcontent .censored").each(function (i) {
-        var to_appended = '<li class="list-censored-elem">' + $(this).text() + '</li>';
-        $("#final-censoredwords-list").append(to_appended);
+    $("#edit-B-orig-text .censored").each(function (i) {
+        var to_appended = '<li class="w3-display-container">' + $(this).text() + '</li>';
+        $("#file-censored-B-ul").append(to_appended);
     });
     //Section C
-
-    $("#secCtext-content .censored").each(function (i) {
-        var to_appended = '<li class="list-censored-elem">' + $(this).text() + '</li>';
-        $("#final-censoredwords-list").append(to_appended);
+    $("#edit-C-orig-text .censored").each(function (i) {
+        var to_appended = '<li class="w3-display-container">' + $(this).text() + '</li>';
+        $("#file-censored-C-ul").append(to_appended);
     });
 }
 
@@ -1600,74 +2445,55 @@ function paintEmAll(word, mode) {
 
 }
 
-///NEEDS UPDATE
-// SETTING UP SELECTING KEYWORDS
-function setupKeywordSelect(arr_l, keys_arr) {
-    $("#secAcontent").html(function (index, oldHtml) {
-        return oldHtml.replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
-    });
-    $("#secBcontent").html(function (index, oldHtml) {
-        return oldHtml.replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
-    });
-    for (var i = 1; i < (arr_l - 2); i++) {
-        var lineId = "#secC-Q" + i + "-cont";
-        //console.log(lineId);
-        $(lineId).html(function (index, oldHtml) {
-            return oldHtml.replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
-        });
-    }
+// SETTING UP SELECTING WORDS
+function setupCensorSelect() {
+    logger.debug("setupCensorSelect");
 
-    $(".word").on("click", function () {
+    $("#edit-A-edit-text .word").on("click", function () {
         //console.log($("#secBcontent").text());
-        var clicked = "";
-        if ($(this).hasClass("underlined")) {
-            $(this).toggleClass("underlined");
-            $(this).toggleClass("censored");
-            updateCensoredList();
-            paintEmAll($(this).text(), 1);
-            clicked = $(this).text().toLowerCase();
-            $("#aside-key-list li").each(function (i) {
-                //var index = $(this).index();
-
-                var text_cont = $(this).text();
-                if (text_cont === clicked) {
-                    $(this).remove();
-                }
-
-            });
-
-        }
-        else if ($(this).hasClass("censored")) {
+        var clicked = $(this).text();
+        logger.debug("CLIECKED: "+clicked);
+        if ($(this).hasClass("censored")) {
             $(this).removeClass("censored");
-            updateCensoredList();
-            //go through list that is at the side->
-            if (testKeywordList($(this).text())) { paintEmAll($(this).text(), 0); }
+            logger.debug("REMOVE censored");
         }
         else {
-            $(this).addClass("underlined");
-            paintEmAll($(this).text(), 0);
-            clicked = $(this).text().toLowerCase();
-            var found = testKeywordList(clicked);
-            console.log(found);
-            console.log(clicked);
-
-
-            if (!found) {
-                var to_appended = '<li class="list-keys-elem">' + clicked + '</li>';
-                $("#aside-key-list").append(to_appended);
-                updateKeywordsList();
-            }
+            $(this).addClass("censored");
+            logger.debug("ADDING censored");
         }
     });
-    if (keys_arr !== null) {
-        loadKeyWords(keys_arr);
-    }
-}
+    $("#edit-B-edit-text .word").on("click", function () {
+        //console.log($("#secBcontent").text());
+        var clicked = $(this).text();
+        logger.debug("CLIECKED: " + clicked);
+        if ($(this).hasClass("censored")) {
+            $(this).removeClass("censored");
+            logger.debug("REMOVE censored");
+        }
+        else {
+            $(this).addClass("censored");
+            logger.debug("ADDING censored");
+        }
+    });
+    $("#edit-C-edit-text .word").on("click", function () {
+        //console.log($("#secBcontent").text());
+        var clicked = $(this).text();
+        logger.debug("CLIECKED: " + clicked);
+        if ($(this).hasClass("censored")) {
+            $(this).removeClass("censored");
+            logger.debug("REMOVE censored");
+        }
+        else {
+            $(this).addClass("censored");
+            logger.debug("ADDING censored");
+        }
+    });
+        }
 
 ///NEEDS UPDATE
 // make array that will be then used to make new csv file
 function parse_content2Array() {
-
+    logger.debug("parse_content2Array");
     var orig_data = window.currentFileContent;
 
     var sectionA_text = $("#secAcontent").text();
@@ -1709,152 +2535,4 @@ function setupTranslations() {
 
     /* Main-window */
     $("#titlebar-appname").text("DECSV {Alpha version " + remote.app.getVersion() + "}");
-}
-
-///NEEDS UPDATE
-function readFile(file) {
-
-    /* check file-extension and name */
-    var output_data = [];
-    var file_ext = file.split('.').pop();
-    var file_name = file.split('/').pop(); //THIS IS WRONG!!!! \\ is right
-
-    //console.log("################################################");
-    //console.log(file_ext);
-    //console.log(file);
-
-
-
-    /* file has .xlsx or .xls extension */
-    if (file_ext === 'xlsx' || file_ext === 'xls') {
-
-        /* xlsx-js */
-        try {
-            var workbook = XLSX.readFile(file);
-        }
-        catch (err) {
-            logger.error("Error opening .xlsx or .xls file: "+ err.message);
-            return;
-        }
-        var first_sheet_name = workbook.SheetNames[0];
-        var worksheet = workbook.Sheets[first_sheet_name];
-
-        var csv_sheet = XLSX.utils.sheet_to_csv(worksheet);
-        //console.log("EXCEL TO CSV");
-        //console.log(JSON.stringify(csv_sheet));
-
-        /* xlsx-js continue... */
-        var newlines = ['\r\n', '\n'];
-        var lines = csv_sheet.split(new RegExp(newlines.join('|'), 'g'));
-
-        var headers = CSVtoArray(lines[0]);
-        var contents = CSVtoArray(lines[1]);
-
-        var keys = null;
-
-        if (lines[2].length !== 0){
-            keys = CSVtoArray(lines[2]);
-            output_data[2] = keys;
-        }
-        //console.log(headers);
-        //console.log(contents);
-
-        output_data[0] = headers;
-        output_data[1] = contents;
-        //console.log("setting data");
-        window.currentFileContent = output_data;
-            
-        keys = showQuizData(output_data); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        setupKeywordSelect(output_data[1].length, keys);// ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    }
-
-    /* file has .csv extension */
-    else if (file_ext === 'csv') {
-
-        /*Node.js fs*/
-        fs.readFile(file, 'utf8', function (err, data) {
-            if (err) {
-                logger.error("Error opening .csv file: "+ err.message);
-                return;
-            }
-            //console.log("DATA FROM READFILE");
-            //console.log(JSON.stringify(data));
-            //console.log(data);
-
-            
-            //console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>OMAN TULOSTUS");
-            var output_data = parseCSV2Array(data);
-            //console.log("setting data");
-            window.currentFileContent = output_data;
-            var keys = null;
-            keys = showQuizData(output_data); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            setupKeywordSelect(output_data[1].length, keys); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        });
-
-    }
-    else {
-        //what lies beyond this land...
-    }
-}
-
-//////////////////////////////////////////////////////////// FUNCTIONS FOR WRITING DATA INTO FILES
-
-/* This function takes in data that is in arrays, and then parses and writes it
-into new .csv files */
-function writeFile_csv(file, dataArray) {
-    //writing... Array[0-1][0-x]
-
-    //console.log("Parsing content for saving...");
-    logger.info("Starting to parse array into proper csv-format...");
-
-    var temp = "";
-
-    //parse arrays to be like .csv file's content
-    for (var i = 0; i < dataArray.length; i++) {
-        if ((dataArray[2].length !== 0) && (i === 2)) {//
-            temp = temp + "\"\"";//
-        }//
-        else {//
-            temp = temp + "\"";
-        }//
-        //console.log(i);
-        //console.log(temp);
-        for (var j = 0; j < dataArray[i].length; j++) {
-            //console.log(j);
-            //console.log(temp);
-            if (j === 0) {
-                if ((dataArray[2].length !== 0) && (i === 2)){//
-                    temp = temp + dataArray[i][j] + "\"\"";//
-                }//
-                else {//
-                    temp = temp + dataArray[i][j];
-                }//
-
-            }
-            else {
-                var input = dataArray[i][j];
-                temp = temp + ",\"\"" + input + "\"\"";
-            }
-        }
-        temp = temp + "\"\r\n";
-    }
-
-    //testlogs...
-    //console.log(file);
-    //console.log(encoding);
-    //console.log(temp);
-    content = temp;
-
-    //overwriting if same name at the moment!... naah. fs-dialog prompts about this before we even GET here :P
-    fs.writeFile(file, content, "utf8", function (msg) {
-        if (!msg) {
-            //console.log(msg);
-            //console.log("The file has been successfully saved");
-            logger.info("File successfully saved!");
-            return;
-        }
-
-        logger.error("Error while trying to save a new file!");
-    });
 }

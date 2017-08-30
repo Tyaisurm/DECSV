@@ -65,7 +65,7 @@
         </div>
         <div id="saveprojbutton" class="w3-bar-item w3-button no-display">
             <img draggable="false" id="nav-save-icon" class="navbar-image" src="../ui_icons/appbar.save.png" />
-            <p class="navbar-text">Save Project</p>
+            <p class="navbar-text">{disabled}</p>
         </div>
         <div id="closeprojbutton" class="w3-bar-item w3-button no-display">
             <img draggable="false" id="nav-closeproj-icon" class="navbar-image" src="../ui_icons/appbar.close-dark.png" />
@@ -100,7 +100,7 @@
             <p style="font-size:11px;">File Contents</p>
         </div>
         <div class="w3-rest w3-gray w3-container">
-            <p style="overflow-x:hidden;text-overflow:ellipsis;white-space:nowrap; font-size:11px;">Current File: NONE</p>
+            <p id="preview-cur-file-name" style="overflow-x:hidden;text-overflow:ellipsis;white-space:nowrap; font-size:11px;">Current File: NONE</p>
         </div>
     </div>
 
@@ -114,15 +114,7 @@
                 </div>
                 <div style="flex:1;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
                     <ul id="proj-files-ul" class="w3-ul">
-                        <li class="w3-green w3-hover-blue w3-display-container">File1.csv</li>
-                        <li class="w3-green w3-hover-blue w3-display-container">File2.csv</li>
-                        <li class="w3-green w3-hover-blue w3-display-container">File3.csv</li>
-                        <li class="w3-yellow w3-hover-blue w3-display-container">File4.csv</li>
-                        <li class="w3-hover-blue w3-display-container">File5.csv</li>
-                        <li class="w3-hover-blue w3-display-container">File6.csv</li>
-                        <li class="w3-hover-blue w3-display-container">File7.csv</li>
-                        <li class="w3-hover-blue w3-display-container">File8.csv</li>
-                        <li class="w3-hover-blue w3-display-container">File9.csv</li>
+                        
                     </ul>
                 </div>
             </div>
@@ -145,8 +137,8 @@
 
             <div style="height:10%;font-size:smaller;margin:auto;" class="section-half">
                 <div class="w3-bar">
-                    <p class="w3-bar-item" style="margin: 0; padding-bottom:0;">Submission ID: 13</p>
-                    <p class="w3-bar-item" style="margin: 0; padding-top:0;">Submission Date: 05.07.2017 15:41</p>
+                    <p id="preview-subid" class="w3-bar-item" style="margin: 0; padding-bottom:0;">Submission ID:</p>
+                    <p id="preview-subdate" class="w3-bar-item" style="margin: 0; padding-top:0;">Submission Date:</p>
                 </div>
             </div>
             <div style="height:10%;" class="section-half">
@@ -156,17 +148,17 @@
 
                     <select id="KW-selector">
                         <option></option>
-                        <optgroup label="Group 1">
-                            <option value="testvalue1">Test Option 1</option>
-                            <option value="testvalue2">Test Option 2</option>
+                        <optgroup label="en-basic">
+                            <option value="en-basic-1">EN_BASIC_TEST_1</option>
+                            <option value="en-basic-2">EN_BASIC_TEST_2</option>
+                            <option value="en-basic-3">EN_BASIC_TEST_3</option>
+                            <option value="en-basic-4">EN_BASIC_TEST_4</option>
                         </optgroup>
-                        <optgroup label="Group 2">
-                            <option value="testvalue3">Test Option 3</option>
-                            <option value="testvalue4">Test Option 4</option>
-                        </optgroup>
-                        <optgroup label="Group 3">
-                            <option value="testvalue5">Test Option THIS ONE IS TOO LONG TO FIT INTO SINGLE LINE SO IT WRAPS INTO MULTIPLE</option>
-                            <option value="testvalue6">This is short</option>
+                        <optgroup label="fi-basic">
+                            <option value="fi-basic-1">FI_PERUS_TESTI_1</option>
+                            <option value="fi-basic-2">FI_PERUS_TESTI_2</option>
+                            <option value="fi-basic-3">FI_PERUS_TESTI_3</option>
+                            <option value="fi-basic-4">FI_PERUS_TESTI_4</option>
                         </optgroup>
                     </select>
 
@@ -191,22 +183,19 @@
                     <div id="a-censored-words">
                         <p style="font-size: smaller;">Section A</p>
                         <ul id="file-censored-A-ul" class="w3-ul">
-                            <li class="w3-display-container">Lorem</li>
-                            <li class="w3-display-container">Ipsum</li>
+
                         </ul>
                     </div>
                     <div id="b-censored-words">
                         <p style="font-size: smaller;">Section B</p>
                         <ul id="file-censored-B-ul" class="w3-ul">
-                            <li class="w3-display-container">Lorem</li>
-                            <li class="w3-display-container">Ipsum</li>
+                            
                         </ul>
                     </div>
                     <div id="c-censored-words">
                         <p style="font-size: smaller;">Section C</p>
                         <ul id="file-censored-C-ul" class="w3-ul">
-                            <li class="w3-display-container">Lorem</li>
-                            <li class="w3-display-container">Ipsum</li>
+                            
                         </ul>
                     </div>
                 </div>
@@ -230,21 +219,21 @@
             <div class="w3-rest w3-container w3-display-container"style="min-height:68.28px;">
                 <div class="w3-display-left">
                     <p class="">
-                        <button id="footer-nav-btn1" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display">Button 1</button>
-                        <button id="footer-nav-btn2" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display">Button 2</button>
+                        <button id="footer-nav-btn1" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display"></button>
+                        <button id="footer-nav-btn2" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display"></button>
 
                     </p>
                 </div>
                 <div class="w3-display-middle">
                     <p class="">
-                        <button id="footer-nav-btn3" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display">Button 3</button>
-                        <button id="footer-nav-btn4" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display">Button 4</button>
+                        <button id="footer-nav-btn3" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display"></button>
+                        <button id="footer-nav-btn4" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display"></button>
                     </p>
                 </div>
                 <div class="w3-display-right">
                     <p class="">
-                        <button id="footer-nav-btn5" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display">Button 5</button>
-                        <button id="footer-nav-btn6" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display">Button 6</button>
+                        <button id="footer-nav-btn5" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display"></button>
+                        <button id="footer-nav-btn6" class="w3-button w3-blue w3-round-large slipps-footer-btn no-display"></button>
                     </p>
                 </div>
             </div>
