@@ -95,7 +95,7 @@ document.getElementById("win-maximize-restore-icon").onclick = function () {
     }
 }
 document.getElementById("win-close-icon").onclick = function () {
-    logger.debug("win-close icon/button");
+    logger.debug("win-close icon/button"); //NEEDS UPDATE!!!!!!
     $('#proj-files-ul li.w3-yellow').each(function (i) {
         var done = ($(this).attr('data-done') === "true");
 
@@ -375,7 +375,7 @@ document.getElementById("closeprojbutton").onclick = function () {
                 var notes = [];
                 $("#proj-notes-ul li").each(function (i) {
                     var text = $(this).text();
-                    notes.push(text);
+                    notes.push(text); // NEED TO REMOVE SPAN-ELEMENTS FIRST!!!!
                 });
                 $("#preview-third-1").addClass("no-display");
                 $("#preview-third-2").addClass("no-display");
@@ -543,8 +543,29 @@ document.getElementById("footer-nav-btn1").onclick = function () {//
     var value = $(this).val();
     logger.debug("btn1: " + value);
     if (value === "preview"){
-        //$(this).text("Previous file");
+        //$(this).text("Previous file"); 
         logger.debug("Moving to previous file");
+        var currentlyselected = null;
+        var previous = null;
+        $("#proj-files-ul li").each(function (i) {
+            if ($(this).hasClass("w3-yellow")) {
+                if (previous === null){
+                    // already in first one
+                    //logger.debug("ALREADY IN FIRST ONE!");
+                    return false;
+                }
+                else {
+                    $(previous).trigger('click');
+                    //logger.debug("switching files...");
+                    return false;
+                }
+            }
+            else {
+                //logger.debug("moving on...");
+                previous = this;
+            }
+            // do sumthing
+        });
     }
     //preview move to previous file
 }
@@ -709,7 +730,26 @@ document.getElementById("footer-nav-btn6").onclick = function () {//
     
     if (value === "preview") {
         logger.debug("Moving to next file");
-        // Move to next file    QWERTY
+        var currentlyselected = null;
+        $("#proj-files-ul li").each(function (i) {
+            if ($(this).hasClass("w3-yellow")) {
+                currentlyselected = this;
+                //logger.debug("FOUND CURRENT! moving on...");
+            }
+            else {
+                if (currentlyselected === null) {
+                    // moving on
+                    //logger.debug("moving on...");
+                }
+                else{
+                    $(this).trigger('click');
+                    //logger.debug("switching files...");
+                    return false;
+                }
+            }
+            // do sumthing
+        });
+        // Move to next file
     }
     else if (value === "login") {
         toggleViewMode(14);

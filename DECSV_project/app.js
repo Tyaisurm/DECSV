@@ -629,7 +629,7 @@ autoUpdater.on('update-downloaded', function (info){//ev, relNot, relNam, relDat
         message: "New version "+ver+" is ready to be installed",
         detail: "Would you like to close the application and update?\r\n\r\nVersion: " + ver + "\r\nRelease date: " + new Date(relDat) +"\r\n"+relNote,
         buttons: ["yes", "no"]
-    }; 
+    }; // DATE NEED TO BE REFORMATTED, AND RELNOTE SHOULD BE PARSED (CONTAINS HTML)
 
     dialog.showMessageBox(mainWindow, options, function (index) {
         if (index === 0) {
