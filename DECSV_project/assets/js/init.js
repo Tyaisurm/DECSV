@@ -193,7 +193,7 @@ document.getElementById("check-app-updates-button").onclick = function () {
         else if (arg[0] === 4) {
             // downloading...
             var progressObj = arg[1];
-            var download_data = "Downloading "+progressObj.transferred + "/" + progressObj.total + " at " + (progressObj.bytesPerSecond / 1000) + " kbps";
+            var download_data = "Downloading " + (Math.round((progressObj.transferred / 1000000) * 100) / 100) + "MB/" + (Math.round((progressObj.total / 1000000) * 100) / 100) + "MB at " + (Math.round((progressObj.bytesPerSecond / 1000) * 100) / 100) + " kBps";
             var download_percent = progressObj.percent;
 
             if (arg[1] = 100) {
@@ -245,21 +245,23 @@ document.getElementById("addfilebutton").onclick = function () {
     addFilesPrompt(proj_name);
 }
 
-document.getElementById("projinfobutton").onclick = function () {
+document.getElementById("projinfobutton").onclick = function () {//
     logger.debug("projinfo button");
-    $("#proj-info-files-ul").empty();
-    $("#proj-info-files-ul").html($("#proj-files-ul").html());
-    $("#proj-info-files-ul li").removeAttr("onclick");
-    $("#proj-info-files-ul li").removeAttr("style");
-    $("#proj-info-files-ul li").removeAttr("data-temp");
-    $("#proj-info-files-ul li").removeAttr("data-done");
-    $("#proj-info-files-ul li").removeAttr("onmouseover");
-    $("#proj-info-files-ul li").removeAttr("onmouseout");
-    var value = $("#footer-nav-btn4").val();
+    
+    var value = $("#footer-nav-btn3").val();
     if (value === "information"){
         // do NOTHING
     }
     else {
+        $("#proj-info-files-ul").empty();
+        $("#proj-info-files-ul").html($("#proj-files-ul").html());
+        $("#proj-info-files-ul li").removeAttr("onclick");
+        $("#proj-info-files-ul li").removeAttr("style");
+        $("#proj-info-files-ul li").removeAttr("data-temp");
+        $("#proj-info-files-ul li").removeAttr("data-done");
+        $("#proj-info-files-ul li").removeAttr("onmouseover");
+        $("#proj-info-files-ul li").removeAttr("onmouseout");
+
         var docpath = remote.app.getPath('documents');
         var proj_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + window.currentProject + '\\');
         var options = {
@@ -326,7 +328,7 @@ document.getElementById("projinfobutton").onclick = function () {
     toggleViewMode(10);
 }
 
-document.getElementById("projstartbutton").onclick = function () {
+document.getElementById("projstartbutton").onclick = function () {//
     logger.debug("projectstart button");
     toggleViewMode(1);
     toggleViewMode(9);
@@ -420,8 +422,13 @@ document.getElementById("back-to-start-button").onclick = function () {
 
 document.getElementById("loginbutton").onclick = function () {
     logger.debug("login button");
-    toggleViewMode(5);
-    toggleViewMode(10);
+    if (($('#footer-nav-btn3').val() === "login") || ($('#footer-nav-btn3').val() === "register") || ($('#footer-nav-btn3').val() === "forgotPW")){
+        // do nothing. already in login.
+    }
+    else {
+        toggleViewMode(5);
+        toggleViewMode(10);
+    }
 }
 
 
@@ -532,11 +539,12 @@ tionStart == "number")
 
 /* Index div footer */
 
-document.getElementById("footer-nav-btn1").onclick = function () {
+document.getElementById("footer-nav-btn1").onclick = function () {//
     var value = $(this).val();
     logger.debug("btn1: " + value);
     if (value === "preview"){
-        $(this).text("Previous file");
+        //$(this).text("Previous file");
+        logger.debug("Moving to previous file");
     }
     //preview move to previous file
 }
@@ -545,7 +553,7 @@ document.getElementById("footer-nav-btn2").onclick = function () {
     logger.debug("btn2: " +value);
 }
 
-document.getElementById("footer-nav-btn3").onclick = function () {
+document.getElementById("footer-nav-btn3").onclick = function () {//
     var value = $(this).val();
     logger.debug("btn3: " + value);
     //create project createProjAsync();
@@ -577,9 +585,18 @@ document.getElementById("footer-nav-btn3").onclick = function () {
     }
     else if (value === "login") {
         //login
+        logger.debug("Now we would try to log in...");
+        logger.debug("Username: " + $("#login-username").val());
+        logger.debug("Password: " + $("#login-pass").val());
     }
     else if (value === "register") {
         //register
+        logger.debug("Now we would try to register...");
+        logger.debug("Username: " + $("#register-username").val());
+        logger.debug("Email: " + $("#register-email").val());
+        logger.debug("Real name: " + $("#register-realname").val());
+        logger.debug("Password: " + $("#register-pass").val());
+        logger.debug("Retype Password: " + $("#register-retype-pass").val());
     }
     else if (value === "settings") {
         var options = {
@@ -595,6 +612,7 @@ document.getElementById("footer-nav-btn3").onclick = function () {
                 saveSettings();
             }
             else {
+                //
             }
         });
         //save settings
@@ -607,6 +625,8 @@ s    }
     }
     else if (value === "forgotPW") {
         //
+        logger.debug("Now we would try to ask for password change...");
+        logger.debug("Email: " + $("#forgot-email").val());
     }
 }
 document.getElementById("footer-nav-btn4").onclick = function () {
@@ -647,7 +667,7 @@ document.getElementById("footer-nav-btn4").onclick = function () {
         updateSettingsUI();
         // revert changes in settings
     }
-    else if (value === "forgotPW") {
+    else if (value === "forgotPW") { 
 
         toggleViewMode(5);
         toggleViewMode(10);
@@ -656,7 +676,7 @@ document.getElementById("footer-nav-btn4").onclick = function () {
 }
 
 document.getElementById("footer-nav-btn5").onclick = function () {
-    var value = $(this).val();
+    var value = $(this).val(); 
     logger.debug("btn5: " + value);
 
     if (value === "preview") {
@@ -683,12 +703,13 @@ document.getElementById("footer-nav-btn5").onclick = function () {
     }
     
 }
-document.getElementById("footer-nav-btn6").onclick = function () {
+document.getElementById("footer-nav-btn6").onclick = function () {//
     var value = $(this).val();
     logger.debug("btn6: " + value);
     
     if (value === "preview") {
-        // Move to next file
+        logger.debug("Moving to next file");
+        // Move to next file    QWERTY
     }
     else if (value === "login") {
         toggleViewMode(14);
@@ -1905,7 +1926,7 @@ function toggleViewMode(mode) {
         }
         else {
             $("#proj-files-ul").removeClass("element-disabled");
-            $("#file-chosen-kw-ul").addClass("element-disabled");
+            $("#file-chosen-kw-ul").removeClass("element-disabled");
         }
 
         $("#start-div").removeClass("is-shown");
@@ -2029,10 +2050,8 @@ function toggleViewMode(mode) {
         $("#information-div").removeClass("is-shown");
         $("#create-proj-div").removeClass("is-shown");
 
-        $("#loginchoices_1").removeClass("no-display");
-        $("#loginchoices_2").removeClass("no-display");
-        $("#registerchoices_1").addClass("no-display");
-        $("#registerchoices_2").addClass("no-display");
+        $("#loginchoices").removeClass("no-display");
+        $("#registerchoices").addClass("no-display");
 
         $("#login-username").val("");
         $("#login-pass").val("");
@@ -2057,15 +2076,13 @@ function toggleViewMode(mode) {
         $("#information-div").removeClass("is-shown");
         $("#create-proj-div").removeClass("is-shown");
 
-        $("#loginchoices_1").addClass("no-display");
-        $("#loginchoices_2").removeClass("no-display");
-        $("#registerchoices_1").removeClass("no-display");
-        $("#registerchoices_2").removeClass("no-display");
+        $("#loginchoices").addClass("no-display");
+        $("#registerchoices").removeClass("no-display");
 
         $("#register-username").val("");
         $("#register-email").val("");
         $("#register-realname").val("");
-        $("#login-pass").val("");
+        $("#register-pass").val("");
         $("#register-retype-pass").val("");
         $("#login-register-title").text("Register");
 
@@ -2159,10 +2176,8 @@ function toggleViewMode(mode) {
         $("#information-div").removeClass("is-shown");
         $("#create-proj-div").removeClass("is-shown");
 
-        $("#loginchoices_1").addClass("no-display");
-        $("#loginchoices_2").addClass("no-display");
-        $("#registerchoices_1").addClass("no-display");
-        $("#registerchoices_2").addClass("no-display");
+        $("#loginchoices").addClass("no-display");
+        $("#registerchoices").addClass("no-display");
 
         $("#forgot_password_choices").removeClass("no-display");
         $("#forgot-email").val("");
@@ -2454,6 +2469,9 @@ function paintEmAll(word, mode) {
 // SETTING UP SELECTING WORDS
 function setupCensorSelect() {
     logger.debug("setupCensorSelect");
+    $("#edit-A-edit-text .word").off("click");
+    $("#edit-B-edit-text .word").off("click");
+    $("#edit-C-edit-text .word").off("click");
 
     $("#edit-A-edit-text .word").on("click", function () {
         //console.log($("#secBcontent").text());

@@ -629,9 +629,9 @@ autoUpdater.on('update-downloaded', function (info){//ev, relNot, relNam, relDat
         message: "New version "+ver+" is ready to be installed",
         detail: "Would you like to close the application and update?\r\n\r\nVersion: " + ver + "\r\nRelease date: " + new Date(relDat) +"\r\n"+relNote,
         buttons: ["yes", "no"]
-    };
+    }; 
 
-    dialog.showMessageBox(options, function (index) {
+    dialog.showMessageBox(mainWindow, options, function (index) {
         if (index === 0) {
             app.showExitPrompt = false;
             autoUpdater.quitAndInstall();
@@ -857,7 +857,7 @@ function transformSrc2Temp(proj_name, event) {
                         }
                         secChtml = secChtml + '</div>';
                         logger.debug("created question lines for C section");
-                        console.log(secChtml);
+                        //console.log(secChtml);
                         // REMEMBER TO TURN \" and \' into regular " and ' when showing the data!!!!!!
                         temp_store.set("a", elemtextA);
                         temp_store.set("b", elemtextB);
