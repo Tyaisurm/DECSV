@@ -63,9 +63,9 @@
             <img draggable="false" id="nav-proj-start-icon" class="navbar-image" src="../ui_icons/appbar.edit.box.png" />
             <p class="navbar-text">Edit</p>
         </div>
-        <div id="saveprojbutton" class="w3-bar-item w3-button no-display">
-            <img draggable="false" id="nav-save-icon" class="navbar-image" src="../ui_icons/appbar.save.png" />
-            <p class="navbar-text">{disabled}</p>
+        <div id="exportprojbutton" class="w3-bar-item w3-button no-display">
+            <img draggable="false" id="nav-export-icon" class="navbar-image" src="../ui_icons/appbar.page.arrow.png" />
+            <p class="navbar-text">Export</p>
         </div>
         <div id="closeprojbutton" class="w3-bar-item w3-button no-display">
             <img draggable="false" id="nav-closeproj-icon" class="navbar-image" src="../ui_icons/appbar.close-dark.png" />
@@ -82,7 +82,7 @@
             <p id="" class="navbar-text">Back to start</p>
         </div>
 
-        <div id="loginbutton" class="w3-bar-item w3-button w3-right">
+        <div id="loginbutton" class="w3-bar-item w3-button w3-right w3-disabled">
             <img draggable="false" id="nav-login-icon" class="navbar-image" src="../ui_icons/appbar.people.png" />
             <p class="navbar-text">Log in</p>
         </div>
@@ -123,6 +123,14 @@
                 <div style="height:38.28px;" class="w3-bar">
                     <p style="margin-top:0;" class="w3-bar-item w3-left">Project Notes:</p>
                 </div>
+
+                <div class="w3-bar">
+                    <input class="w3-input w3-bar-item" style="padding: 8px; width:80%; border: 1px solid black;" id="proj-note-input-field" placeholder="Type notes here" />
+                    <div class="w3-bar-item w3-button" style="padding: 0; width: 20%; height: 40px;" id="proj-note-input-btn">
+                        <img draggable="false" id="proj-note-add-icon" class="" src="../ui_icons/appbar.add.png" style="margin: 0; height: 40px;" />
+                    </div>
+                </div>
+
                 <div style="flex:1;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
                     <ul id="proj-notes-ul" class="w3-ul">
 

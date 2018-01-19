@@ -1,18 +1,20 @@
 ﻿const remote = require('electron').remote;
 const { ipcRenderer } = require('electron')
-const BrowserWindow = remote.BrowserWindow;
+//const BrowserWindow = remote.BrowserWindow;
 const dialog = remote.dialog;
 const firstWindow = remote.getCurrentWindow();
 const fs = require('fs');
-const http = require("http");
-const shell = remote.shell;
+//const http = require("http");
+//const shell = remote.shell;
 const autoUpdater = remote.autoUpdater;
 const path = require('path');
-const url = require('url');
+//const url = require('url');
 const select2 = require('select2');
 const Store = require('electron-store');
 
-
+$.fn.ignore = function (sel) {
+    return this.clone().find(sel || ">*").remove().end();
+};
 /* This sets up the language that ALL select2 select-fields will use */
 $.fn.select2.amd.define('select2/i18n/current_lang', [], function () {
     // Current language $("#open-file-prompt-text").text(i18n.__('open-files'));
@@ -96,7 +98,9 @@ document.getElementById("win-maximize-restore-icon").onclick = function () {
 }
 document.getElementById("win-close-icon").onclick = function () {
     logger.debug("win-close icon/button"); //NEEDS UPDATE!!!!!!
+    var no_yellows = true;
     $('#proj-files-ul li.w3-yellow').each(function (i) {
+        no_yellows = false;
         var done = ($(this).attr('data-done') === "true");
 
         $("#edit-A-orig-text .secA-Q").empty();
@@ -121,9 +125,22 @@ document.getElementById("win-close-icon").onclick = function () {
             var text = $(this).text();
             notes.push(text);
         });
-
+        
         saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
     });
+    if (no_yellows) {
+        var notes = [];
+        $("#proj-notes-ul li").each(function (i) {
+            var text = $(this).ignore("span").text();
+            notes.push(text);
+        });
+        var dataA = "";
+        var dataB = "";
+        var dataC = "";
+        var dataKW = "";
+        var done = "";
+        saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
+    }
     firstWindow.close();
 }
 document.getElementById('win-about-icon').onclick = function () {
@@ -133,6 +150,18 @@ document.getElementById('win-about-icon').onclick = function () {
 /////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////// WINDOW VIEW BUTTONS FUNCTIONALITY
+
+document.getElementById("proj-note-input-btn").onclick = function () {
+    logger.debug("proj-note-input-btn button");
+    if ($("#proj-note-input-field").val().trim().length < 1){
+        //do nothing
+    }
+    else {
+        logger.info("adding project note: " + $("#proj-note-input-field").val().trim());
+        addProjNote($("#proj-note-input-field").val().trim());
+        $("#proj-note-input-field").val("");
+    }
+}
 
 /* Top navigation bar */
 
@@ -334,9 +363,25 @@ document.getElementById("projstartbutton").onclick = function () {//
     toggleViewMode(9);
 }
 
-document.getElementById("saveprojbutton").onclick = function () {
-    logger.debug("saveproject button");
-    //save project
+document.getElementById("exportprojbutton").onclick = function () {
+    logger.debug("exportproject button");
+    //export "done" marked project files
+    var options = {
+        type: 'info',
+        title: "Exporting files",
+        message: "Files marked 'DONE' are going to be exported into .csv format.",
+        detail: "Are you sure? Older files with same name will be overwritten!",
+        buttons: [i18n.__('conf-yes', true), i18n.__('conf-no', true)]
+    };
+
+    dialog.showMessageBox(firstWindow, options, function (index) {
+        if (index === 0) {
+            //
+            logger.debug("exporting.......");
+            // need to disable ALL controls from user!!!
+        }
+    });
+
 }
 
 document.getElementById("closeprojbutton").onclick = function () {
@@ -351,8 +396,10 @@ document.getElementById("closeprojbutton").onclick = function () {
 
     dialog.showMessageBox(firstWindow, options, function (index) {
         if (index === 0) {
+            var no_yellows = true;
             //save before closing
             $('#proj-files-ul li.w3-yellow').each(function (i) {
+                no_yellows = false;
                 var done = ($(this).attr('data-done') === "true");
 
                 $("#edit-A-orig-text .secA-Q").empty();
@@ -374,8 +421,8 @@ document.getElementById("closeprojbutton").onclick = function () {
 
                 var notes = [];
                 $("#proj-notes-ul li").each(function (i) {
-                    var text = $(this).text();
-                    notes.push(text); // NEED TO REMOVE SPAN-ELEMENTS FIRST!!!!
+                    var text = $(this).ignore("span").text();
+                    notes.push(text);
                 });
                 $("#preview-third-1").addClass("no-display");
                 $("#preview-third-2").addClass("no-display");
@@ -383,13 +430,26 @@ document.getElementById("closeprojbutton").onclick = function () {
                 $("#preview-third-start").removeClass("no-display");
                 saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
             });
+            if (no_yellows) {
+                var notes = [];
+                $("#proj-notes-ul li").each(function (i) {
+                    var text = $(this).ignore("span").text();
+                    notes.push(text);
+                });
+                var dataA = "";
+                var dataB = "";
+                var dataC = "";
+                var dataKW = "";
+                var done = "";
+                saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
+            }
             //
             window.currentProject = undefined;
             window.currentFile = undefined;
             window.currentFileContent = undefined;
             setViewButtonSets("project-closed");
             clearElements();
-            $("#titlebar-appname").text("DECSV {Alpha version " + remote.app.getVersion() + "}")
+            $("#titlebar-appname").text("DECSV");// {Alpha version " + remote.app.getVersion() + "}")
             $("#preview-cur-file-name").text("Current file: NONE");
             $("#preview-subid").text("Submission ID:");
             $("#preview-subdate").text("Submission Date:");
@@ -420,8 +480,10 @@ document.getElementById("back-to-start-button").onclick = function () {
     toggleViewMode(10);
 }
 
-document.getElementById("loginbutton").onclick = function () {
+document.getElementById("loginbutton").onclick = function () { // DISABLED FOR NOW
     logger.debug("login button");
+    /*
+
     if (($('#footer-nav-btn3').val() === "login") || ($('#footer-nav-btn3').val() === "register") || ($('#footer-nav-btn3').val() === "forgotPW")){
         // do nothing. already in login.
     }
@@ -429,6 +491,7 @@ document.getElementById("loginbutton").onclick = function () {
         toggleViewMode(5);
         toggleViewMode(10);
     }
+    */
 }
 
 
@@ -467,7 +530,7 @@ document.getElementById("open-proj-button").onclick = function () {
                 else {
                     logger.debug("FAILED TO OPEN EXISTING PROJECT!");
                     logger.debug("REASON: " + opened_res[1]);
-                    $("#proj-open-error").text(open_res[1]);
+                    $("#proj-open-error").text(opened_res[1]);
                 }
                 return;
             }
@@ -637,7 +700,7 @@ document.getElementById("footer-nav-btn3").onclick = function () {//
             }
         });
         //save settings
-s    }
+    }
     else if (value === "create-proj") {
         logger.debug("new-proj-create-button");
         var project_name = $("#new-proj-create-input").val();
@@ -894,7 +957,7 @@ function setViewButtonSets(view) {
         $("#addfilebutton").removeClass("no-display");
         $("#projinfobutton").removeClass("no-display");
         $("#projstartbutton").removeClass("no-display");
-        $("#saveprojbutton").removeClass("no-display");
+        $("#exportprojbutton").removeClass("no-display");
         $("#closeprojbutton").removeClass("no-display");
         $("#back-to-start-button").addClass("no-display");
     }
@@ -902,7 +965,7 @@ function setViewButtonSets(view) {
         $("#addfilebutton").addClass("no-display");
         $("#projinfobutton").addClass("no-display");
         $("#projstartbutton").addClass("no-display");
-        $("#saveprojbutton").addClass("no-display");
+        $("#exportprojbutton").addClass("no-display");
         $("#closeprojbutton").addClass("no-display");
         $("#back-to-start-button").removeClass("no-display");
     }
@@ -1113,7 +1176,7 @@ function openAndViewProject(proj_name) {
                     if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp'))) {
                         if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\' + proj_name + '.json'))) {
 
-                            $("#titlebar-appname").text("DECSV {Alpha version " + remote.app.getVersion() + "}" + " - " + proj_name);
+                            $("#titlebar-appname").text("DECSV" + " - " + proj_name);// {Alpha version " + remote.app.getVersion() + "}" + " - " + proj_name);
                             var open_options = {
                                 name: proj_name,
                                 cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name)
@@ -1337,7 +1400,7 @@ function addProjFile(fileArr) {
     });
     var notes = [];
     $("#proj-notes-ul li").each(function (i) {
-        var text = $(this).text();
+        var text = $(this).ignore("span").text();
         notes.push(text);
     });
 
@@ -1363,6 +1426,14 @@ function addProjFile(fileArr) {
 
 function saveProject(file_name, proj_name, dataA, dataB, dataC, dataKW, notes, done) {
     logger.debug("saveProject");
+    logger.debug("FILE_NAME: " + file_name);
+    logger.debug("PROJE_NAME: " + proj_name);
+    logger.debug("DATA-A: " + dataA);
+    logger.debug("DATA-B: " + dataB);
+    logger.debug("DATA-C: " + dataC);
+    logger.debug("DATA-KW: " + dataKW);
+    logger.debug("NOTES: " + notes);
+    logger.debug("DONE: "+ done);
     if ((file_name !== undefined) && (proj_name !== undefined)) {
         logger.info("Starting saving data to temp and project files...");
         //
@@ -1398,6 +1469,17 @@ function saveProject(file_name, proj_name, dataA, dataB, dataC, dataKW, notes, d
     }
     else {
         logger.error("Tried to save file/project, when 'file_name' or 'proj_name' is undefined!");
+        if (proj_name !== undefined) {
+            logger.info("'proj_name' is defined! Saving notes into project...");
+            var docpath = remote.app.getPath('documents');
+            // store for project properties
+            var options3 = {
+                name: proj_name,
+                cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name)
+            }
+            const store3 = new Store(options3);
+            store3.set('notes', notes);
+        }
     }
 }
 function openAndShowFile(fileObj) {
@@ -1568,7 +1650,7 @@ function updateSettingsUI() {
     var localsArr = [];
 
     //start loop (local lists)
-    for (var k in kw_local_list) { // var i = 0; i < enabled_kw_list.length; i++
+    for (var k in kw_local_list) { // var i = 0; i < enabled_kw_list.length; i++sadasdasd
         let list_id = "";
         let list_name = "";
         let lang = "";
@@ -1952,7 +2034,7 @@ function toggleViewMode(mode) {
         setViewButtonSets("preview");
 
         $("#addfilebutton").removeClass("element-disabled");
-        $("#saveprojbutton").removeClass("element-disabled");
+        $("#exportprojbutton").removeClass("element-disabled");
 
         $("#closeprojbutton").removeClass("element-disabled");
         $("#projinfobutton").removeClass("element-disabled");
@@ -1988,7 +2070,7 @@ function toggleViewMode(mode) {
         setViewButtonSets("editA");
 
         $("#addfilebutton").addClass("element-disabled");
-        $("#saveprojbutton").addClass("element-disabled");
+        $("#exportprojbutton").addClass("element-disabled");
 
         $("#closeprojbutton").addClass("element-disabled");
         $("#projinfobutton").addClass("element-disabled");
@@ -2018,7 +2100,7 @@ function toggleViewMode(mode) {
         setViewButtonSets("editB");
 
         $("#addfilebutton").addClass("element-disabled");
-        $("#saveprojbutton").addClass("element-disabled");
+        $("#exportprojbutton").addClass("element-disabled");
 
         $("#closeprojbutton").addClass("element-disabled");
         $("#projinfobutton").addClass("element-disabled");
@@ -2048,7 +2130,7 @@ function toggleViewMode(mode) {
         setViewButtonSets("editC");
 
         $("#addfilebutton").addClass("element-disabled");
-        $("#saveprojbutton").addClass("element-disabled");
+        $("#exportprojbutton").addClass("element-disabled");
 
         $("#closeprojbutton").addClass("element-disabled");
         $("#projinfobutton").addClass("element-disabled");
@@ -2078,7 +2160,7 @@ function toggleViewMode(mode) {
         setViewButtonSets("login");
 
         $("#addfilebutton").addClass("element-disabled");
-        $("#saveprojbutton").addClass("element-disabled");
+        $("#exportprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
@@ -2104,7 +2186,7 @@ function toggleViewMode(mode) {
         setViewButtonSets("register");
 
         $("#addfilebutton").addClass("element-disabled");
-        $("#saveprojbutton").addClass("element-disabled");
+        $("#exportprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
@@ -2133,7 +2215,7 @@ function toggleViewMode(mode) {
         setViewButtonSets("settings");
 
         $("#addfilebutton").addClass("element-disabled");
-        $("#saveprojbutton").addClass("element-disabled");
+        $("#exportprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
@@ -2169,7 +2251,7 @@ function toggleViewMode(mode) {
         setViewButtonSets("information");
 
         $("#addfilebutton").addClass("element-disabled");
-        $("#saveprojbutton").addClass("element-disabled");
+        $("#exportprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
@@ -2204,7 +2286,7 @@ function toggleViewMode(mode) {
         setViewButtonSets("forgotPW");
 
         $("#addfilebutton").addClass("element-disabled");
-        $("#saveprojbutton").addClass("element-disabled");
+        $("#exportprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
         $("#preview-div").removeClass("is-shown");
@@ -2598,5 +2680,5 @@ function setupTranslations() {
     //
 
     /* Main-window */
-    $("#titlebar-appname").text("DECSV {Alpha version " + remote.app.getVersion() + "}");
+    $("#titlebar-appname").text("DECSV");// {Alpha version " + remote.app.getVersion() + "}");
 }

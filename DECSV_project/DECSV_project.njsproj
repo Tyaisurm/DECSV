@@ -4,11 +4,12 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <Name>DECSV_project</Name>
     <RootNamespace>DECSV_project</RootNamespace>
-    <NodeExePath>C:\Users\h17263\VS-p\DECSV_project\DECSV_project\node_modules\electron\dist\electron.exe</NodeExePath>
+    <NodeExePath>D:\GIT_bash\summer_job_2017\DECSV\DECSV_project\node_modules\electron\dist\electron.exe</NodeExePath>
     <ScriptArguments>
     </ScriptArguments>
     <NodeExeArguments>
     </NodeExeArguments>
+    <ToolsVersionPromptShown>0.0</ToolsVersionPromptShown>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -148,6 +149,9 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="build\install-spinner.gif" />
+    <Content Include="demo_files\en-basic.json" />
+    <Content Include="demo_files\fi-basic.json" />
+    <Content Include="demo_files\keyword-config.json" />
     <Content Include="tsconfig.json">
       <SubType>Code</SubType>
     </Content>
@@ -186,6 +190,7 @@
     <Folder Include="assets\css\" />
     <Folder Include="assets\translations\" />
     <Folder Include="build\" />
+    <Folder Include="demo_files\" />
     <Folder Include="__licenses\" />
     <Folder Include="Scripts\" />
     <Folder Include="Scripts\typings\" />

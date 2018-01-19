@@ -1,0 +1,24 @@
+{
+  "last-successful-update": "----",
+  "available-keywordlists": {
+    "en-basic": {
+      "date": "2017-08-11T15:47:34.847Z",
+      "name": "English - Basic"
+    },
+    "fi-basic": {
+      "date": "2017-08-11T15:47:34.847Z",
+      "name": "Suomi - Perus"
+    }
+  },
+  "local-keywordlists": {
+    "en-basic": {
+      "date": "2017-08-11T15:47:34.847Z",
+      "name": "English - Basic"
+    },
+    "fi-basic": {
+      "date": "2017-08-11T15:47:34.847Z",
+      "name": "Suomi - Perus"
+    }
+  },
+  "enabled-keywordlists": [ "en-basic" ]
+}

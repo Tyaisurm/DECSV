@@ -1,4 +1,4 @@
-const electron = require('electron');
+﻿const electron = require('electron');
 const app = electron.app;
 const logger = require('electron-log');
 const BrowserWindow = electron.BrowserWindow; 
@@ -146,6 +146,10 @@ function createAppStructure() {
     if (!fs.existsSync(path.join(apppath, 'keywordlists\\keyword-config.json'))) {
         logger.info("No keyword configuration file found! Creating one with defaults...");
         fs.mkdirSync(path.join(apppath, 'keywordlists'));
+        logger.info("CREATING DEMO FILES TO SHOW FUNCTIONALITY WITH KEYWORDS!");
+        // #################################################################
+        //      SETTING DEMO FILES
+        /*
         var CA2_options = {
             defaults: {
                 "last-successful-update": "----",
@@ -156,7 +160,51 @@ function createAppStructure() {
             name: "keyword-config",
             cwd: path.join(apppath, 'keywordlists')
         }
+        */
+        var CA2_options = {
+            defaults: {
+                "last-successful-update": "----",
+                "available-keywordlists": {
+                    "en-basic": {
+                        "date": "2017-08-11T15:47:34.847Z",
+                        "name": "English - Basic"
+                    },
+                    "fi-basic": {
+                        "date": "2017-08-11T15:47:34.847Z",
+                        "name": "Suomi - Perus"
+                    }
+                },
+                "local-keywordlists": {
+                    "en-basic": {
+                        "date": "2017-08-11T15:47:34.847Z",
+                        "name": "English - Basic"
+                    },
+                    "fi-basic": {
+                        "date": "2017-08-11T15:47:34.847Z",
+                        "name": "Suomi - Perus"
+                    }
+                },
+                "enabled-keywordlists": ["en-basic"]
+            },
+            name: "keyword-config",
+            cwd: path.join(apppath, 'keywordlists')
+        }
         const CA2_store = new Store(CA2_options);
+        //
+        try {
+            var source_demo_1 = path.join(__dirname, './demo_files/en-basic.json');
+            var source_demo_2 = path.join(__dirname, './demo_files/fi-basic.json');
+            var destination_demo_1 = path.join(apppath, 'keywordlists/en-basic.json')
+            var destination_demo_2 = path.join(apppath, 'keywordlists/fi-basic.json')
+            var content_1 = fs.readFileSync(source_demo_1, 'utf-8');
+            var content_2 = fs.readFileSync(source_demo_2, 'utf-8');
+            fs.writeFileSync(destination_demo_1, content_1, 'utf-8');
+            fs.writeFileSync(destination_demo_2, content_2, 'utf-8');
+        }
+        catch (err) {
+            logger.error("Failed to copy demo files!");
+            logger.error(err.message);
+        }
     }
 }
 
@@ -388,6 +436,7 @@ function createWin() {
         width: 300,
         height: 300,
         resizable: false,
+        devTools: true,
         frame: false,
         backgroundColor: '#dadada',
     });
@@ -409,11 +458,12 @@ function createWin() {
         y: mainWindowState.y,
         width: mainWindowState.width,
         height: mainWindowState.height,
+        devTools: true,
         frame: false,
         backgroundColor: '#dadada',
         show: false
     });
-    //mainWindow.toggleDevTools();
+    mainWindow.toggleDevTools();//ENABLED
     mainWindowState.manage(mainWindow);
 
     let win2_url = url.format({
@@ -500,6 +550,8 @@ app.on('ready', function () {
     var firstuse = store.get('first-use');
     //logger.debug(firstuse);
     //logger.debug(typeof(firstuse));
+
+    // Checking if the app json data file shows that the program has been opened before
     if (firstuse) {
         logger.info("######################################################");
         logger.info("WELCOME! This app is now started for the first time :)");
@@ -668,9 +720,10 @@ global.createAboutWin = function () {
         aboutWindow = new BrowserWindow({
             width: 500,
             height: 500,
-            //resizable: false,
+            resizable: false,
             minWidth: 500,
             minHeight: 500,
+            devTools: true,
             frame: false,
             backgroundColor: '#dadada',
             show: false
