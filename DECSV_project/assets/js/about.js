@@ -2,19 +2,19 @@
 const dialog = remote.dialog;
 const thiswindow = remote.getCurrentWindow();
 
-setupTranslations();
-
+///////////////////////////////////////////////////////////////////////////////// SCREEN LISTENERS
 thiswindow.on('focus', function () { $("html").css("opacity", "1"); });
 thiswindow.on('blur', function () { $("html").css("opacity", "0.5"); });
 document.getElementById("win-close-icon").onclick = function () {
     thiswindow.close();
 }
+/////////////////////////////////////////////////////////////////////////////////
+
 $("#about-version").text("Version: Alpha " + remote.app.getVersion());
 
 /* THIS IS SETTING UP UI TRANSLATION */
 function setupTranslations() {
     logger.info("ABOUT-WINDOW Loading translations into UI...");
-
-    //About
-    //
+    // Set window texts here
 }
+setupTranslations();

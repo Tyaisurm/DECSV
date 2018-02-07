@@ -1,4 +1,4 @@
-﻿# DECSV_project
+﻿# DECSV_project - LERT Tool
 
 This project is about making a CSV file editor, that
 allows its users to open CSV files in it, anonymize personal
@@ -24,8 +24,8 @@ students, in order to review data from SLIPPS surveys.
 - electron-store (MIT License)
 - electron-updater (MIT License)
 - electron-window-state (MIT License)
+- html-parse-stringify2 (MIT License)
 - jquery (MIT License)
-- list.js (MIT License)
 - rimraf (ISC License)
 - select2 (MIT License)
 - js-xlsx (xlsx) (Apache License 2.0)

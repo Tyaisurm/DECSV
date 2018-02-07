@@ -4,14 +4,13 @@ const BrowserWindow = remote.BrowserWindow;
 const dialog = remote.dialog;
 const firstWindow = remote.getCurrentWindow();
 const fs = require('fs');
-//const http = require("http");
-//const shell = remote.shell;
 const autoUpdater = remote.autoUpdater;
 const path = require('path');
 const url = require('url');
 
 const Store = require('electron-store');
 
+/* New function to make discarding <span> elements easier */
 $.fn.ignore = function (sel) {
     return this.clone().find(sel || ">*").remove().end();
 };
@@ -65,6 +64,7 @@ $.fn.select2.amd.define('select2/i18n/current_lang', [], function () {
     };
 });
 
+/* Getting global ABOUT-window creator from app.js */
 let aboutCreatFunc = remote.getGlobal('createAboutWin');
 
 const enable_onclicks = false; // NEEDS TO BE DELETED AT SOME POINT
@@ -77,7 +77,9 @@ set_app_lang_selector();
 set_kw_list_available_select();
 updateSettingsUI();
 setupKWSelector();
-///////////////////////////////////////////////////////// WINDOW CONTROL BUTTONS FUNCTIONALITY
+///////////////////////////////////////////////////////// 
+
+////////////////////////////////////////////////////////////////////////////////////////////////// WINDOW CONTROL BUTTONS FUNCTIONALITY
 if (firstWindow.isMaximized()) { document.getElementById("win-maximize-restore-icon").src = "../ui_icons/appbar.window.restore.png"; } // just to make sure when opening 
 firstWindow.on('focus', function () { $("html").css("opacity", "1");});
 firstWindow.on('blur', function () { $("html").css("opacity", "0.5");});
@@ -150,10 +152,10 @@ document.getElementById('win-about-icon').onclick = function () {
     logger.debug("win-about icon/button");
     aboutCreatFunc();
 }
-/////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////// WINDOW VIEW BUTTONS FUNCTIONALITY
-
+////////////////////////////////////////////////////////////////////////////////////////////////// INPUT LISTENERS
+/* Project note add button */
 document.getElementById("proj-note-input-btn").onclick = function () {
     logger.debug("proj-note-input-btn button");
     if ($("#proj-note-input-field").val().trim().length < 1){
@@ -165,6 +167,7 @@ document.getElementById("proj-note-input-btn").onclick = function () {
         $("#proj-note-input-field").val("");
     }
 }
+/* Follows input into project notes field */
 document.getElementById("proj-note-input-field").onkeypress = function (e) {
     if (e.keyCode === 13) {
         logger.debug("proj-note-input-field ENTER PRESSED");
@@ -179,6 +182,7 @@ document.getElementById("proj-note-input-field").onkeypress = function (e) {
     }
 }
 
+/* Follows input into new project name field */
 document.getElementById("new-proj-create-input").onkeypress = function (e) {//
     logger.debug("Pressed ENTER at CREATE PROJECT input")
     if (e.keyCode === 13) {
@@ -188,8 +192,9 @@ document.getElementById("new-proj-create-input").onkeypress = function (e) {//
 
     }
 }
-/* Top navigation bar */
+//////////////////////////////////////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////////////////////////////////////// SETTINGS LISTENERS UPDATE BUTTONS
 document.getElementById("check-app-updates-button").onclick = function () {
     logger.debug("check-app-updates button");
     $("#check-app-updates-button").addClass("element-disabled");
@@ -291,7 +296,9 @@ document.getElementById("downloadandupdatekeywords").onclick = function () {
     //checkAndUpdateKWLists();
     // REMEMBER TO SET "NAME" TO KW LISTS properties-file FROM THE FIRST ELEMENT within the .json file, when you have downloaded them!!!!!!
 }
+//////////////////////////////////////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////////////////////////////////////// UPPER NAV BAR LISTENERS / BUTTONS
 document.getElementById("addfilebutton").onclick = function () {
     logger.debug("addfile button");
     //
@@ -401,6 +408,7 @@ document.getElementById("projstartbutton").onclick = function () {//
     toggleViewMode(9);
 }
 
+/* ASYNC answers to EXPORT-window about the current project's name (IPC to file_export.js) */
 ipcRenderer.on('get-project-name', function (event, fromWindowId) {
     logger.debug("RECEIVED REQUESST");
     console.log("fromwindowID: "+fromWindowId);
@@ -612,8 +620,10 @@ document.getElementById("open-proj-button").onclick = function () {
     }
     //open dialog here to choose directory, or create directory if nothing is present. then recall function
 }
+//////////////////////////////////////////////////////////////////////////////////////////////////
 
 /* Preview div */
+/////////////////////////////////////////////////////////////////////////////////////////////// WINDOW LISTENERS FOR A,B and C SECTIONS
 document.getElementById("secAmodetoggle").onclick = function () {
     logger.debug("secAmodetoggle button");
     console.log("toggle A");
@@ -634,7 +644,7 @@ document.getElementById("secCmodetoggle").onclick = function () {
     toggleViewMode(4);
     toggleViewMode(9);
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////
 /* Login/Register div */
 //
 
@@ -670,7 +680,7 @@ tionStart == "number")
 */
 
 /* Index div footer */
-
+///////////////////////////////////////////////////////////////////////////////////////////// INDEX FOOTER WINDOW LISTENERS / BUTTONS
 document.getElementById("footer-nav-btn1").onclick = function () {//
     var value = $(this).val();
     logger.debug("btn1: " + value);
@@ -888,7 +898,9 @@ document.getElementById("footer-nav-btn6").onclick = function () {//
         toggleViewMode(10);
     }
 }
+/////////////////////////////////////////////////////////////////////////////////////////
 
+/* Set value of footer (bottom) buttons */
 function setFooterBtnValue(value) {
     logger.debug("setFooterBtnValue");
     logger.debug("Value: "+value);
@@ -900,6 +912,7 @@ function setFooterBtnValue(value) {
     $("#footer-nav-btn6").val(value);
 }
 
+/* Set visibility of various UI buttons (mainly footer) */
 function setViewButtonSets(view) {
     logger.debug("setViewButtonSets");
     logger.debug("View: "+view);
@@ -1054,25 +1067,12 @@ function setViewButtonSets(view) {
     }
 }
 
-/* Index div right side */
-
-//
-
-/* Index div left side */
-
-//
-
-/* Settings div */
-
-//
-
-/* Info div */
-
-//
 
 ///////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////// FUNCTIONS
+
+/* Creates new project ASYNC!! (IPC to app.js) */
 function createProjAsync(project_name) {
     if ($("#new-proj-create-input").val().trim().length < 1) {
         //do nothing
@@ -1126,6 +1126,7 @@ function createProjAsync(project_name) {
     }
 }
 
+/* Handles moving source files into project folder and generating temp-files ASYNC!! (IPC to app.js) */
 function sourceFiles2ProjAsync(files) { // Last object of "files" will be name of the project where files will be added to
     logger.debug("sourceFiles2ProjAsync");
     var proj_name = files[files.length - 1];
@@ -1207,6 +1208,7 @@ function sourceFiles2ProjAsync(files) { // Last object of "files" will be name o
     ipcRenderer.send('async-import-files', send_arg);
 }
 
+/* Reads through list of temp-files from proj_properties and then adds them to the EDIT-view filelist */
 function updateFileList(proj_name) {
     logger.debug("updateFilesList");
     var docpath = remote.app.getPath('documents');
@@ -1241,6 +1243,7 @@ function updateFileList(proj_name) {
     }
 }
 
+/* Called when project is opened */
 function openAndViewProject(proj_name) {
     logger.debug("openAndViewProject");
 
@@ -1392,7 +1395,7 @@ function openAndViewProject(proj_name) {
     }
 }
 
-// Add given note into ul element
+/* Add given note into EDIT-view proj_notes ul-element */
 function addProjNote(note) {
     //
     var li_string = document.createTextNode(note);
@@ -1419,7 +1422,7 @@ function addProjNote(note) {
     $('#proj-notes-ul').append(li_node);
 }
 
-// Add given filename + details into ul element
+/* Add given filename + details into EDIT-view filelist ul-element */
 function addProjFile(fileArr) {
     logger.debug("addProjFile");
     logger.debug(fileArr);
@@ -1519,6 +1522,7 @@ function addProjFile(fileArr) {
     });
 }
 
+/* Called when temp-file is saved - temp files are saved simultaniously with the project itself */
 function saveProject(file_name, proj_name, dataA, dataB, dataC, dataKW, notes, done) {
     logger.debug("saveProject");
     logger.debug("FILE_NAME: " + file_name);
@@ -1577,6 +1581,8 @@ function saveProject(file_name, proj_name, dataA, dataB, dataC, dataKW, notes, d
         }
     }
 }
+
+/* Retrieve data from a temp-file and show it on the window */
 function openAndShowFile(fileObj) {
     logger.debug("openAndShowFile");
     window.currentFile = $(fileObj).text();
@@ -1694,6 +1700,7 @@ function openAndShowFile(fileObj) {
     setViewButtonSets("preview");
 }
 
+/* Update EDIT-view preview sections (non-editable section A, B and C) */
 function updatePreview() {
     logger.debug("updatePreview");
     //
@@ -1859,6 +1866,7 @@ function updateSettingsUI() {
     set_app_lang_selector();
 }
 
+/* Called when settings on SETTINGS-view are saved */
 function saveSettings() {
     logger.debug("saveSettings");
     var applang = $("#app-lang-selector").val();
@@ -1892,6 +1900,7 @@ function saveSettings() {
     setupKWSelector();
 }
 
+/* Setting up KW-selector on EDIT-view (select2) */
 function setupKWSelector() {
     var enabledKW = [];
     var apppath = remote.app.getPath('userData');
@@ -1994,7 +2003,7 @@ function setupKWSelector() {
     });
 }
 
-/* These set up SELECT boxes :) */
+/* Setting up KW-list-choosing  on SETTINGS-view (select2) */
 function set_KW_choose_selector() {
     logger.debug("set_KW_choose_selector");
     $("#KW-selector").select2({
@@ -2041,6 +2050,8 @@ function set_KW_choose_selector() {
     });
     $('#KW-selector').prop("disabled", true);
 }
+
+/* Setting up language selector for app language (select2) */
 function set_app_lang_selector() {
     logger.debug("set_app_lang_selector");
     fs.readdirSync(path.join(__dirname,"..\\translations")).forEach(file => {
@@ -2058,10 +2069,12 @@ function set_app_lang_selector() {
         placeholder: i18n.__('select2-app-lang-ph'),
         minimumResultsForSearch: Infinity
     });
-    ///////////////////////////// BECAUSE NOT YET WORKING
+    ///////////////////////////// BECAUSE LANGUAGE SELECT IS NOT YET WORKING
     $("#app-lang-selector").prop("disabled", true);
     ////////////////////////////
 }
+
+/* So that you get full displayed name for short identifier */
 function getFullLangName(lang_short) {
     logger.debug("getFullLangName");
     var lang_full = null;
@@ -2078,6 +2091,8 @@ function getFullLangName(lang_short) {
     } 
     return lang_full;
 }
+
+/* Setting up available kw-list selector (select2) */
 function set_kw_list_available_select() { 
     logger.debug("set_kw_list_available_select");
     $("#kw-list-available-choose").select2({
@@ -2322,7 +2337,7 @@ function toggleViewMode(mode) {
         $(".w3-button").toggleClass("element-disabled");
         $("ul").toggleClass("element-disabled");
         $(".select2").toggleClass("element-disabled");
-        //$("#subB9").toggleClass("element-disabled");// just because, well, you'd be stuck :D
+        //$("#subB9").toggleClass("element-disabled");// just because, well, you'd be stuck :'D
     }
     else if (mode === 9) {
         $("#leftsection").removeClass("no-display");
@@ -2448,6 +2463,7 @@ function updateFileQueue(files) {
 }
 */
 
+/* Empty contents of all elements */
 function clearElements() {
     logger.debug("clearElements");
     $("#proj-files-ul").empty();
@@ -2472,6 +2488,7 @@ function clearElements() {
     $("#file-censored-C-ul").empty();
 }
 
+/* Show file browser so that new files may be imported into current project */
 function addFilesPrompt(project_name) {
     logger.debug("addFilesPrompt");
     var docpath = remote.app.getPath('documents');
@@ -2488,8 +2505,6 @@ function addFilesPrompt(project_name) {
     function callback(fileNames) {
 
         if (fileNames !== undefined) {
-            //console.log(fileNames);
-            //readFile(fileNames);
             fileNames.push(project_name);
             sourceFiles2ProjAsync(fileNames);
             return;
@@ -2499,36 +2514,7 @@ function addFilesPrompt(project_name) {
     dialog.showOpenDialog(firstWindow, options, callback);
 }
 
-///NEEDS UPDATE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-/*
-if (enable_onclicks) {
-    document.getElementById("save-file-prompt").onclick = function () {
-        //console.log("SAVE CLICKED");
-        var options = {
-            title: window.i18n.__('save-prompt-window-title'),
-            //defaultPath: THIS MUST BE SET
-            filters: [
-                { name: 'CSV spreadsheet', extensions: ['csv'] }
-            ]
-        }
-        function callback(fileName) {
-            if (fileName !== undefined) {
-                removeCensored();
-                var content = parse_content2Array();
-                //console.log(content);
-                writeFile_csv(fileName, content);
-                continueQueue();
-                return;
-            }
-            logger.warn("No file chosen to be saved!");
-
-        }
-        dialog.showSaveDialog(firstWindow, options, callback);
-    }
-}
-*/
-
-/* Turns .word with .censored class into " **** " */
+/* Turns .word with .censored class into " ***** " */
 function removeCensored() {
     logger.debug("removeCensored");
     //Section A
@@ -2621,6 +2607,7 @@ function updateKeywordsList() {
 */
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
+/* Update shown list of currently censored lists for each section A, B and C */
 function updateCensoredList() {
     logger.debug("updateCensoredList");
     $("#file-censored-A-ul").empty();
@@ -2702,7 +2689,6 @@ function setupCensorSelect() {
     $("#edit-C-edit-text .word").off("click");
 
     $("#edit-A-edit-text .word").on("click", function () {
-        //console.log($("#secBcontent").text());
         var clicked = $(this).text();
         logger.debug("CLIECKED: "+clicked);
         if ($(this).hasClass("censored")) {
@@ -2715,7 +2701,6 @@ function setupCensorSelect() {
         }
     });
     $("#edit-B-edit-text .word").on("click", function () {
-        //console.log($("#secBcontent").text());
         var clicked = $(this).text();
         logger.debug("CLIECKED: " + clicked);
         if ($(this).hasClass("censored")) {
@@ -2728,7 +2713,6 @@ function setupCensorSelect() {
         }
     });
     $("#edit-C-edit-text .word").on("click", function () {
-        //console.log($("#secBcontent").text());
         var clicked = $(this).text();
         logger.debug("CLIECKED: " + clicked);
         if ($(this).hasClass("censored")) {
@@ -2742,20 +2726,12 @@ function setupCensorSelect() {
     });
         }
 
-///NEEDS UPDATE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-///NEEDS UPDATE
 /* THIS IS SETTING UP UI TRANSLATION */
 function setupTranslations() {
     logger.debug("setupTranslations(init.js)");
     logger.info("Loading translations into UI...");
-    /* Start */
-    //
 
-    /* Login */
-    //
+    // Set text to window here...
 
-    /* Main-window */
     $("#titlebar-appname").text("DECSV");// {Alpha version " + remote.app.getVersion() + "}");
 }

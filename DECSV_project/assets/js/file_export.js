@@ -12,6 +12,7 @@ const ipcRenderer = require('electron').ipcRenderer;
 
 var projectname = "";
 
+/* This is about retrieving project's name from another window */
 $(document).ready(setTimeout(function () { 
     $("#exportlist").empty();
 ipcRenderer.on('get-project-name-reply', function (event, output) {
@@ -31,7 +32,6 @@ parentwindow.webContents.send('get-project-name', thiswindow.id);
 /* THIS IS SETTING UP UI TRANSLATION */
 function setupTranslations() {
     logger.info("EXPORT-WINDOW Loading translations into UI...");
-
     // Set text here
 }
 setupTranslations();
@@ -77,7 +77,6 @@ function writeFile_csv(dataArray) {
     var file = path.join(out_base, "out_"+dataArray[1]);
     //writing... Array[0-1][0-x]
 
-    //console.log("Parsing content for saving...");
     logger.info("Starting to parse array into proper csv-format...");
     var finArr = [];
     finArr[0] = []; finArr[1] = []; finArr[2] = [];
@@ -113,19 +112,9 @@ function writeFile_csv(dataArray) {
         temp = temp + "\"\r\n";
     }
 
-    //testlogs...
-    console.log(file);
-    //console.log(encoding);
-    console.log("TEMP :DDDDDDDDDDDDDDD");
-    console.log(temp);
-    //content = temp;
-    
-
-    //overwriting if same name at the moment!... naah. fs-dialog prompts about this before we even GET here :P
+    /* Overwriting if same name at the moment! */
     fs.writeFile(file, temp, "utf8", function (msg) {
         if (!msg) {
-            //console.log(msg);
-            //console.log("The file has been successfully saved");
             logger.info("File '" + "out_" + dataArray[1] + "' successfully saved!");
             addFile2List(dataArray[1], 0)
             return;
@@ -136,6 +125,7 @@ function writeFile_csv(dataArray) {
     });
 }
 // status: 0=success 1=failure, file=name
+/* This function adds files into the EXPORT-window list based on their status */
 function addFile2List(file, status) {
     logger.debug("addFile2List");
     //
@@ -160,12 +150,12 @@ function addFile2List(file, status) {
     });
 
     $('#exportlist').append(li_node);
-    // SORT LIST
+    // SORT LIST?
 }
 
-// make array that will be then used to make new csv file
+/* Make array from temp-files that will be then used to make new csv files */
 
-// NEEDS TO BE EDITED TO WORK IN A LOOP WITH PROJECT DATA!! uses html-parse-stringify2
+// uses html-parse-stringify2
 // line-endings with "\r\n
 // line starts with "
 // object delimiter "" and "",""
@@ -181,57 +171,43 @@ function parseDoneFiles(proj_name) {
     if (fs.existsSync(src_base)) {
         if (fs.existsSync(proj_prop)) {
             if (fs.existsSync(temp_base)) {
-                //needed locations exist...
+                // needed locations exist...
                 var proj_options = {
                     name: proj_name,
                     cwd: proj_base
                 }
-                //
                 const proj_store = new Store(proj_options);
                 var proj_temps = proj_store.get('temp-files', {});
-                //console.log(proj_temps);
                 var finishedArr = [];
                 for (var tempFileName in proj_temps) {
-                    //console.log(tempFileName);
                     var temp_file_location = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp\\' + tempFileName);
-                    /*if (obj.hasOwnProperty(key)) {
-                        console.log(key + ": " + obj[key]);
-                    }*/
-                    //these go into loop of files
+
                     if (fs.existsSync(temp_file_location)) {
                         var file_options = {
-                            name: tempFileName.substring(0, tempFileName.length-5),
+                            name: tempFileName.substring(0, tempFileName.length - 5),
                             cwd: temp_base
                         }
                         const file_store = new Store(file_options);
                         if (!file_store.get("done", false)) {
-                            logger.info("File '"+tempFileName+"' not ready! Skipping...");
+                            logger.info("File '" + tempFileName + "' not ready! Skipping...");
                             continue;
+                        } else {
+                            // file_store returned 'false' or didn't exist, so 'false' was defaulted
                         }
-                        //console.log(tempFileName);
-                        //console.log(temp_base);
-                        //console.log(file_store.get("a", "ERROR WITH A"));
-                        //
-                        var tf_a = htmlParser.parse(file_store.get("a",""));
-                        var tf_b = htmlParser.parse(file_store.get("b",""));
-                        var tf_c = htmlParser.parse(file_store.get("c",""));
-                        //return 0;
-                        //var parsed = huetest.parse(htmlS);
-                        //console.log(parsed);
+
+                        var tf_a = htmlParser.parse(file_store.get("a", ""));
+                        var tf_b = htmlParser.parse(file_store.get("b", ""));
+                        var tf_c = htmlParser.parse(file_store.get("c", ""));
+
                         var done_a = "";
                         var done_b = "";
                         var done_c = "";
 
                         // FIRST PART A
-                        //console.log(tf_a);
-                        //console.log(tf_b);
-                        //console.log(tf_c);
                         for (var obj_o in tf_a[1].children) {
-                            //
                             var obj = tf_a[1].children[obj_o];
                             if (obj.type !== "text") {
                                 var check = false;
-                                //console.log(obj);
                                 var test_arr = obj.attrs.class.split(" ");
                                 for (var k = 0; k < test_arr.length; k++) {
                                     if (test_arr[k] === "censored") {
@@ -250,11 +226,9 @@ function parseDoneFiles(proj_name) {
 
                         // SECOND PART B
                         for (var obj_o in tf_b[1].children) {
-                            //
                             var obj = tf_b[1].children[obj_o];
                             if (obj.type !== "text") {
                                 var check = false;
-                                //console.log(obj);
                                 var test_arr = obj.attrs.class.split(" ");
                                 for (var k = 0; k < test_arr.length; k++) {
                                     if (test_arr[k] === "censored") {
@@ -277,8 +251,7 @@ function parseDoneFiles(proj_name) {
                         var ccounter = 0;
                         var obj_string = "";
                         for (var obj_o in tf_c[0].children) {
-                            //
-                            //console.log();
+
                             obj_string = "";
                             if (ccounter === 0) {
                                 ccounter++;
@@ -289,7 +262,6 @@ function parseDoneFiles(proj_name) {
                             }
                             var obj = tf_c[0].children[obj_o];
                             var check = false;
-                            //console.log(obj.attrs.class);
                             if (obj.children.length !== 0) {
                                 for (var k = 0; k < obj.children.length; k++) {
                                     if (obj.children[k].type === "text") {
@@ -299,7 +271,7 @@ function parseDoneFiles(proj_name) {
                                     var test_arr = obj.children[k].attrs.class.split(" ");
                                     for (var i = 0; i < test_arr.length; i++) {
                                         if (test_arr[i] === "censored") {
-                                            check = true;
+                                            check = true; // singular "word" has a class 'censored' attached to it
                                         }
                                     }
                                     if (!check) {
@@ -312,20 +284,22 @@ function parseDoneFiles(proj_name) {
                                 done_c.push(obj_string);
                             } else { done_c.push(obj_string); }
                         }
-                        //
-                        console.log("LOGGING ALLL STUFF!!!!!");
-                        console.log(file_store.get("src-data", []));
-                        //console.log(done_a);
-                        //console.log(done_b);
-                        //console.log(done_c);
                         var resultArr = [];
                         resultArr.push(proj_name, file_store.get("src", ""), file_store.get("subID", 0), file_store.get("subDATE", ""), file_store.get("kw", []), done_a, done_b, done_c);
                         finishedArr.push(resultArr);
+                    } else {
+                        // temp_file_location does not exist!
                     }
                 }
                 logger.info("Parsing temp files completed!");
                 return finishedArr;
+            } else {
+                // temp_base does not exist!
             }
+        } else {
+            // proj_prop does not exist!
         }
+    } else {
+        // src_base does not exist!
     }
 }

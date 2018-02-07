@@ -15,19 +15,18 @@ let mainWindow = null;
 let aboutWindow = null;
 let i18n_app = null;
 
-// if demo files will be added
 var demostatus = false;
 
 if (require('electron-squirrel-startup')) { app.quit(); }
 
-///////////////////////////////
+/////////////////////////////// SETTING LOGGER LEVELS
 logger.transports.file.level = "info";
 logger.transports.console.level = "silly";
 autoUpdater.logger = logger;
 ///////////////////////////////
 
 const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
-    // Someone tried to run a second instance, we should focus our window.
+    // Someone tried to run a second instance, we should focus our window
     if (mainWindow) {
         if (mainWindow.isMinimized()) {
             mainWindow.restore();
@@ -63,7 +62,7 @@ ipcMain.on('async-create-project', (event, arg) => {
     event.sender.send('async-create-project-reply', sending_back);
 });
 
-// NEEDS UPDATE
+// NEEDS UPDATE - NOT USED AT THE MOMENT (rimraf)
 // delete project
 ipcMain.on('async-delete-project', (event, arg) => {
     logger.debug("async-delete-project (at app.js)");
@@ -89,7 +88,7 @@ ipcMain.on('async-create-output', (event, arg) => {
 
 ////////////////////////////////////////////////////////////
 
-
+/* Creates application's folders into user's Documents-folder */
 function createDocStructure() {
     logger.debug("createDocStructure");
     var docpath = app.getPath('documents');
@@ -107,6 +106,7 @@ function createDocStructure() {
     }
 }
 
+/* Creates application's folders and settings-files into user's AppData-folder */
 function createAppStructure() {
     logger.debug("createAppStructure");
     var apppath = app.getPath('userData');
@@ -171,7 +171,7 @@ function createAppStructure() {
         if (!fs.existsSync(path.join(apppath, 'keywordlists'))){ fs.mkdirSync(path.join(apppath, 'keywordlists')); }// just because error when trying to create already existing
         logger.info("CREATING DEMO FILES TO SHOW FUNCTIONALITY WITH KEYWORDS!");
         // #################################################################
-        //      SETTING DEMO FILES
+        //      SETTING DEMO FILES - BELOW IS ORIGINAL.....
         /*
         var CA2_options = {
             defaults: {
@@ -231,10 +231,7 @@ function createAppStructure() {
     }
 }
 
-// TEST
-//fs.writeFileSync('log.txt', 'lisää ääkkösiä', encoding='utf-8');
-//createNewProject("ää");
-
+/* Creates new project with a given name into Documents-folder */
 function createNewProject(proj_name) {
     var reason = [];
     logger.debug("createNewProject");
@@ -309,7 +306,8 @@ function createNewProject(proj_name) {
     }
 }
 
-// NEEDS UPDATE
+// NEEDS UPDATE - NOT CURRENTLY USED
+/* This deletes project directory with given name */
 function removeProject(proj_name) {
     logger.debug("removeProject");
     if (proj_name.length === 0 || proj_name.length > 100) {
@@ -341,6 +339,7 @@ function removeProject(proj_name) {
 
 }
 
+/* Imports source files into the project folders */
 function srcFiles2Proj(files,event,ready_src) {
     logger.debug("srcFiles2Proj");
     var docpath = app.getPath('documents');
@@ -439,7 +438,7 @@ function srcFiles2Proj(files,event,ready_src) {
     }
 }
 
-
+/* Handles needed stuff when application is going to be closed */
 function handleclosing() {
     logger.debug("handleClosing");
     // do things needed before shutting down
@@ -453,6 +452,8 @@ function handleclosing() {
     //CA3_store.set("safe-to-shutdown", true)
     app.quit();
 }
+
+/* Creates opening window (with logo) and main window */
 function createWin() {
     logger.debug("createWin");
     openWindow = new BrowserWindow({
@@ -538,6 +539,7 @@ function createWin() {
     });
 }
 
+/* Called when all windows are closed */
 app.on('window-all-closed', function () {
     logger.info("all windows closed");
     // On OS X it is common for applications and their menu bar
@@ -547,6 +549,7 @@ app.on('window-all-closed', function () {
     }
 });
 
+/* Called when application has finished loading */
 app.on('ready', () => {
     //setTimeout(function () {
         if (process.platform === 'win32') {
@@ -591,6 +594,7 @@ app.on('ready', () => {
     //}, 0)
 });
 
+/* Called when activating application window */
 app.on('activate', function () {
     // On OS X it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
@@ -604,6 +608,7 @@ app.on('activate', function () {
 // WARN DO NOT USE THESE! var updatePath = "http://testing-tyaisurm.c9users.io/update/win32/" + app.getVersion().toString();
 //autoUpdater.setFeedURL(updatePath);
 
+/* These are quit-handlers for the application */
 app.on('will-quit', function () {
     logger.info("application will quit...");
 });
@@ -611,14 +616,14 @@ app.on('quit', function () {
     logger.info("quitting application...");
 });
 
-///////////////////
+///////////////////////////////////////////////////////////////////////////////// UPDATER HANDLERS
     // 0 = checking
     // 1 = update found
     // 2 = no update available
     // 3 = error
     // 4 = downloading %
     // 5 = downloaded
-
+/* Called from init.js (or somewhere else) when wanted to check updates */
 ipcMain.on("check-updates", (event, arg) => {
 
 autoUpdater.on('checking-for-update', function () {
@@ -730,6 +735,7 @@ autoUpdater.on('download-progress', function (progressObj) {
    autoUpdater.checkForUpdates();
 });
 
+/* Clears away all listeners after updates have been checked - prevents listener-dublicates */
 function clearUpdaterListeners() {
     logger.debug("clearUpdaterListeners");
     autoUpdater.removeAllListeners('checking-for-update');
@@ -739,6 +745,8 @@ function clearUpdaterListeners() {
     autoUpdater.removeAllListeners('update-downloaded');
     autoUpdater.removeAllListeners('download-progress');
 }
+
+/* Global function that opens up the ABOUT-window */
 global.createAboutWin = function () {
     if (aboutWindow === null) {
         logger.debug("createAboutWindow");
@@ -777,6 +785,7 @@ global.createAboutWin = function () {
     }
 }
 
+/* Creates temp-files from source files within the project's folders */
 function transformSrc2Temp(proj_name, event) {
     logger.debug("transformSrc2Temp");
     var docpath = app.getPath('documents');
@@ -1002,6 +1011,7 @@ function transformSrc2Temp(proj_name, event) {
 }
 
 // NEEDS const XLSX = require('xlsx');
+/* Reads source file, CSV or XLS or XLSX format into array */
 function readFile(file) {
     logger.debug("readFile");
     logger.debug(file);
@@ -1109,7 +1119,7 @@ function readFile(file) {
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-// Return array of string values, or NULL if CSV string not well formed.
+// Return array of string values, or NULL if CSV string not well formed. Checks valid form (ONLY WITH EXCEL-FORMATS!!!!!)
 function CSVtoArray(text) {
     logger.debug("CSVtoArray");
     //logger.debug(text);
@@ -1141,7 +1151,7 @@ function CSVtoArray(text) {
 }
 
 
-/* This function takes in raw data from read .csv file and turns it into arrays */
+/* This function takes in raw data from read .csv file and turns it into arrays (ONLY CSV FORMATS!!!) */
 function parseCSV2Array(csv) {
     logger.debug("parseCSV2Array");
     //logger.debug(csv);

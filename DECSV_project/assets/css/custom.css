@@ -1,15 +1,4 @@
-﻿/*
-* {
-    box-sizing: border-box;
-}
-*/
-/*
-html {
-    overflow: hidden; /* Prevents rubber-band scrolling of the whole "page" */
-    /*background-color: #fff; /* To cover OSes with no default background color *//*
-}
-*/
-html, body {
+﻿html, body {
     height:100%;
 
 }
@@ -17,16 +6,6 @@ body {
     display:flex;
     flex-direction:column;
 }
-
-
-/*
-body {
-    margin: 5px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-*/
 
 /* Utilities ---------------------------- */
 
@@ -55,7 +34,7 @@ body {
 .no-drag {
     -webkit-app-region: no-drag;
 }
-
+/* Window elements and sections ------------------------- */
 .section {
     position: absolute;
     pointer-events: none;
@@ -84,62 +63,7 @@ body {
     flex-direction: column;
 }
     
-/*
-.text-content {
-    overflow-wrap: normal;
-    overflow-x: auto;
-    padding: 1rem;
-    margin: 2rem;
-    border: 2px solid black;
-    height: 50%;
-    background-color: white;
-}
-    */
-/*
-.textSection{
-    left:0;
-    right:30%;
-}*/
-/*
-.asideSec{
-    right:0;
-    left:70%;
-    margin: 2rem;
-}*/
 
-/* ASIDE 
-#aside-wrap{
-    float:right;
-}
-
-#aside-chosenkeys{
-    height:300px;
-}
-*/
-/*
-#final-censoredwords {
-    height: 300px;
-    width: 170px;
-}
-
-ul {
-    border: 2px solid black;
-    height: 100%;
-    overflow: auto;
-}
-
-.win-control-button {
-    max-width: 30px;
-    max-height: 30px;
-    display: inline-block;
-}
-
-#titlebar-window-controls {
-    float: right;
-    min-height: 30px;
-    max-height: 30px;
-}
-*/
 #top-titlebar {
     top:0;
     left:0;
@@ -181,18 +105,7 @@ ul {
     right:216px;
     height: 32px;
 }
-/*
-#titlebar-filename{
-    margin-top:0px;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    min-width:0;
-    max-width:400px;
-    padding-left:0;
-    padding-right:0;
-}
-*/
+
 #titlebar-appname {
     z-index:9000;
     overflow-x:hidden;
@@ -212,50 +125,7 @@ ul {
 .slipps-footer-btn {
     font-size: smaller;
 }
-/*
-.about {
-    position: absolute;
-    display: flex;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    visibility: hidden;
-    opacity: 0;
-    transform: scale(1.1);
-    transition: visibility 0s .12s linear, opacity .12s ease-in, transform .12s ease-in;
-    z-index: 8000;
-    background-color: #dadada;
-}
 
-    .about.is-shown {
-        pointer-events: auto;
-        visibility: visible;
-        opacity: 1;
-        transform: scale(1);
-        transition: visibility 0s 0s linear, opacity .24s ease-out, transform .24s ease-out;
-    }
-
-
-.ui-prompt {
-    border: 1px solid black;
-    padding: 1rem;
-    display: flex;
-    max-width: 25rem;
-    -webkit-user-select: none;
-    background-color: rgba(22, 155, 213, 1);
-}
-
-    .ui-prompt h2 {
-        overflow: hidden;
-        overflow-wrap: normal;
-    }
-
-.ui-button:hover {
-    background-color: darkgrey;
-}
-*/
 /* Content ------------------ */
 .content {
     overflow: hidden;
