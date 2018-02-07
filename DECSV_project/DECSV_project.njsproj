@@ -4,7 +4,8 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <Name>DECSV_project</Name>
     <RootNamespace>DECSV_project</RootNamespace>
-    <NodeExePath>D:\GIT_bash\summer_job_2017\DECSV\DECSV_project\node_modules\electron\dist\electron.exe</NodeExePath>
+    <NodeExePath>
+    </NodeExePath>
     <ScriptArguments>
     </ScriptArguments>
     <NodeExeArguments>
