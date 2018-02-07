@@ -1,6 +1,6 @@
 ﻿const remote = require('electron').remote;
 const { ipcRenderer } = require('electron')
-//const BrowserWindow = remote.BrowserWindow;
+const BrowserWindow = remote.BrowserWindow;
 const dialog = remote.dialog;
 const firstWindow = remote.getCurrentWindow();
 const fs = require('fs');
@@ -8,13 +8,14 @@ const fs = require('fs');
 //const shell = remote.shell;
 const autoUpdater = remote.autoUpdater;
 const path = require('path');
-//const url = require('url');
-const select2 = require('select2');
+const url = require('url');
+
 const Store = require('electron-store');
 
 $.fn.ignore = function (sel) {
     return this.clone().find(sel || ">*").remove().end();
 };
+
 /* This sets up the language that ALL select2 select-fields will use */
 $.fn.select2.amd.define('select2/i18n/current_lang', [], function () {
     // Current language $("#open-file-prompt-text").text(i18n.__('open-files'));
@@ -122,7 +123,8 @@ document.getElementById("win-close-icon").onclick = function () {
 
         var notes = [];
         $("#proj-notes-ul li").each(function (i) {
-            var text = $(this).text();
+            var text = $(this).ignore("span").text();
+            //logger.error("text_3: " + text);
             notes.push(text);
         });
         
@@ -132,6 +134,7 @@ document.getElementById("win-close-icon").onclick = function () {
         var notes = [];
         $("#proj-notes-ul li").each(function (i) {
             var text = $(this).ignore("span").text();
+            //logger.error("text_4: " + text);
             notes.push(text);
         });
         var dataA = "";
@@ -162,7 +165,29 @@ document.getElementById("proj-note-input-btn").onclick = function () {
         $("#proj-note-input-field").val("");
     }
 }
+document.getElementById("proj-note-input-field").onkeypress = function (e) {
+    if (e.keyCode === 13) {
+        logger.debug("proj-note-input-field ENTER PRESSED");
+        if ($("#proj-note-input-field").val().trim().length < 1) {
+            //do nothing
+        }
+        else {
+            logger.info("adding project note: " + $("#proj-note-input-field").val().trim());
+            addProjNote($("#proj-note-input-field").val().trim());
+            $("#proj-note-input-field").val("");
+        }
+    }
+}
 
+document.getElementById("new-proj-create-input").onkeypress = function (e) {//
+    logger.debug("Pressed ENTER at CREATE PROJECT input")
+    if (e.keyCode === 13) {
+        logger.debug("proj-note-input-field KEY PRESSED");
+
+        $("#footer-nav-btn3").trigger("click");
+
+    }
+}
 /* Top navigation bar */
 
 document.getElementById("check-app-updates-button").onclick = function () {
@@ -319,24 +344,37 @@ document.getElementById("projinfobutton").onclick = function () {//
         ////////
         $('#proj-info-kw-ul').empty();
         var uniq = [];
+        var tempUniq = []
         var check = false;
-        for (i = 0; i < allkw.length; i++) {
-            check = false;
-            //logger.debug("COMPARING ARRAYS");
-            //logger.debug(allkw[i]);
+        var counter = 1;
+        for (i = 0; i < allkw.length; i++) {//&%&&%%&&¤&¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
             var current = allkw[i];
-            
-            for (var t = 0; t < uniq.length; t++){
-                if (uniq[t][0] === current[0]){
+            check = false;
+            for (var t = 0; t < tempUniq.length; t++) {
+                if (tempUniq[t][0] === current[0]) {
                     check = true;
-                    break;
+                    tempUniq[t][2]++;
                 }
             }
-
             if (!check) {
-                uniq.push(current);
+                current[2] = 1;
+                tempUniq.push(current);
             }
+            
+
         }
+        logger.debug("tempUniq length: "+tempUniq.length);
+        for (var w = 0; w < tempUniq.length; w++) {
+            uniq[w] = [];
+            uniq[w][0] = tempUniq[w][0];
+            uniq[w][1] = tempUniq[w][1] + " x" + tempUniq[w][2];
+            logger.debug("asdasdadadsda " + toString(tempUniq[w][2]));
+            logger.debug("uniq w: "+uniq[w]);
+            logger.debug("uniq w 0: "+uniq[w][0]);
+            logger.debug("w: "+w);
+            logger.debug("tempUniq w 0: "+tempUniq[w][0]);
+        }
+
         for (var j = 0; j < uniq.length; j++){
             //logger.debug("CREATING LIST OT PROJ SUMMARY");
             var li_string = document.createTextNode(uniq[j][1]);
@@ -363,14 +401,22 @@ document.getElementById("projstartbutton").onclick = function () {//
     toggleViewMode(9);
 }
 
+ipcRenderer.on('get-project-name', function (event, fromWindowId) {
+    logger.debug("RECEIVED REQUESST");
+    console.log("fromwindowID: "+fromWindowId);
+    var result = window.currentProject;
+    var fromWindow = BrowserWindow.fromId(fromWindowId);
+    fromWindow.webContents.send('get-project-name-reply', result);
+});
+
 document.getElementById("exportprojbutton").onclick = function () {
-    logger.debug("exportproject button");
+    logger.debug("exportproject button");    
     //export "done" marked project files
     var options = {
         type: 'info',
         title: "Exporting files",
-        message: "Files marked 'DONE' are going to be exported into .csv format.",
-        detail: "Are you sure? Older files with same name will be overwritten!",
+        message: "Files marked 'DONE' will be exported!",
+        detail: "Exporting files into csv-format. Editing will be disabled until export is finished.",
         buttons: [i18n.__('conf-yes', true), i18n.__('conf-no', true)]
     };
 
@@ -379,6 +425,27 @@ document.getElementById("exportprojbutton").onclick = function () {
             //
             logger.debug("exporting.......");
             // need to disable ALL controls from user!!!
+            var asdwin = new BrowserWindow({
+                width: 500,
+                height: 400,
+                resizable: false,
+                devTools: true,
+                frame: false,
+                backgroundColor: '#dadada',
+                parent: firstWindow,
+                modal: true,
+                show: false
+            });
+
+            let winurl = url.format({
+                protocol: 'file',
+                slashes: true,
+                pathname: path.join(__dirname, '../html/exporting.html')
+            });
+            asdwin.on('ready-to-show', function () {
+                asdwin.show();
+            });
+            asdwin.loadURL(winurl);
         }
     });
 
@@ -422,6 +489,7 @@ document.getElementById("closeprojbutton").onclick = function () {
                 var notes = [];
                 $("#proj-notes-ul li").each(function (i) {
                     var text = $(this).ignore("span").text();
+                    //logger.error("text_1: "+text);
                     notes.push(text);
                 });
                 $("#preview-third-1").addClass("no-display");
@@ -434,6 +502,7 @@ document.getElementById("closeprojbutton").onclick = function () {
                 var notes = [];
                 $("#proj-notes-ul li").each(function (i) {
                     var text = $(this).ignore("span").text();
+                    //logger.error("text_2: " + text);
                     notes.push(text);
                 });
                 var dataA = "";
@@ -1005,6 +1074,25 @@ function setViewButtonSets(view) {
 
 /////////////////////////////////////////////////////////////// FUNCTIONS
 function createProjAsync(project_name) {
+    if ($("#new-proj-create-input").val().trim().length < 1) {
+        //do nothing
+        $("#create-proj-error").text("Name should not be empty!");
+        return;
+    }
+    else {
+        // OPEN DIALOG TO CONFIRM NAME!!!!!
+        var options = {
+            type: 'info',
+            title: "Create new project",
+            message: "Is the name '" + project_name + "' ok?",
+            detail: "Project with this name will be created",
+            buttons: [i18n.__('conf-yes', true), i18n.__('conf-no', true)]
+        };
+
+        dialog.showMessageBox(firstWindow, options, function (index) {
+            if (index === 0) {
+                //continue
+            
     logger.debug("createProjAsync");
     ipcRenderer.on('async-create-project-reply', (event, arg) => {
         //console.log("RETURNED FROM APP: ");
@@ -1030,6 +1118,12 @@ function createProjAsync(project_name) {
         ipcRenderer.removeAllListeners('async-create-project-reply');
     })
     ipcRenderer.send('async-create-project', project_name);
+            }
+            else {
+                return;
+            }
+        });
+    }
 }
 
 function sourceFiles2ProjAsync(files) { // Last object of "files" will be name of the project where files will be added to
@@ -1184,19 +1278,19 @@ function openAndViewProject(proj_name) {
                             const open_store = new Store(open_options);
 
                             var created_on = new Date(open_store.get("created-on", null));
-                            console.log(created_on);
-                            $("#proj-info-name").text("Project Name: " + proj_name);
+                            //console.log(created_on);
+                            $("#proj-info-name").text("Project Name: \"" + proj_name+"\"");
                             $("#proj-info-created").text("Created: " + created_on);
 
                             var source_files = open_store.get("source-files", null);
-                            console.log(source_files);
+                            //console.log(source_files);
 
                             for (var i = 0; i < source_files.length; i++) {
                                 console.log(i + "  " + source_files[i]);
                             }
 
                             var temp_files = open_store.get("temp-files", {});
-                            console.log(temp_files);
+                            //console.log(temp_files);
 
                             for (var k in temp_files) {
                                 console.log("1: ");
@@ -1209,7 +1303,7 @@ function openAndViewProject(proj_name) {
                             }
 
                             var kw_per_file = open_store.get("kw-per-file", null);
-                            console.log(kw_per_file);
+                            //console.log(kw_per_file);
 
 
                             for (var k in kw_per_file) {
@@ -1222,10 +1316,10 @@ function openAndViewProject(proj_name) {
                             }
 
                             var proj_notes = open_store.get("notes", null);
-                            console.log("NOTES: ");
-                            console.log(proj_notes);
+                            //console.log("NOTES: ");
+                            //console.log(proj_notes);
                             for (var i = 0; i < proj_notes.length; i++) {
-                                console.log(i + "  " + proj_notes[i]);
+                                //console.log(i + "  " + proj_notes[i]);
                                 addProjNote(proj_notes[i]);
                             }
                             window.currentProject = proj_name;
@@ -1401,6 +1495,7 @@ function addProjFile(fileArr) {
     var notes = [];
     $("#proj-notes-ul li").each(function (i) {
         var text = $(this).ignore("span").text();
+        //logger.error("text_5: " + text);
         notes.push(text);
     });
 
@@ -1468,7 +1563,7 @@ function saveProject(file_name, proj_name, dataA, dataB, dataC, dataKW, notes, d
         logger.info("Saved data to temp-file 'temp#"+file_name+".json' and project '"+proj_name+"' properties file");
     }
     else {
-        logger.error("Tried to save file/project, when 'file_name' or 'proj_name' is undefined!");
+        logger.warn("Tried to save file/project, when 'file_name' or 'proj_name' is undefined!");
         if (proj_name !== undefined) {
             logger.info("'proj_name' is defined! Saving notes into project...");
             var docpath = remote.app.getPath('documents');
@@ -1560,7 +1655,8 @@ function openAndShowFile(fileObj) {
         //logger.debug("2# VALUE: " + kw_value + " # TEXT: " + kw_text);
         li_node.appendChild(span_node);
 
-        $('#file-chosen-kw-ul').append(li_node);
+        $('#file-chosen-kw-ul').append(li_node); 
+
 
         // would like to add "red" bgc if element does not exist in current kw-selector. currently only disables those already in there
         //logger.debug("3# VALUE: " + kw_value + " # TEXT: " + kw_text);
@@ -1896,11 +1992,6 @@ function setupKWSelector() {
         language: "current_lang",
         placeholder: i18n.__('select2-kw-add-ph')
     });
-}
-
-// nEEDS UPDATE
-function sortListElem(list) {  // REPLACED BY LIST.JS!!!!!!!!!! NPM
-    //
 }
 
 /* These set up SELECT boxes :) */
@@ -2408,7 +2499,8 @@ function addFilesPrompt(project_name) {
     dialog.showOpenDialog(firstWindow, options, callback);
 }
 
-///NEEDS UPDATE
+///NEEDS UPDATE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+/*
 if (enable_onclicks) {
     document.getElementById("save-file-prompt").onclick = function () {
         //console.log("SAVE CLICKED");
@@ -2434,6 +2526,7 @@ if (enable_onclicks) {
         dialog.showSaveDialog(firstWindow, options, callback);
     }
 }
+*/
 
 /* Turns .word with .censored class into " **** " */
 function removeCensored() {
@@ -2457,6 +2550,7 @@ function removeCensored() {
 ///NEEDS UPDATE
 /* This function parses data for textareas that are CURRENTLY USED
         => Will be changed */
+/*
 function showQuizData(data) {
     //console.log("INSIDE SHOW QUIZ DATA");
     showCsecData(data); //, 4, data[0].length - 1);
@@ -2479,9 +2573,11 @@ function showQuizData(data) {
 
     return result;
 }
+*/
 
 ///NEEDS UPDATE
 /* This function puts C section answers into right places */
+/*
 function showCsecData(section_data) {
     //console.log("#############");
     var line = 1;
@@ -2492,9 +2588,11 @@ function showCsecData(section_data) {
         line++;
     }
 }
+*/
 
 ///NEEDS UPDATE
 /* This function shows pre-selected words from the file */
+/*
 function loadKeyWords(keys) {
     for (var i = 0; i < keys.length; i++) {
         var to_appended = '<li class="list-keys-elem">' + keys[i] + '</li>';
@@ -2503,8 +2601,10 @@ function loadKeyWords(keys) {
     }
     updateKeywordsList();
 }
+*/
 
 ///NEEDS UPDATE
+/*
 function updateKeywordsList() {
     var elements = [];
     $("#aside-key-list li").each(function (i) {
@@ -2518,6 +2618,8 @@ function updateKeywordsList() {
         $("#aside-key-list").append(to_appended);
     }
 }
+*/
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
 function updateCensoredList() {
     logger.debug("updateCensoredList");
@@ -2543,6 +2645,7 @@ function updateCensoredList() {
 
 ///NEEDS UPDATE
 /* True if is found, false otherwise */
+/*
 function testKeywordList(word) {
 
     var found = false;
@@ -2556,9 +2659,11 @@ function testKeywordList(word) {
     });
     return found;
 }
+*/
 
 ///NEEDS UPDATE
 // mode 0 = paint all words as "keys"; mode 1 = remove "keys" marks from words
+/*
 function paintEmAll(word, mode) {
     //Section A
     $("#secAcontent .word").each(function (i) {
@@ -2587,6 +2692,7 @@ function paintEmAll(word, mode) {
     });
 
 }
+*/
 
 // SETTING UP SELECTING WORDS
 function setupCensorSelect() {
@@ -2636,37 +2742,8 @@ function setupCensorSelect() {
     });
         }
 
-///NEEDS UPDATE
-// make array that will be then used to make new csv file
-function parse_content2Array() {
-    logger.debug("parse_content2Array");
-    var orig_data = window.currentFileContent;
+///NEEDS UPDATE%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    var sectionA_text = $("#secAcontent").text();
-    var sectionB_text = $("#secBcontent").text();
-    var sectionC_arr;
-    var keywords = [];
-    $("#aside-key-list li").each(function (i) {
-        keywords.push($(this).text());
-    });
-
-    $("#secC-Q1-cont___secC-Q14-cont").each(function (i) {
-        keywords.push($(this).text());
-    });
-
-    var finalData = orig_data;
-    finalData[1][2] = sectionA_text;
-    finalData[1][3] = sectionB_text;
-
-    for (var i = 1; i < 15; i++) {
-
-        finalData[1][i + 3] = $("#secC-Q" + i + "-cont").text();
-    }
-
-    finalData[2] = keywords;
-
-    return finalData;
-}
 
 ///NEEDS UPDATE
 /* THIS IS SETTING UP UI TRANSLATION */

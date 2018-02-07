@@ -56,6 +56,9 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\css\w3.css" />
+    <Content Include="assets\html\exporting.html">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="assets\html\sections\create-proj.html">
       <SubType>Code</SubType>
     </Content>
@@ -169,7 +172,6 @@
     <Content Include="__licenses\electron_license.txt" />
     <Content Include="__licenses\jquery_license.txt" />
     <Content Include="__licenses\js-xlsx_license.txt" />
-    <Content Include="__licenses\list.js_license.txt" />
     <Content Include="__licenses\rimraf_license.txt" />
     <Content Include="__licenses\select2_license.txt" />
     <Content Include="__licenses\WindowsIcons_license.txt" />
@@ -198,6 +200,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="app.js" />
+    <Compile Include="assets\js\file_export.js" />
     <Compile Include="assets\js\about.js">
       <SubType>Code</SubType>
     </Compile>

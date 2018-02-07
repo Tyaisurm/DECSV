@@ -15,8 +15,8 @@
 
     <!--SELECT2 CSS-->
     <link rel="stylesheet" href="../select2/css/select2.min.css">
-    <!--SELECT2 JS
-    <script src="../select2/js/select2.full.js"></script>-->
+    <!--SELECT2 JS-->
+    <script>require('select2')</script>
 
     <link rel="import" href="./sections/login.html" />
     <link rel="import" href="./sections/preview.html" />
@@ -143,17 +143,21 @@
         <div style="flex:1;" class="w3-display-container content is-shown"></div>
         <div id="rightsection" style="width:240px;border-left:2px solid #dadada" class=" w3-display-container w3-border-white no-display">
 
-            <div style="height:10%;font-size:smaller;margin:auto;" class="section-half">
-                <div class="w3-bar">
-                    <p id="preview-subid" class="w3-bar-item" style="margin: 0; padding-bottom:0;">Submission ID:</p>
-                    <p id="preview-subdate" class="w3-bar-item" style="margin: 0; padding-top:0;">Submission Date:</p>
-                </div>
-            </div>
-            <div style="height:10%;" class="section-half">
-                <div style="height:38.28px;" class="w3-bar">
-                    <p style="margin-top:0;" class="w3-bar-item w3-left">Adding Keywords:</p>
-                </div>
+            
 
+            <div style="height:60%;" class="section-half">
+
+
+
+                    <div class="w3-bar" style="font-size:smaller;">
+                        <p id="preview-subid" class="w3-bar-item" style="margin: 0; padding-bottom:0;">ID:</p>
+                        <p id="preview-subdate" class="w3-bar-item" style="margin: 0; padding-top:0;">Date:</p>
+                    </div>
+
+                <div style="height:64px;" class="section-half">
+                    <div style="height:38.28px;" class="w3-bar">
+                        <p style="margin-top:0;" class="w3-bar-item w3-left">Adding Keywords:</p>
+                    </div>
                     <select id="KW-selector">
                         <option></option>
                         <optgroup label="en-basic">
@@ -169,17 +173,15 @@
                             <option value="fi-basic-4">FI_PERUS_TESTI_4</option>
                         </optgroup>
                     </select>
+                </div>
 
-            </div>
 
-            <div style="height:40%;" class="section-half">
+
                 <div style="height:38.28px;" class="w3-bar">
                     <p style="margin-top:0;" class="w3-bar-item w3-left">Chosen Keywords:</p>
                 </div>
                 <div style="flex:1;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
-                    <ul id="file-chosen-kw-ul" class="w3-ul">
-                        
-                    </ul> 
+                    <ul id="file-chosen-kw-ul" class="w3-ul"></ul>
                 </div>
             </div>
 

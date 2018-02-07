@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script>window.logger = require('electron-log');</script>
+    <script>window.$ = require('jquery');</script>
+    <script>window.i18n = new (require('../translations/i18n')); logger.debug("setupTranslations(exporting.html)");</script>
+    <link rel="stylesheet" href="../css/w3.css">
+    <link rel="stylesheet" href="../css/custom.css">
+</head>
+<body style="overflow:hidden;">
+    <div id="top-titlebar" class="drag disable-select"></div>
+    <header style="min-height:32px;max-height:32px;" class="w3-display-container w3-blue disable-select">
+        <div id="titlebar-left-corner" class="w3-display-topleft w3-bar">
+            <img draggable="false" id="slipps-title-icon" class="w3-bar-item" src="../ui_icons/SLIPPS.logo-76.png" />
+            <p id="titlebar-appname" class="w3-bar-item">DECSV - Export files</p>
+        </div>
+        <div id="titlebar-window-controls" style="width:58px;" class="w3-bar w3-display-topright no-drag">
+            <img draggable="false" id="win-close-icon" class="w3-bar-item w3-button corner-buttons w3-hover-red" style="padding: 3px 16px;" src="../ui_icons/appbar.close.png" />
+        </div>
+    </header>
+    <div class="w3-border w3-border-black w3-white" style="flex: 1;overflow-wrap:normal;overflow-x:auto;">
+        <ul id="exportlist" class="w3-ul">
+            <li class="w3-green">test 1.csv - COMPLETED</li>
+            <li class="w3-green">test 2.csv - COMPLETED</li>
+            <li class="w3-red">test 3.csv - FAILED</li>
+            <li class="w3-green">test 4.csv - COMPLETED</li>
+        </ul>
+    </div>
+    <button id="ok-button" class="w3-button w3-gray">OK</button>
+    <button id="view-button" class="w3-button w3-gray">View folder contents</button>
+    <script>require('../js/file_export');</script>
+</body>
+</html>

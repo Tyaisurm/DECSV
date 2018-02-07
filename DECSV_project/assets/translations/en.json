@@ -28,6 +28,8 @@
   "conf-yes": "Yes",
   "conf-no": "No",
   "conf-ok": "Ok",
+  "app-success": "SUCCESS",
+  "app-failure": "FAILURE",
 
   "open-file-prompt-window-title": "Open file",
   "open-project-prompt-window-title": "Open project",

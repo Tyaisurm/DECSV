@@ -15,6 +15,9 @@ let mainWindow = null;
 let aboutWindow = null;
 let i18n_app = null;
 
+// if demo files will be added
+var demostatus = false;
+
 if (require('electron-squirrel-startup')) { app.quit(); }
 
 ///////////////////////////////
@@ -113,13 +116,22 @@ function createAppStructure() {
             defaults: {
                 "app-lang": "en",
                 "first-use": true,
-                "app-version": app.getVersion()
+                "app-version": app.getVersion(),
+                "demo-files": demostatus
             },
             name: "app-configuration",
             cwd: apppath
         }
         const CA1_store = new Store(CA1_options);
 
+        if (demostatus) {
+            // is true, meaning that demofiles have been created before
+            logger.info("Demofiles created before!");
+        } else {
+            CA1_store.set("demo-files", true)
+            logger.info("Demofiles not created before! Creating now...");
+            // is false, no demofiles have been done yet
+        }
     }
     else {
         logger.info("App configuration file found! Checking version...");
@@ -131,21 +143,32 @@ function createAppStructure() {
         var appver = CA1_store.get("app-version", "0.0.0");
         var applang = CA1_store.get("app-lang", "en");
         var appfirst = CA1_store.get("first-use", true);
+        var appdemos = CA1_store.get("demo-files", false)
 
         logger.info("Current ver.: " + app.getVersion() + " Ver. in file: " + appver);
         if (appver !== app.getVersion()){
-            logger.info("Config version old! Deleting and making a new one...");
+            logger.info("Config version old! Overwriting..."); 
             CA1_store.clear();
             CA1_store.set("app-lang", applang);
             CA1_store.set("first-use", appfirst);
             CA1_store.set("app-version", app.getVersion());
+            CA1_store.set("demo-files", appdemos)
+        }
+        demostatus = appdemos;
+        if (demostatus) {
+            // is true, meaning that demofiles have been created befor
+            logger.info("Demofiles created before!");
+        } else {
+            CA1_store.set("demo-files", true)
+            logger.info("Demofiles not created before! Creating now...");
+            // is false, no demofiles have been done yet
         }
 
         // check if consistent with this version, if not, remove and rebuild
     }
-    if (!fs.existsSync(path.join(apppath, 'keywordlists\\keyword-config.json'))) {
+    if (!fs.existsSync(path.join(apppath, 'keywordlists\\keyword-config.json')) || !demostatus) {
         logger.info("No keyword configuration file found! Creating one with defaults...");
-        fs.mkdirSync(path.join(apppath, 'keywordlists'));
+        if (!fs.existsSync(path.join(apppath, 'keywordlists'))){ fs.mkdirSync(path.join(apppath, 'keywordlists')); }// just because error when trying to create already existing
         logger.info("CREATING DEMO FILES TO SHOW FUNCTIONALITY WITH KEYWORDS!");
         // #################################################################
         //      SETTING DEMO FILES
@@ -463,8 +486,7 @@ function createWin() {
         backgroundColor: '#dadada',
         show: false
     });
-    mainWindow.toggleDevTools();//ENABLED
-    mainWindowState.manage(mainWindow);
+    //mainWindow.toggleDevTools();//ENABLED
 
     let win2_url = url.format({
         protocol: 'file',
@@ -476,6 +498,8 @@ function createWin() {
     //toggle dev tools when window opens
     //mainWindow.webContents.openDevTools();
     mainWindow.on('ready-to-show', function () {
+        //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+        mainWindowState.manage(mainWindow);
         openWindow.hide();
         mainWindow.show();
         openWindow.close();
@@ -509,6 +533,7 @@ function createWin() {
     mainWindow.on('unresponsive', function () { });
     mainWindow.on('responsive', function () { });
     openWindow.on('closed', function () {
+        //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
         openWindow = null;
     });
 }
@@ -522,47 +547,48 @@ app.on('window-all-closed', function () {
     }
 });
 
-app.on('ready', function () {
-    if (process.platform === 'win32') {
-        //
-    }
-    else if (process.platform === 'linux') {
-        //
-    }
-    else if (process.platform === 'darwin'){
-        //
-    }
-    else {
-        //well then, you are fckd :x
-    }
-    logger.info('app ready');
+app.on('ready', () => {
+    //setTimeout(function () {
+        if (process.platform === 'win32') {
+            //
+        }
+        else if (process.platform === 'linux') {
+            //
+        }
+        else if (process.platform === 'darwin') {
+            //
+        }
+        else {
+            //well then, you are done for :x
+        }
+        logger.info('app ready');
 
-    logger.debug("setupTranslations(app.js)");
-    i18n_app = new (require('./assets/translations/i18n'))(true);
-    app.showExitPrompt = true;
+        logger.debug("setupTranslations(app.js)");
+        i18n_app = new (require('./assets/translations/i18n'))(true);
+        app.showExitPrompt = true;
 
-    logger.debug("checking first usage...");
-    var options = {
-        name: "app-configuration",
-        cwd: app.getPath('userData')
-    }
-    const store = new Store(options);
-    var firstuse = store.get('first-use');
-    //logger.debug(firstuse);
-    //logger.debug(typeof(firstuse));
+        logger.debug("checking first usage...");
+        var options = {
+            name: "app-configuration",
+            cwd: app.getPath('userData')
+        }
+        const store = new Store(options);
+        var firstuse = store.get('first-use');
+        //logger.debug(firstuse);
+        //logger.debug(typeof(firstuse));
 
-    // Checking if the app json data file shows that the program has been opened before
-    if (firstuse) {
-        logger.info("######################################################");
-        logger.info("WELCOME! This app is now started for the first time :)");
-        logger.info("######################################################");
-        store.set('first-use', false);
-    }
-    else {
-        logger.info("App has been started before!");
-    }
-
-    createWin();
+        // Checking if the app json data file shows that the program has been opened before
+        if (firstuse) {
+            logger.info("######################################################");
+            logger.info("WELCOME! This app is now started for the first time :)");
+            logger.info("######################################################");
+            store.set('first-use', false);
+        }
+        else {
+            logger.info("App has been started before!");
+        }
+        createWin();
+    //}, 0)
 });
 
 app.on('activate', function () {
@@ -679,9 +705,10 @@ autoUpdater.on('update-downloaded', function (info){//ev, relNot, relNam, relDat
         type: 'info',
         title: "Update downloaded",
         message: "New version "+ver+" is ready to be installed",
-        detail: "Would you like to close the application and update?\r\n\r\nVersion: " + ver + "\r\nRelease date: " + new Date(relDat) +"\r\n"+relNote,
-        buttons: ["yes", "no"]
+        detail: "Would you like to close the application and update?\r\n\r\nVersion: " + ver ,
+        buttons: [i18n_app.__('conf-yes', true), i18n_app.__('conf-no', true)]
     }; // DATE NEED TO BE REFORMATTED, AND RELNOTE SHOULD BE PARSED (CONTAINS HTML)
+    // + "\r\nRelease date: " + new Date(relDat) +"\r\n"+relNote,
 
     dialog.showMessageBox(mainWindow, options, function (index) {
         if (index === 0) {
@@ -712,7 +739,6 @@ function clearUpdaterListeners() {
     autoUpdater.removeAllListeners('update-downloaded');
     autoUpdater.removeAllListeners('download-progress');
 }
-
 global.createAboutWin = function () {
     if (aboutWindow === null) {
         logger.debug("createAboutWindow");
@@ -915,7 +941,9 @@ function transformSrc2Temp(proj_name, event) {
                         temp_store.set("a", elemtextA);
                         temp_store.set("b", elemtextB);
                         temp_store.set("c", secChtml);
-                        temp_store.set("src-data",dataArray[1]);
+                        temp_store.set("src-data", dataArray); // just putting in all instead of [1]
+                        logger.debug("DATAAAAAAAAAAAAAAAAAAAAAAAAAAA:");
+                        logger.debug(dataArray);
                         //logger.debug(temp_store.get("c","WAS EMPTY"));
                         logger.debug("file section setted for A, B and C");
                         if (dataArray[2] === undefined) {
@@ -1080,66 +1108,7 @@ function readFile(file) {
     }
 }
 
-/* This function takes in data that is in arrays, and then parses and writes it
-into new .csv files */
-function writeFile_csv(file, dataArray) {
-    logger.debug("writeFile_csv");
-    //writing... Array[0-1][0-x]
-
-    //console.log("Parsing content for saving...");
-    logger.info("Starting to parse array into proper csv-format...");
-
-    var temp = "";
-
-    //parse arrays to be like .csv file's content
-    for (var i = 0; i < dataArray.length; i++) {
-        if ((dataArray[2].length !== 0) && (i === 2)) {//
-            temp = temp + "\"\"";//
-        }//
-        else {//
-            temp = temp + "\"";
-        }//
-        //console.log(i);
-        //console.log(temp);
-        for (var j = 0; j < dataArray[i].length; j++) {
-            //console.log(j);
-            //console.log(temp);
-            if (j === 0) {
-                if ((dataArray[2].length !== 0) && (i === 2)) {//
-                    temp = temp + dataArray[i][j] + "\"\"";//
-                }//
-                else {//
-                    temp = temp + dataArray[i][j];
-                }//
-
-            }
-            else {
-                var input = dataArray[i][j];
-                temp = temp + ",\"\"" + input + "\"\"";
-            }
-        }
-        temp = temp + "\"\r\n";
-    }
-
-    //testlogs...
-    //console.log(file);
-    //console.log(encoding);
-    //console.log(temp);
-    content = temp;
-
-    //overwriting if same name at the moment!... naah. fs-dialog prompts about this before we even GET here :P
-    fs.writeFile(file, content, "utf8", function (msg) {
-        if (!msg) {
-            //console.log(msg);
-            //console.log("The file has been successfully saved");
-            logger.info("File successfully saved!");
-            return;
-        }
-
-        logger.error("Error while trying to save a new file!");
-    });
-}
-
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 // Return array of string values, or NULL if CSV string not well formed.
 function CSVtoArray(text) {
     logger.debug("CSVtoArray");
