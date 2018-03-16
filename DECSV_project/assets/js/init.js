@@ -436,62 +436,72 @@ document.getElementById("exportprojbutton").onclick = function () {
         buttons: [i18n.__('conf-yes', true), i18n.__('conf-no', true)]
     };
 
+    ////////////////////////////////////////////////////////////////// Saving before exporting..... 
+    var no_yellows = true;
+    $('#proj-files-ul li.w3-yellow').each(function (i) {
+        no_yellows = false;
+        var done = ($(this).attr('data-done') === "true");
+
+        //$("#edit-A-orig-text .secA-Q").empty();
+        //$("#edit-B-orig-text .secB-Q").empty();
+        //for (var k = 1; k < 15; k++) {
+        //    $("#edit-C-orig-text .secC-Q-" + k).empty();
+        //}
+        var dataA = $("#edit-A-orig-text").html();
+        var dataB = $("#edit-B-orig-text").html();
+        var dataC = $("#edit-C-orig-text").html();
+        var dataKW = [];
+
+        $("#file-chosen-kw-ul li").each(function (i) {
+            var value = $(this).attr("data-value");
+            //$(this).find('span').remove();
+            var name = $(this).ignore("span").text();
+            dataKW.push([value, name]);
+            //console.log("¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤");
+            //console.log([value, name]);
+        });
+
+        var notes = [];
+        $("#proj-notes-ul li").each(function (i) {
+            //console.log("QWRQWERWRWRQEWQEWQE=================");
+            //console.log(i);
+            var text = $(this).ignore("span").text();
+            //console.log(text);
+            //console.log($(this).text());
+            //logger.error("text_1: "+text);
+            notes.push(text);
+        });
+        //$("#preview-third-1").addClass("no-display");
+        //$("#preview-third-2").addClass("no-display");
+        //$("#preview-third-3").addClass("no-display");
+        //$("#preview-third-start").removeClass("no-display");
+        saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
+    });
+    if (no_yellows) {
+        var notes = [];
+        $("#proj-notes-ul li").each(function (i) {
+            //console.log("ASDASDASDASDASDASDASDASD");
+            //console.log(i);
+            var text = $(this).ignore("span").text();
+            //console.log(text);
+            //console.log($(this).text());
+            //logger.error("text_2: " + text);
+            notes.push(text);
+        });
+        var dataA = "";
+        var dataB = "";
+        var dataC = "";
+        var dataKW = "";
+        var done = "";
+        saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
+    }
+            //////////////////////////////////////////////////7
+
     dialog.showMessageBox(firstWindow, options, function (index) {
         if (index === 0) {
             //
             logger.debug("exporting.......");
-            ////////////////////////////////////////////////////////////////// Saving before exporting..... 
-            var no_yellows = true;
-            $('#proj-files-ul li.w3-yellow').each(function (i) {
-                no_yellows = false;
-                var done = ($(this).attr('data-done') === "true");
-
-                //$("#edit-A-orig-text .secA-Q").empty();
-                //$("#edit-B-orig-text .secB-Q").empty();
-                //for (var k = 1; k < 15; k++) {
-                //    $("#edit-C-orig-text .secC-Q-" + k).empty();
-                //}
-                var dataA = $("#edit-A-orig-text").html();
-                var dataB = $("#edit-B-orig-text").html();
-                var dataC = $("#edit-C-orig-text").html();
-                var dataKW = [];
-
-                $("#file-chosen-kw-ul li").each(function (i) {
-                    var value = $(this).attr("data-value");
-                    //$(this).find('span').remove();
-                    var name = $(this).ignore("span").text();
-                    dataKW.push([value, name]);
-                    //console.log("¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤");
-                    //console.log([value, name]);
-                });
-
-                var notes = [];
-                $("#proj-notes-ul li").each(function (i) {
-                    var text = $(this).ignore("span").text();
-                    //logger.error("text_1: "+text);
-                    notes.push(text);
-                });
-                //$("#preview-third-1").addClass("no-display");
-                //$("#preview-third-2").addClass("no-display");
-                //$("#preview-third-3").addClass("no-display");
-                //$("#preview-third-start").removeClass("no-display");
-                saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
-            });
-            if (no_yellows) {
-                var notes = [];
-                $("#proj-notes-ul li").each(function (i) {
-                    var text = $(this).ignore("span").text();
-                    //logger.error("text_2: " + text);
-                    notes.push(text);
-                });
-                var dataA = "";
-                var dataB = "";
-                var dataC = "";
-                var dataKW = "";
-                var done = "";
-                saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
-            }
-            //////////////////////////////////////////////////7
+            
             // need to disable ALL controls from user!!!
             var asdwin = new BrowserWindow({
                 width: 500,

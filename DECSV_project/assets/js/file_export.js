@@ -380,6 +380,14 @@ function notesOutput(proj_name) {
     var proj_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\');
     var out_base = path.join(docpath, 'SLIPPS DECSV\\Output\\' + proj_name);
 
+    //var docpath = app.getPath('documents');
+    //var out_base = path.join(docpath, 'SLIPPS DECSV\\Output\\' + proj_name);
+    //console.log(out_base);
+    if (!fs.existsSync(out_base)) {
+        logger.info("No project OUTPUT folder found! Creating one...");
+        fs.mkdirSync(out_base);
+    }
+
     if (fs.existsSync(proj_prop)) {
         if (fs.existsSync(out_base)) {
 
