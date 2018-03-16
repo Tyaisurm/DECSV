@@ -1,7 +1,7 @@
 {
   "name": "decsv",
   "productName": "DECSV",
-  "version": "1.5.1",
+  "version": "2.0.0",
   "description": "SLIPPS survey results review and edit application.",
   "main": "app.js",
   "scripts": {
@@ -46,12 +46,14 @@
   },
   "licence": "MIT",
   "dependencies": {
+    "charset-detector": "0.0.2",
     "electron-log": "2.2.6",
     "electron-squirrel-startup": "1.0.0",
     "electron-store": "1.2.0",
     "electron-updater": "2.8.7",
     "electron-window-state": "4.1.1",
     "html-parse-stringify2": "2.0.1",
+    "iconv-lite": "^0.4.19",
     "jquery": "3.2.1",
     "rimraf": "2.6.1",
     "select2": "4.0.3",

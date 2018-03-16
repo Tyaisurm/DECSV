@@ -11,22 +11,27 @@ const parentwindow = thiswindow.getParentWindow();
 const ipcRenderer = require('electron').ipcRenderer;
 
 var projectname = "";
+var file_version = "1.0.0";
 
 /* This is about retrieving project's name from another window */
 $(document).ready(setTimeout(function () { 
     $("#exportlist").empty();
-ipcRenderer.on('get-project-name-reply', function (event, output) {
+ipcRenderer.on('get-project-data-reply', function (event, output) {
     logger.debug("Project name received: "+output);
     projectname = output;
-    if (output !== undefined){
-        var result = parseDoneFiles(output)
-        //console.log(result);// proj_name, file_store.get("src",""),file_store.get("subID", 0), file_store.get("subDATE", ""), file_store.get("kw",[]),done_a, done_b, done_c
+    if (projectname !== undefined){
+        var result = parseDoneFiles(projectname);
+        notesOutput(projectname);
+
+        //console.log(result);// proj_name, file_store.get("src",""),file_store.get("subID", 0), file_store.get("subDATE", new Date()), file_store.get("kw", []), done_a, done_b, done_c, file_store.get("lang", ""), file_store.get("country", ""), tempFileName.substring(5, tempFileName.length - 5));
+        
         for (var i = 0; i < result.length; i++) {
             writeFile_csv(result[i]);
         }
+        
     }
 })
-parentwindow.webContents.send('get-project-name', thiswindow.id);
+parentwindow.webContents.send('get-project-data', thiswindow.id);
 }, 0));
 
 /* THIS IS SETTING UP UI TRANSLATION */
@@ -57,6 +62,7 @@ $("#view-button").on("click", function () {
 ///////////////////////////////////////////////////////////////////////////////
 
 /* This function takes in an array filled with data, and then writes a csv-file based on it */
+// resultArr.push(proj_name, file_store.get("src", ""), file_store.get("subID", 0), file_store.get("subDATE", new Date()), file_store.get("kw", []), done_a, done_b, done_c, file_store.get("lang", ""), file_store.get("country", ""), tempFileName.substring(5, tempFileName.length - 5)
 function writeFile_csv(dataArray) {
     logger.debug("writeFile_csv");
     var proj_name = dataArray[0];
@@ -74,55 +80,67 @@ function writeFile_csv(dataArray) {
     else {
         //
     }
-    var file = path.join(out_base, "out_"+dataArray[1]);
+    var file = path.join(out_base, "out_"+dataArray[10]+".csv");
     //writing... Array[0-1][0-x]
 
     logger.info("Starting to parse array into proper csv-format...");
     var finArr = [];
-    finArr[0] = []; finArr[1] = []; finArr[2] = [];
+    finArr[0] = []; //metadata
+    finArr[1] = []; //data
+    finArr[2] = []; //kw
     var temp = "";
+    finArr[0].push(file_version, dataArray[3], dataArray[8], dataArray[9]); // version, datetime, lang, country
+    //console.log(finArr);
+    finArr[1].push(dataArray[5], dataArray[6], JSON.stringify(dataArray[7])); //, dataArr[7] needs to be parsed
 
-    finArr[1].push(dataArray[2], dataArray[3], dataArray[5], dataArray[6]);
 
-    for (var z = 0; z < dataArray[7].length; z++){
-        finArr[1].push(dataArray[7][z]);
-    }
-    for (var v = 0; v < finArr[1].length; v++) {
-        finArr[0].push(v + 1);
-    }
+    //////////////////////////////////////////////////////////////////////////////////////
+    //finArr[1].push(dataArray[2], dataArray[3], dataArray[5], dataArray[6]);
+
+    //for (var z = 0; z < dataArray[7].length; z++){
+    //    finArr[1].push(dataArray[7][z]);
+    //}
+    //for (var v = 0; v < finArr[1].length; v++) {
+    //    finArr[0].push(v + 1);
+    //}
     for (var x = 0; x < dataArray[4].length; x++){
         finArr[2].push(dataArray[4][x][0]);
     }
     //console.log("FINAL PRODUCT (ALMOST)");
     //console.log(finArr);
+    //////////////////////////////////////////////////////////////////////////////////////
+
 
     //parse arrays to be like .csv file's content
     for (var i = 0; i < finArr.length; i++) {
         for (var j = 0; j < finArr[i].length; j++) {
             if (j === 0) {
-                temp = temp + "\"\"\"" + finArr[i][j] + "\"\"";
+                temp = temp + "\"" + finArr[i][j] + "\"";
             }
             else {
-                temp = temp + ",\"\"" + finArr[i][j] + "\"\"";
+                temp = temp + ";\"" + finArr[i][j] + "\"";
             }
         }
-        if (finArr[2].length === 0) {
-            temp = temp + "\"";
+        if (finArr[2].length === 0 && i === 2) {
+            temp = temp + "\"\"";
         }
-        temp = temp + "\"\r\n";
+        temp = temp + "\r\n";
     }
+    //console.log(temp);
 
     /* Overwriting if same name at the moment! */
+    
     fs.writeFile(file, temp, "utf8", function (msg) {
         if (!msg) {
-            logger.info("File '" + "out_" + dataArray[1] + "' successfully saved!");
-            addFile2List(dataArray[1], 0)
+            logger.info("File '" + "out_" + dataArray[10] + "' successfully saved!");
+            addFile2List(dataArray[10], 0)
             return;
         }
 
         logger.error("Error while trying to save a new file!");
-        addFile2List(dataArray[1], 1)
+        addFile2List(dataArray[10], 1)
     });
+    
 }
 // status: 0=success 1=failure, file=name
 /* This function adds files into the EXPORT-window list based on their status */
@@ -250,8 +268,10 @@ function parseDoneFiles(proj_name) {
 
                         var ccounter = 0;
                         var obj_string = "";
+                        //console.log("11111111111");
+                        //console.log(tf_c);
+                        //console.log();
                         for (var obj_o in tf_c[0].children) {
-
                             obj_string = "";
                             if (ccounter === 0) {
                                 ccounter++;
@@ -260,7 +280,10 @@ function parseDoneFiles(proj_name) {
                             else {
                                 ccounter = 0;
                             }
+                            
                             var obj = tf_c[0].children[obj_o];
+                            //console.log("OBJECT");
+                            //console.log(obj);
                             var check = false;
                             if (obj.children.length !== 0) {
                                 for (var k = 0; k < obj.children.length; k++) {
@@ -281,17 +304,63 @@ function parseDoneFiles(proj_name) {
                                     }
 
                                 }
+                                //console.log("DONE_C PUSH_1: " + obj_string);
+                                //console.log("what CLASS: " + obj.attrs.class);
+                                //console.log(done_c);
                                 done_c.push(obj_string);
-                            } else { done_c.push(obj_string); }
+                            } else {
+                                // no children.... testing realdata
+                                if (obj.attrs.hasOwnProperty("data-real")) {
+                                    //console.log("¤¤¤%¤%%¤¤%%¤¤%¤%¤%¤%%¤%¤%¤%¤%¤%¤¤%¤%¤%¤%%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤");
+                                    //console.log(obj.attrs["data-real"]);
+                                    //console.log(obj.attrs.hasOwnProperty("data-real"));
+                                    //console.log(obj.attrs["data-real"].length);
+                                    if (obj.attrs["data-real"].length !== 0) {
+                                        var rex = /&quot;/g;
+                                        var string_src = obj.attrs["data-real"];
+                                        var result_1 = JSON.parse(string_src.replace(rex, "\""));
+                                        //console.log("!_!_!_!_!_!_!_!_!_!_!_!_!");
+                                        //console.log();
+                                        //console.log(result_1);
+                                        //console.log(typeof (result_1));
+                                        //console.log(result_1[0]);
+                                        //console.log(typeof (result_1[0]));
+                                        if (result_1.constructor === Array) { // is array
+                                            //console.log("DONE_C PUSH_2: " + result_1);
+                                            //console.log("what CLASS: " + obj.attrs.class);
+                                            //console.log(done_c);
+                                            done_c.push(result_1);
+                                        }
+                                        else {// is not array
+                                            //console.log("DONE_C PUSH_3: " + result_1);
+                                            //console.log("what CLASS: " + obj.attrs.class);
+                                            //console.log(done_c);
+                                            done_c.push(result_1);
+                                        }
+                                    }
+                                    else {
+                                        done_c.push(-1);
+                                    }
+                                }
+                                else {
+                                    //console.log("DONE_C PUSH_4: " + obj_string);
+                                    //console.log("what CLASS: " + obj.attrs.class);
+                                    //console.log(done_c);
+                                    done_c.push(obj_string);
+                                }
+                            }
                         }
                         var resultArr = [];
-                        resultArr.push(proj_name, file_store.get("src", ""), file_store.get("subID", 0), file_store.get("subDATE", ""), file_store.get("kw", []), done_a, done_b, done_c);
+                        resultArr.push(proj_name, file_store.get("src", ""), file_store.get("subID", 0), file_store.get("subDATE", new Date()), file_store.get("kw", []), done_a, done_b, done_c, file_store.get("lang", ""), file_store.get("country", ""), tempFileName.substring(5, tempFileName.length - 5));
                         finishedArr.push(resultArr);
                     } else {
                         // temp_file_location does not exist!
                     }
                 }
                 logger.info("Parsing temp files completed!");
+                //console.log("FINALARRAY!!!!!!!!!!!!!!!!!!!11111111111111111111111111111111111");
+                //console.log(finishedArr);
+                //console.log(finishedArr[0][7]);
                 return finishedArr;
             } else {
                 // temp_base does not exist!
@@ -301,5 +370,51 @@ function parseDoneFiles(proj_name) {
         }
     } else {
         // src_base does not exist!
+    }
+}
+
+function notesOutput(proj_name) {
+    logger.debug("notesOutput");
+    var docpath = app.getPath('documents');
+    var proj_prop = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\' + proj_name + '.json');
+    var proj_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\');
+    var out_base = path.join(docpath, 'SLIPPS DECSV\\Output\\' + proj_name);
+
+    if (fs.existsSync(proj_prop)) {
+        if (fs.existsSync(out_base)) {
+
+            var proj_options = {
+                name: proj_name,
+                cwd: proj_base
+            }
+            const proj_store = new Store(proj_options);
+            var notes = proj_store.get("notes", []);
+            var basestring = "####### DECSV (version " + remote.app.getVersion() + "), project '"+proj_name+"' notefile #######\r\n";
+            basestring = basestring +"############### START ###############\r\n";
+
+            for (var i = 0; i < notes.length;i++) {
+                basestring = basestring + "> "+notes[i] + "\r\n"
+            }
+
+            basestring = basestring + "################ END ################\r\n"
+            var file = path.join(out_base, "out_NOTES_" + proj_name + ".txt");
+
+            fs.writeFile(file, basestring, "utf8", function (msg) {
+                if (!msg) {
+                    logger.info("Project '" + proj_name + "' notes successfully exported!");
+                    addFile2List("Project NOTES", 0);
+                    return;
+                }
+
+                logger.error("Error while trying to save project notes!");
+                addFile2List("Project NOTES", 1);
+            });
+        }
+        else {
+            // no output-folder....
+        }
+    }
+    else {
+        // no properties file...
     }
 }

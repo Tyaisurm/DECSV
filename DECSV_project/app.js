@@ -10,6 +10,8 @@ const dialog = electron.dialog;
 const windowStateKeeper = require('electron-window-state');
 const Store = require('electron-store');
 const XLSX = require('xlsx');
+const charDetector = require('charset-detector');
+const iconv = require('iconv-lite');
 let openWindow = null;
 let mainWindow = null;
 let aboutWindow = null;
@@ -56,9 +58,9 @@ createAppStructure();
 const { ipcMain } = require('electron')
 
 // create project
-ipcMain.on('async-create-project', (event, arg) => {
+ipcMain.on('async-create-project', (event, project_name, project_country, project_lang) => {
     logger.debug("async-create-project (at app.js)");
-    var sending_back = createNewProject(arg);
+    var sending_back = createNewProject(project_name, project_country, project_lang);
     event.sender.send('async-create-project-reply', sending_back);
 });
 
@@ -232,7 +234,7 @@ function createAppStructure() {
 }
 
 /* Creates new project with a given name into Documents-folder */
-function createNewProject(proj_name) {
+function createNewProject(proj_name, proj_country, proj_lang) {// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Test if country and language given!!!!
     var reason = [];
     logger.debug("createNewProject");
     logger.debug(proj_name);
@@ -268,7 +270,10 @@ function createNewProject(proj_name) {
                         "source-files": [],
                         "temp-files": {},
                         "kw-per-file": {},
-                        "notes": []
+                        "notes": [],
+                        "country": proj_country,
+                        "lang": proj_lang,
+                        "version": app.getVersion()
                     },
                     name: proj_name,
                     cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name)
@@ -339,6 +344,95 @@ function removeProject(proj_name) {
 
 }
 
+// NOT CURRENTLY USED
+/* This function checks and compares temp folder contents of project with it's properties file "temp-files" list */
+function checkTempFiles(proj_name) {
+    //
+    var docpath = app.getPath('documents');
+    var proj_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\');
+
+    if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
+        if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
+            if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp'))) {
+                if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.json'))) {
+                    var temp_files = [];
+                    fs.readdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp'), (err, files) => {
+                        temp_files = files;
+                    });
+
+                    var check_options = {
+                        name: proj_name,
+                        cwd: proj_base
+                    }
+                    //logger.debug("proj_name and proj_base: "+proj_name+" & "+proj_base);
+                    const check_store = new Store(check_options);
+
+                    var sourceF = check_store.get('source-files', []);
+                    var tempF = check_store.get('temp-files', {});
+                    var tempLang = check_store.get('lang', null);
+                    var tempCountry = check_store.get('country', null);
+                    var proj_ver = check_store.get("version", null);
+
+                    // compare dir contents with proj properties contents, and either add new (valid) files into properties, or remove non-existing from properties
+
+                    for (var proj_f in tempF) {
+                        //
+                    }
+                    ///////////////////////////////////////////////////////////////////////////////
+                    /*
+                    var temp_options = {
+                        defaults: {
+                            "src": fileS.toString(),
+                            "src-data": [],
+                            "subID": 0,
+                            "subDATE": new Date(),
+                            "a": "",
+                            "b": "",
+                            "c": "",
+                            "kw": [],
+                            "done": false,
+                            "lang": tempLang,
+                            "country": tempCountry,
+                            "version": app.getVersion()
+                        },
+                        name: "temp#" + temp_finalname,
+                        cwd: temp_base
+                    }
+                    logger.debug("CREATING TEMP FILE: " + "temp#" + temp_finalname);
+                    const temp_store = new Store(temp_options);
+                    if (temp_store.get("version", null) !== null) {
+                        // checking version found inside...
+                    }
+                    else {
+                        // no version. too old.
+                    }
+                    */
+                    ///////////////////////////////////////////////////////////////////////////////
+
+
+                }
+                else {
+                    // No project properties file
+                    return false;
+                }
+
+            }
+            else {
+                // No project with given name or tempfolder found!
+                return false;
+            }
+        }
+        else {
+            // Projects-folder not present!
+            return false;
+        }
+    }
+    else {
+        // No Application-folder (at Documents) not present!
+        return false;
+    }
+}
+
 /* Imports source files into the project folders */
 function srcFiles2Proj(files,event,ready_src) {
     logger.debug("srcFiles2Proj");
@@ -391,7 +485,7 @@ function srcFiles2Proj(files,event,ready_src) {
                     logger.error(err.message);
                     rcounter++;
                     result[0] = false;
-                    result.push("Error reading source file while importing");
+                    result.push("Error reading source file while importing '"+filename+"'");
                 });
 
                 readStream.once('end', () => {
@@ -402,7 +496,7 @@ function srcFiles2Proj(files,event,ready_src) {
                 writeStream.on('error', function () {
                     logger.info("Error while writing source file while importing!");
                     result[0] = false;
-                    result.push("Error writing to target file while importing");
+                    result.push("Error writing to target file while importing '" + filename + "'");
                 });
 
                 writeStream.on('finish', function () {
@@ -424,7 +518,7 @@ function srcFiles2Proj(files,event,ready_src) {
         else {
             logger.error();
             result[0] = false;
-            result.push("Project properties does not exist!");
+            result.push("Project source-folder does not exist!");
             event.sender.send('async-import-files-reply', result);
             // Project data .json not present!
         }
@@ -432,7 +526,7 @@ function srcFiles2Proj(files,event,ready_src) {
     else {
         logger.error();
         result[0] = false;
-        result.push("Project's source-folder (or other) does not exist!");
+        result.push("Project's folder does not exist!");
         event.sender.send('async-import-files-reply', result);
         // project source folder or other folders not present!
     }
@@ -806,7 +900,12 @@ function transformSrc2Temp(proj_name, event) {
 
                 var sourceF = s2t_store.get('source-files', []);
                 var tempF = s2t_store.get('temp-files', {});
+                var tempLang = s2t_store.get('lang',null);
+                var tempCountry = s2t_store.get('country',null);
                 var newtempF = tempF;
+                var test_name_base = "event_";
+                var testvalue = false;
+                var testvalue_nro = 0;
                 //logger.debug("SOURCEF AND TEMPF");
                 //logger.debug(sourceF);
                 //logger.debug(tempF);
@@ -820,166 +919,249 @@ function transformSrc2Temp(proj_name, event) {
                     cwd: proj_base
                 }
                 const proj_store = new Store(proj_options);
-
-                for (var i = 0; i < sourceF.length; i++){
+                while (!testvalue) {
+                    if (proj_store.has(test_name_base + testvalue_nro.toString())) {
+                        // do nothing
+                        testvalue_nro++;
+                    }
+                    else {
+                        testvalue = true;
+                    }
+                }
+                for (var i = 0; i < sourceF.length; i++){// looping array of project's source file array
                     //logger.debug("sourceF length: " + sourceF.length);
                     //logger.debug("loop nro: "+i);
                     fileS = sourceF[i];
                     //logger.debug("FILES ORIG: " + fileS);
-                    for (var k in tempF) {
+
+                    //////////////////////////////////////////////////////////////////////////////////////   USELESS   ////////////////////////
+                    for (var k in tempF) {// looping through project's temp file json object
                         //console.log("1: ");
                         //console.log(k); // source file name
                         //logger.debug("FILET SOURCE: " + k);
-                        if (tempF.hasOwnProperty(k)) {
+                        if (tempF.hasOwnProperty(k)) { //checking if has subvalues
                             //logger.debug("TEMPF had own property!");
                             //console.log(tempF[k].file); // temp file name
                             fileT = tempF[k].file;
                             //logger.debug("FILET TEMP: "+fileT);
                         }
-                        if (fileT.toString() === fileS.toString()) {
+                        if (fileT.toString() === fileS.toString()) { //if current source filename is same as existing tempfile source
                             //logger.debug("FILE EXISTS!!!");
                             //logger.debug(fileT.toString() + " and " + fileS.toString());
                             break;
                         }
                     }
-                    if (fileT.toString() === fileS.toString()) {
+                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                    if (fileT.toString() === fileS.toString()) { // if any existing temp-file has this source-file as "source"
                         failArray.push(fileS);
                         logger.debug(">>>>>>>>>>>>>>>>>>continue_1");
                         continue;
                     }
                     else {
-                        //createshitz
-                        if (fs.existsSync(path.join(src_base, fileS))) {
+
+                        if (fs.existsSync(path.join(src_base, fileS))) {// testing if source file exists at project's source folder
 
                             //logger.debug("before reading");
-                            var returnArr = readFile(path.join(src_base, fileS), function () {
+                            var returnArr = readFile(path.join(src_base, fileS), function () {// reading source file from project's source folder
                                 //
                             });
-                            //logger.debug("AFTER reading");
+                            logger.debug("AFTER reading");
+
+                            mainWindow.webContents.send("output-to-chrome-console", returnArr);
 
                             var dataArray = returnArr[1];
                             if (returnArr[0]) {
                                 //
                             }
-                            else {
+                            else { //there was error with reading the source file
                                 failArray.push(fileS);
                                 logger.debug(">>>>>>>>>>>>>>>>>>continue_2");
                                 continue;
                             }
                         }
-                        else {
+                        else { // source-file not present at the current project's source folder
                             failArray.push(fileS);
                             logger.debug(">>>>>>>>>>>>>>>>>>continue_3");
                             continue;
                         }
                         logger.debug("EVERYTHING OK. creating file...");
-                        var temp_options = {
-                            defaults: {
-                                "src": fileS.toString(),
-                                "src-data":[],
-                                "subID": "",
-                                "subDATE": "",
-                                "a": "",
-                                "b": "",
-                                "c": "",
-                                "kw": [],
-                                "done": false
-                                },
-                            name: "temp#"+fileS,
-                            cwd: temp_base
+                        // source file at project's source folder! looping through answers within.....
+
+                        var temporaryArr = [];
+                        var temporary_counter = 0;
+                        function testfunction(currentValue) { return currentValue === undefined }
+
+
+                        for (var p = 1; p < dataArray.length; p++) {
+                            if (dataArray[p].every(testfunction)) {
+                                temporary_counter++;
+                            }
+                            else if (temporary_counter < 2) {
+                                temporaryArr.push(dataArray[p]);
+                            }
                         }
-                        logger.debug("CREATING TEMP FILE: " + "temp#" + fileS);
-                        const temp_store = new Store(temp_options);
-                        temp_store.set("subID", dataArray[1][0]);
-                        temp_store.set("subDATE", dataArray[1][1]);
-                        secChtml = '<div class="secC-Q-allA">';
-                        var elemtextA = '<p class="w3-blue w3-container secA-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
-                        elemtextA = elemtextA + '<p class="secA-Q-allA">';
-                        var elemtextB = '<p class="w3-blue w3-container secB-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
-                        elemtextB = elemtextB + '<p class="secB-Q-allA">';
+                        mainWindow.webContents.send("output-to-chrome-console", temporaryArr);//testing the array. works now (gives proper answers)
 
-                        elemtextA = elemtextA + dataArray[1][2].replace(/&/g, "&amp;")
-                            .replace(/</g, "&lt;")
-                            .replace(/>/g, "&gt;")
-                            .replace(/"/g, "&quot;")
-                            .replace(/'/g, "&#039;")
-                            .replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
-                        elemtextB = elemtextB + dataArray[1][3].replace(/&/g, "&amp;")
-                            .replace(/</g, "&lt;")
-                            .replace(/>/g, "&gt;")
-                            .replace(/"/g, "&quot;")
-                            .replace(/'/g, "&#039;")
-                            .replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
-                        //var elemA = "<p>" + elemtextA + "</p>";
-                        //var elemB = "<p>" + elemtextB + "</p>";
 
-                        for (var line = 1; line < 15; line++) {
-                            var j = line + 3;
-                            //logger.debug("creating Question line: "+line);
-                            var questID = "secC-Q-" + line;
-                            
+                        // ##############################################################################################################
+                        // ############################################################################################################## LOOP TO CREATE MULTIPLE FILES from source array
+                        for (var q = 0; q < temporaryArr.length; q++) {
                             /*
-                            var questText = i18n_app.__(questID).replace(/&/g, "&amp;")
+                                NEEDS A LOT OF WORK!
+                             */
+                            var currentDataArr = temporaryArr[q];
+                            //var tempNameBase = "event_";
+                            var temp_finalname = test_name_base + testvalue_nro.toString();
+                            var temp_options = {
+                                defaults: {
+                                    "src": fileS.toString(),
+                                    "src-data": [],
+                                    "subID": 0,
+                                    "subDATE": new Date(),
+                                    "a": "",
+                                    "b": "",
+                                    "c": "",
+                                    "kw": [],
+                                    "done": false,
+                                    "lang": tempLang,
+                                    "country": tempCountry,
+                                    "version": app.getVersion()
+                                },
+                                name: "temp#" + temp_finalname,
+                                cwd: temp_base
+                            }
+                            logger.debug("CREATING TEMP FILE: " + "temp#" + temp_finalname);
+                            const temp_store = new Store(temp_options);
+
+                            //temp_store.set("subID", dataArray[1][0]); // Setting identifier
+                            //temp_store.set("subDATE", dataArray[1][1]); // Setting create date
+
+                            secChtml = '<div class="secC-Q-allA">';
+                            var elemtextA = '<p class="w3-blue w3-container secA-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
+                            elemtextA = elemtextA + '<p class="secA-Q-allA">';
+                            var elemtextB = '<p class="w3-blue w3-container secB-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
+                            elemtextB = elemtextB + '<p class="secB-Q-allA">';
+
+                            elemtextA = elemtextA + currentDataArr[1].replace(/&/g, "&amp;")
                                 .replace(/</g, "&lt;")
                                 .replace(/>/g, "&gt;")
                                 .replace(/"/g, "&quot;")
-                                .replace(/'/g, "&#039;");
-                            */
-                            var elemCQ = '<p class="w3-blue w3-container ' + questID + '" style="width:100%;"></p>'; // no text here, because it will be placed in UI, not in file
-                            //logger.debug(elemCQ);
-                            var ansID = "secC-Q-" + line + "-cont";
-                            //logger.debug("ADDIN Q LINE");
-                            //logger.debug(ansID);
-                            var ansText = "";
-                            if (dataArray[1][j] !== undefined) {
-                                ansText = dataArray[1][j].replace(/&/g, "&amp;")
-                                    .replace(/</g, "&lt;")
-                                    .replace(/>/g, "&gt;")
-                                    .replace(/"/g, "&quot;")
-                                    .replace(/'/g, "&#039;")
-                                    .replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
-                            }
-                            var elemCA = '<p class="' + ansID + '">' + ansText + '</p>';
+                                .replace(/'/g, "&#039;")
+                                .replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
+                            elemtextB = elemtextB + currentDataArr[2].replace(/&/g, "&amp;")
+                                .replace(/</g, "&lt;")
+                                .replace(/>/g, "&gt;")
+                                .replace(/"/g, "&quot;")
+                                .replace(/'/g, "&#039;")
+                                .replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
+                            //var elemA = "<p>" + elemtextA + "</p>";
+                            //var elemB = "<p>" + elemtextB + "</p>";
 
-                            secChtml = secChtml + elemCQ + elemCA;
+                            ////////////////////////////////////////////////////////////////////////////////////////////
+                            // Creating C section from here on....
+                            var j = 1;
+                            var temp_c_list = [];
+                            for (var line = 3; line < currentDataArr.length; line++) {
+                                
+                                var questID = "secC-Q-" + j;
+                                var elemCQ = '<p class="w3-blue w3-container ' + questID + '" style="width:100%;"></p>'; // no text here, because it will be placed in UI, not in file
+                                var ansID = "secC-Q-" + j + "-cont";
+                                var ansText = "";
+                                var elemCA = '';
+
+                                if (line === 3 || line === 5 || line === 6 || line === 7 || line === 8 || line === 29 || line === 30 || line === 32) {// integer answers. 30 & 32 ARE OPTIONAL!!!!
+                                    // add data
+                                    var datareal = "";
+                                    if (currentDataArr[line] !== undefined) {
+                                        datareal = currentDataArr[line].toString();
+                                    }
+                                    //mainWindow.webContents.send("output-to-chrome-console", "line at integer: "+line);
+                                    //mainWindow.webContents.send("output-to-chrome-console", currentDataArr[line]);
+                                    elemCA = '<p class="w3-light-blue ' + ansID + '" data-real="' + datareal + '" style="display:inline;padding:3px;">' + ansText + '</p>';
+                                    secChtml = secChtml + elemCQ + elemCA;
+                                    j++;
+                                }
+                                else if (line === 4 || line === 9 || line === 28 || line === 31 || line === 33) {// open string answers
+                                    if (currentDataArr[line] !== undefined) {
+                                        ansText = currentDataArr[line].replace(/&/g, "&amp;")
+                                            .replace(/</g, "&lt;")
+                                            .replace(/>/g, "&gt;")
+                                            .replace(/"/g, "&quot;")
+                                            .replace(/'/g, "&#039;")
+                                            .replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
+                                    }
+                                    else {
+                                        ansText = "";
+                                    }
+                                    elemCA = '<p class="' + ansID + '">' + ansText + '</p>';
+                                    secChtml = secChtml + elemCQ + elemCA;
+                                    j++;
+                                }
+                                else if (line >= 10 && line <= 27) {
+                                    if (currentDataArr[line] !== undefined) {
+                                        temp_c_list.push(parseInt(currentDataArr[line]));
+                                    }
+                                    else {
+                                        //do nothing
+                                    }
+                                    if (line !== 27) {
+                                        continue;
+                                    }
+                                    elemCA = "<p class='w3-light-blue " + ansID + "' data-real='" + JSON.stringify(temp_c_list) + "' style='display:inline;padding:3px;'>" + ansText + "</p>";
+                                    secChtml = secChtml + elemCQ + elemCA;
+                                    j++;
+                                }
+                            }
+                            ////////////////////////////////////////////////////////////////////////////////////////////
+                            secChtml = secChtml + '</div>';
+                            logger.debug("created question lines for C section");
+                            //console.log(secChtml);
+                            // REMEMBER TO TURN \" and \' into regular " and ' when showing the data!!!!!!
+                            temp_store.set("a", elemtextA);
+                            temp_store.set("b", elemtextB);
+                            temp_store.set("c", secChtml);
+                            temp_store.set("src-data", currentDataArr); // just putting in all instead of [1]
+                            //logger.debug("DATAAAAAAAAAAAAAAAAAAAAAAAAAAA:");
+                            //logger.debug(dataArray);
+                            //logger.debug(temp_store.get("c","WAS EMPTY"));
+                            logger.debug("file section setted for A, B and C");
+
+                            /*
+                            ////////////////////////////////////////////////////////// THIS IS USELESS
+                            if (dataArray[2] === undefined) {
+                                logger.warn("Third line (keywords) is not available in convertable source file '" + fileS + "'!");
+                            }
+                            else {
+                                logger.debug("KEYWORDS WITHIN THE SOURCE FILE: '" + fileS + "'!");
+                                logger.debug(dataArray[2]);
+                                //check if keywords in proper format, else, don't add anything... NOT USED ATM!!!
+                            }
+                            //////////////////////////////////////////////////////////
+                            */
+
+                            logger.debug("done! continuing to next");
+                            var currentprojkw = proj_store.get("kw-per-file", {});
+                            currentprojkw["temp#" + temp_finalname + ".json"] = [];
+                            proj_store.set('kw-per-file', currentprojkw);//currently and empty array. would be [ [listID, term], [listID_2, term2], [listID_3, term3],... ]
+                            newtempF["temp#" + temp_finalname + ".json"] = {};
+                            newtempF["temp#" + temp_finalname + ".json"]["file"] = fileS;
+                            newtempF["temp#" + temp_finalname + ".json"]["done"] = false;
+                            //logger.debug("TESTING TYPEOF: " + typeof (newtempF["temp#" + fileS + ".json"]["done"]))
+                            proj_store.set('temp-files', newtempF);
+                            //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]);
+                            //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]);
+                            //logger.debug(typeof(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]));
+                            var successFile = [];
+                            successFile.push(fileS, "temp#" + temp_finalname + ".json", false);
+                            successArray.push(successFile);
+                            testvalue_nro++;
                         }
-                        secChtml = secChtml + '</div>';
-                        logger.debug("created question lines for C section");
-                        //console.log(secChtml);
-                        // REMEMBER TO TURN \" and \' into regular " and ' when showing the data!!!!!!
-                        temp_store.set("a", elemtextA);
-                        temp_store.set("b", elemtextB);
-                        temp_store.set("c", secChtml);
-                        temp_store.set("src-data", dataArray); // just putting in all instead of [1]
-                        logger.debug("DATAAAAAAAAAAAAAAAAAAAAAAAAAAA:");
-                        logger.debug(dataArray);
-                        //logger.debug(temp_store.get("c","WAS EMPTY"));
-                        logger.debug("file section setted for A, B and C");
-                        if (dataArray[2] === undefined) {
-                            logger.warn("Third line (keywords) is not available in convertable source file '"+fileS+"'!");
-                        }
-                        else {
-                            logger.debug("KEYWORDS WITHIN THE SOURCE FILE: '"+fileS+"'!");
-                            logger.debug(dataArray[2]);
-                            //check if keywords in proper format, else, don't add anything... NOT USED ATM!!!
-                        }
-                        logger.debug("done! continuing to next");
-                        var currentprojkw = proj_store.get("kw-per-file", {});
-                        currentprojkw["temp#" + fileS + ".json"] = [];
-                        proj_store.set('kw-per-file', currentprojkw);//currently and empty array. would be [ [listID, term], [listID_2, term2], [listID_3, term3],... ]
-                        newtempF["temp#" + fileS + ".json"] = {};
-                        newtempF["temp#" + fileS + ".json"]["file"] = fileS;
-                        newtempF["temp#" + fileS + ".json"]["done"] = false;
-                        //logger.debug("TESTING TYPEOF: " + typeof (newtempF["temp#" + fileS + ".json"]["done"]))
-                        proj_store.set('temp-files', newtempF);
-                        //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]);
-                        //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]);
-                        //logger.debug(typeof(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]));
-                        var successFile = [];
-                        successFile.push(fileS, "temp#" + fileS + ".json", false);
-                        successArray.push(successFile);
+                        // ##############################################################################################################
+       // ##############################################################################################################
                     }
                 }
+               
                 logger.debug(">>>>>>>DONE WITH LOOP");
                 //logger.debug(i);
                 var sendArray = [];
@@ -1031,7 +1213,10 @@ function readFile(file) {
     /* file has .xlsx or .xls extension */
     if (file_ext === 'xlsx' || file_ext === 'xls') {
         logger.debug("file was EXCEL FORMAT");
-        /* xlsx-js */
+        logger.debug("Ignoring....");
+        /*
+
+        // xlsx-js 
         try {
             var workbook = XLSX.readFile(file);
         }
@@ -1047,7 +1232,7 @@ function readFile(file) {
         //console.log("EXCEL TO CSV");
         //console.log(JSON.stringify(csv_sheet));
 
-        /* xlsx-js continue... */
+        // xlsx-js continue... 
         var newlines = ['\r\n', '\n'];
         var lines = csv_sheet.split(new RegExp(newlines.join('|'), 'g'));
 
@@ -1074,7 +1259,7 @@ function readFile(file) {
 
         //keys = showQuizData(output_data); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //setupKeywordSelect(output_data[1].length, keys);// ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+        */
     }
 
     /* file has .csv extension */
@@ -1084,12 +1269,32 @@ function readFile(file) {
         logger.debug("starting reading...");
         var data = "";
         try {
-            data = fs.readFileSync(file, 'utf8');
+            data = fs.readFileSync(file);//, 'utf8'
         }
         catch (err) {
             logger.error("Error opening .csv file: " + err.message);
             result.push(false);
             return result;
+        }
+        //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+        //logger.debug(charDetector(data));//iconv-lite, iconv
+        //mainWindow.webContents.send("output-to-chrome-console", charDetector(data));
+        //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+        var detectRes = charDetector(data);
+        if (detectRes.length > 0) {
+            logger.info("FOUND HITS FOR ENCODING....");
+            if (iconv.encodingExists(detectRes[0].charsetName)) {
+                logger.info("encoding EXISTS!");
+                data = iconv.decode(data, detectRes[0].charsetName);
+            }
+            else {
+                logger.warn("encoding DOES NOT EXISTS! Defaulting to UTF-8...");
+                data = data.toString('utf8'); 
+            }
+        }
+        else {
+            logger.warn("NO HITS FOR ENCODING!!! Defaulting to UTF-8...");
+            data = data.toString('utf8'); 
         }
             //console.log("DATA FROM READFILE");
             //console.log(JSON.stringify(data));
@@ -1098,7 +1303,7 @@ function readFile(file) {
 
             //console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>OMAN TULOSTUS");
        logger.debug("readFile before parsing data to arrays");
-       var output_data = parseCSV2Array(data);
+       var output_data = CSVtoArray(data);
        //logger.debug("outputdata>>>>>>>>");
        //logger.debug(output_data);
             //console.log("setting data");
@@ -1120,6 +1325,7 @@ function readFile(file) {
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 // Return array of string values, or NULL if CSV string not well formed. Checks valid form (ONLY WITH EXCEL-FORMATS!!!!!)
+/*
 function CSVtoArray(text) {
     logger.debug("CSVtoArray");
     //logger.debug(text);
@@ -1148,6 +1354,89 @@ function CSVtoArray(text) {
         arr.push('');
     }
     return arr;
+}*/
+function CSVtoArray(strData, strDelimiter) {
+    logger.debug("CSVtoArray");
+    // Check to see if the delimiter is defined. If not,
+    // then default to comma.
+    strDelimiter = (strDelimiter || ";");
+
+    // Create a regular expression to parse the CSV values.
+    var objPattern = new RegExp(
+        (
+            // Delimiters.
+            "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+
+            // Quoted fields.
+            "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+
+            // Standard fields.
+            "([^\"\\" + strDelimiter + "\\r\\n]*))"
+        ),
+        "gi"
+    );
+
+
+    // Create an array to hold our data. Give the array
+    // a default empty first row.
+    var arrData = [[]];
+
+    // Create an array to hold our individual pattern
+    // matching groups.
+    var arrMatches = null;
+
+
+    // Keep looping over the regular expression matches
+    // until we can no longer find a match.
+    while (arrMatches = objPattern.exec(strData)) {
+
+        // Get the delimiter that was found.
+        var strMatchedDelimiter = arrMatches[1];
+
+        // Check to see if the given delimiter has a length
+        // (is not the start of string) and if it matches
+        // field delimiter. If id does not, then we know
+        // that this delimiter is a row delimiter.
+        if (
+            strMatchedDelimiter.length &&
+            strMatchedDelimiter !== strDelimiter
+        ) {
+
+            // Since we have reached a new row of data,
+            // add an empty row to our data array.
+            arrData.push([]);
+
+        }
+
+        var strMatchedValue;
+
+        // Now that we have our delimiter out of the way,
+        // let's check to see which kind of value we
+        // captured (quoted or unquoted).
+        if (arrMatches[2]) {
+
+            // We found a quoted value. When we capture
+            // this value, unescape any double quotes.
+            strMatchedValue = arrMatches[2].replace(
+                new RegExp("\"\"", "g"),
+                "\""
+            );
+
+        } else {
+
+            // We found a non-quoted value.
+            strMatchedValue = arrMatches[3];
+
+        }
+
+
+        // Now that we have our value string, let's add
+        // it to the data array.
+        arrData[arrData.length - 1].push(strMatchedValue);
+    }
+
+    // Return the parsed data.
+    return (arrData);
 }
 
 
@@ -1157,13 +1446,20 @@ function parseCSV2Array(csv) {
     //logger.debug(csv);
     //console.log("RAW CSV DATA IN");
     //console.log(csv);
+
     var separators = ['\"\",\"\"', ',\"\"', '\"\"'];
-    var newlines = ['\r\n', '\n'];
+    //var separators_NEW = ['\";\"']; // the second " at the start and the end of the line need to be removed seperately (this->" something ";" something 2 "<-this)
+    var newlines = ['\r\n', '\n']; //<- so that no weird stuff happens... hopefully
 
     //console.log(typeof (csv));
     //var lines = csv.split("\n");
     var lines = csv.split(new RegExp(newlines.join('|'), 'g'));
     //console.log(JSON.stringify(lines[0]));
+
+
+    //var temptemp = CSVtoArray(csv);
+    //mainWindow.webContents.send("output-to-chrome-console", temptemp);
+    //mainWindow.webContents.send("output-to-chrome-console", lines);
 
     lines[0] = lines[0].substring(1, lines[0].length - 3);
     //console.log(JSON.stringify(lines[0]));
@@ -1173,10 +1469,10 @@ function parseCSV2Array(csv) {
         lines[2] = lines[2].substring(1, lines[2].length - 3);
     }
 
-    var headers = lines[0].split(new RegExp(separators.join('|'), 'g'));
-    var contents = lines[1].split(new RegExp(separators.join('|'), 'g'));
+    var headers = lines[0].split(new RegExp(separators_NEW.join('|'), 'g'));
+    var contents = lines[1].split(new RegExp(separators_NEW.join('|'), 'g'));
     if (lines[2].length !== 0) {
-        var keys = lines[2].split(new RegExp(separators.join('|'), 'g'));
+        var keys = lines[2].split(new RegExp(separators_NEW.join('|'), 'g'));
     }
     //console.log(">>>>>>>>>>>>>>>>>>>>>>>>HEADERS");
     //console.log(headers);

@@ -10,6 +10,13 @@ const url = require('url');
 
 const Store = require('electron-store');
 
+ipcRenderer.on('output-to-chrome-console', function (event, data) {
+    console.log("#%#%#%#%#%#%#%#%#%#%#%#%#%#%#%#%#%%#%#%#%");
+    console.log(data);
+});
+
+
+
 /* New function to make discarding <span> elements easier */
 $.fn.ignore = function (sel) {
     return this.clone().find(sel || ">*").remove().end();
@@ -77,6 +84,7 @@ set_app_lang_selector();
 set_kw_list_available_select();
 updateSettingsUI();
 setupKWSelector();
+setupCreateProjSelector();
 ///////////////////////////////////////////////////////// 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////// WINDOW CONTROL BUTTONS FUNCTIONALITY
@@ -375,11 +383,11 @@ document.getElementById("projinfobutton").onclick = function () {//
             uniq[w] = [];
             uniq[w][0] = tempUniq[w][0];
             uniq[w][1] = tempUniq[w][1] + " x" + tempUniq[w][2];
-            logger.debug("asdasdadadsda " + toString(tempUniq[w][2]));
-            logger.debug("uniq w: "+uniq[w]);
-            logger.debug("uniq w 0: "+uniq[w][0]);
-            logger.debug("w: "+w);
-            logger.debug("tempUniq w 0: "+tempUniq[w][0]);
+            //logger.debug("asdasdadadsda " + toString(tempUniq[w][2]));
+            //logger.debug("uniq w: "+uniq[w]);
+            //logger.debug("uniq w 0: "+uniq[w][0]);
+            //logger.debug("w: "+w);
+            //logger.debug("tempUniq w 0: "+tempUniq[w][0]);
         }
 
         for (var j = 0; j < uniq.length; j++){
@@ -409,17 +417,17 @@ document.getElementById("projstartbutton").onclick = function () {//
 }
 
 /* ASYNC answers to EXPORT-window about the current project's name (IPC to file_export.js) */
-ipcRenderer.on('get-project-name', function (event, fromWindowId) {
+ipcRenderer.on('get-project-data', function (event, fromWindowId) {
     logger.debug("RECEIVED REQUESST");
     console.log("fromwindowID: "+fromWindowId);
     var result = window.currentProject;
     var fromWindow = BrowserWindow.fromId(fromWindowId);
-    fromWindow.webContents.send('get-project-name-reply', result);
+    fromWindow.webContents.send('get-project-data-reply', result);
 });
 
 document.getElementById("exportprojbutton").onclick = function () {
     logger.debug("exportproject button");    
-    //export "done" marked project files
+    //export "done" marked project files 
     var options = {
         type: 'info',
         title: "Exporting files",
@@ -432,6 +440,58 @@ document.getElementById("exportprojbutton").onclick = function () {
         if (index === 0) {
             //
             logger.debug("exporting.......");
+            ////////////////////////////////////////////////////////////////// Saving before exporting..... 
+            var no_yellows = true;
+            $('#proj-files-ul li.w3-yellow').each(function (i) {
+                no_yellows = false;
+                var done = ($(this).attr('data-done') === "true");
+
+                //$("#edit-A-orig-text .secA-Q").empty();
+                //$("#edit-B-orig-text .secB-Q").empty();
+                //for (var k = 1; k < 15; k++) {
+                //    $("#edit-C-orig-text .secC-Q-" + k).empty();
+                //}
+                var dataA = $("#edit-A-orig-text").html();
+                var dataB = $("#edit-B-orig-text").html();
+                var dataC = $("#edit-C-orig-text").html();
+                var dataKW = [];
+
+                $("#file-chosen-kw-ul li").each(function (i) {
+                    var value = $(this).attr("data-value");
+                    //$(this).find('span').remove();
+                    var name = $(this).ignore("span").text();
+                    dataKW.push([value, name]);
+                    //console.log("¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤");
+                    //console.log([value, name]);
+                });
+
+                var notes = [];
+                $("#proj-notes-ul li").each(function (i) {
+                    var text = $(this).ignore("span").text();
+                    //logger.error("text_1: "+text);
+                    notes.push(text);
+                });
+                //$("#preview-third-1").addClass("no-display");
+                //$("#preview-third-2").addClass("no-display");
+                //$("#preview-third-3").addClass("no-display");
+                //$("#preview-third-start").removeClass("no-display");
+                saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
+            });
+            if (no_yellows) {
+                var notes = [];
+                $("#proj-notes-ul li").each(function (i) {
+                    var text = $(this).ignore("span").text();
+                    //logger.error("text_2: " + text);
+                    notes.push(text);
+                });
+                var dataA = "";
+                var dataB = "";
+                var dataC = "";
+                var dataKW = "";
+                var done = "";
+                saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
+            }
+            //////////////////////////////////////////////////7
             // need to disable ALL controls from user!!!
             var asdwin = new BrowserWindow({
                 width: 500,
@@ -579,6 +639,9 @@ document.getElementById("loginbutton").onclick = function () { // DISABLED FOR N
 
 document.getElementById("create-proj-button").onclick = function () {
     logger.debug("create-proj-button");
+    $("#create-proj-error").text("");
+    $("#create-proj-country-select").val(null).trigger("change");
+    $("#create-proj-language-select").val(null).trigger("change");
     toggleViewMode(10);
     toggleViewMode(13);
 }
@@ -602,11 +665,11 @@ document.getElementById("open-proj-button").onclick = function () {
                 var opened_res = openAndViewProject(projname);
                 //readFile(fileNames);
                 if (opened_res[0]) {
-                    logger.debug("OPENED EXISTING PROJECT");
+                    logger.info("OPENED EXISTING PROJECT: "+projname);
                 }
                 else {
-                    logger.debug("FAILED TO OPEN EXISTING PROJECT!");
-                    logger.debug("REASON: " + opened_res[1]);
+                    logger.error("FAILED TO OPEN EXISTING PROJECT!");
+                    logger.error("REASON: " + opened_res[1]);
                     $("#proj-open-error").text(opened_res[1]);
                 }
                 return;
@@ -783,7 +846,9 @@ document.getElementById("footer-nav-btn3").onclick = function () {//
     else if (value === "create-proj") {
         logger.debug("new-proj-create-button");
         var project_name = $("#new-proj-create-input").val();
-        createProjAsync(project_name);
+        var project_country = $("#create-proj-country-select").val();
+        var project_lang = $("#create-proj-language-select").val();
+        createProjAsync(project_name, project_country, project_lang); 
         //create project
     }
     else if (value === "forgotPW") {
@@ -1073,10 +1138,18 @@ function setViewButtonSets(view) {
 /////////////////////////////////////////////////////////////// FUNCTIONS
 
 /* Creates new project ASYNC!! (IPC to app.js) */
-function createProjAsync(project_name) {
+function createProjAsync(project_name = "", project_country = "", project_lang = "") {
     if ($("#new-proj-create-input").val().trim().length < 1) {
         //do nothing
         $("#create-proj-error").text("Name should not be empty!");
+        return;
+    }
+    else if (project_country === null || project_country.length !== 2) {
+        $("#create-proj-error").text("Select a country!");
+        return;
+    }
+    else if (project_lang === null || project_lang.length !== 2) {
+        $("#create-proj-error").text("Select a language!");
         return;
     }
     else {
@@ -1084,8 +1157,8 @@ function createProjAsync(project_name) {
         var options = {
             type: 'info',
             title: "Create new project",
-            message: "Is the name '" + project_name + "' ok?",
-            detail: "Project with this name will be created",
+            message: "Project name: '" + project_name + "'\r\nCountry: '" + project_country + "'\r\nLanguage: '" + project_lang+"'",
+            detail: "Would you like to create project with these values?",
             buttons: [i18n.__('conf-yes', true), i18n.__('conf-no', true)]
         };
 
@@ -1117,7 +1190,7 @@ function createProjAsync(project_name) {
         }
         ipcRenderer.removeAllListeners('async-create-project-reply');
     })
-    ipcRenderer.send('async-create-project', project_name);
+    ipcRenderer.send('async-create-project', project_name, project_country, project_lang);
             }
             else {
                 return;
@@ -1153,8 +1226,8 @@ function sourceFiles2ProjAsync(files) { // Last object of "files" will be name o
         }
         else {
             logger.debug("ERROR WHILE IMPORTING!");
-            var reason = arg[1];
-            // SHOW REASON TO USER!
+            var reason1 = arg[1];
+            // SHOW REASON TO USER! 
         }       
         logger.debug("STORE SOURCE: "+f2p_store.get("source-files","NONE!!!!"));
         f2p_store.set("source-files", dirfiles);
@@ -1179,12 +1252,15 @@ function sourceFiles2ProjAsync(files) { // Last object of "files" will be name o
             }
             else {
                 logger.error("SRC to TEMP conversion failed!");
+                var reason2 = arg[1];
+                // SHOW REASON TO USER!
+
                 //folders missing
             }
-            var testing_opt = {
-                name: "temp#"+arg[1][0],
-                cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp\\')
-            }
+            //var testing_opt = {
+            //    name: "temp#"+arg[1][0],
+            //    cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp\\')
+            //}
             /*
             const testing_store = new Store(testing_opt);
             var teststring = testing_store.get("c","AHAHAHAHAHAHAHAH");
@@ -1279,6 +1355,21 @@ function openAndViewProject(proj_name) {
                                 cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name)
                             }
                             const open_store = new Store(open_options);
+
+                            var prog_ver_1 = open_store.get("version", "0.0.0").split(".");
+                            var prog_ver_2 = remote.app.getVersion().split(".");
+                            for (var pr1 = 0; pr1 < prog_ver_1.length; pr1++) {
+                                prog_ver_1[pr1] = parseInt(prog_ver_1[pr1])
+                            }
+                            for (var pr2 = 0; pr2 < prog_ver_2.length; pr2++) {
+                                prog_ver_2[pr2] = parseInt(prog_ver_2[pr2])
+                            }
+
+                            if (prog_ver_1[0] < prog_ver_2[0]) {
+                                // Projectname not allowed
+                                reason.push(false, 'Project "'+ proj_name +'" is not compatible with this version!'); 
+                                return reason;
+                            }
 
                             var created_on = new Date(open_store.get("created-on", null));
                             //console.log(created_on);
@@ -1438,7 +1529,7 @@ function addProjFile(fileArr) {
         <li class="w3-hover-blue w3-display-container">File9.csv</li>
     */
     // filearr 0 = fileoriginal, 1 = filetemp, 2 = filedonestatus
-    var li_string = document.createTextNode(fileArr[0]);
+    var li_string = document.createTextNode(fileArr[1].substring(5,fileArr[1].length-5));
     //console.log("####################################################");
     //console.log(li_string);
     var li_node = document.createElement("li");
@@ -1457,6 +1548,7 @@ function addProjFile(fileArr) {
         class: classes,
         onmouseover: "$(this).addClass('w3-hover-blue');",
         onmouseout: "$(this).removeClass('w3-hover-blue');",
+        "data-orig": fileArr[0],
         "data-temp": fileArr[1],
         "data-done": fileArr[2]
     });
@@ -1524,6 +1616,9 @@ function addProjFile(fileArr) {
 
 /* Called when temp-file is saved - temp files are saved simultaniously with the project itself */
 function saveProject(file_name, proj_name, dataA, dataB, dataC, dataKW, notes, done) {
+
+    clearCsectionUI(); // is this needed?
+
     logger.debug("saveProject");
     logger.debug("FILE_NAME: " + file_name);
     logger.debug("PROJE_NAME: " + proj_name);
@@ -1601,7 +1696,7 @@ function openAndShowFile(fileObj) {
     var docpath = remote.app.getPath('documents');
     var temp_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + window.currentProject + '\\temp\\');
     var options = {
-        name: "temp#" + $(fileObj).text(),
+        name: 'temp#'+$(fileObj).text(),
         cwd: temp_base
     }
     const store = new Store(options);
@@ -1611,7 +1706,16 @@ function openAndShowFile(fileObj) {
     $("#edit-B-edit-text").html(store.get("b",""));
     $("#edit-B-orig-text").html(store.get("b",""));
     $("#edit-C-edit-text").html(store.get("c",""));
-    $("#edit-C-orig-text").html(store.get("c",""));
+    $("#edit-C-orig-text").html(store.get("c", ""));
+
+    /*
+    HERE EDIT THE C SECTION TO SHOW PROPER ANSERWS FROM TRANSLATION FILE....
+
+
+    */
+    setupCsectionUI();
+
+
 
     window.currentFileContent = store.get("src-data",[]);
 
@@ -2496,12 +2600,12 @@ function addFilesPrompt(project_name) {
         title: i18n.__('open-file-prompt-window-title'),
         defaultPath: docpath,
         filters: [
-            { name: 'Spreadsheet', extensions: ['csv', 'xls', 'xlsx'] }
+            { name: 'Spreadsheet', extensions: ['csv'] }
         ],
         properties: ['openFile',
             'multiSelections'
         ]
-    }
+    }//, 'xls', 'xlsx'
     function callback(fileNames) {
 
         if (fileNames !== undefined) {
@@ -2725,6 +2829,121 @@ function setupCensorSelect() {
         }
     });
         }
+/* Setup language and country (in English) selectors on Create Project -view */
+function setupCreateProjSelector() {
+    logger.debug("setupCreateProjSelector");
+    var resultdata1 = "";
+    var resultdata2 = "";
+    try {
+        resultdata1 = JSON.parse(fs.readFileSync(path.join(__dirname,"../select2/language_3b2.json"), "utf8"));
+        resultdata2 = JSON.parse(fs.readFileSync(path.join(__dirname,"../select2/data_countries.json"), "utf8"));
+    }
+    catch (err) {
+        logger.error("Error opening >Create Project< file: " + err.message);
+        return -1;
+    }
+    var testdata1 = $.map(resultdata1, function (obj) {
+        obj.id = obj["alpha2"];
+        obj.text = obj.English;
+        return obj;
+    });
+
+    var testdata2 = $.map(resultdata2, function (obj) {
+        obj.id = obj.Code;
+        obj.text = obj.Name;
+        return obj;
+    });
+    $("#create-proj-country-select").select2({
+        language: "current_lang",
+        placeholder: i18n.__('select2-proj-country-ph'),
+        data: testdata2
+    }
+    );
+
+    $("#create-proj-language-select").select2({
+        language: "current_lang",
+        placeholder: i18n.__('select2-proj-lang-ph'),
+        data: testdata1
+    }
+    );
+
+    $("#create-proj-country-select").val(null).trigger("change");
+    $("#create-proj-language-select").val(null).trigger("change");
+
+}
+
+
+function setupCsectionUI() {
+    logger.debug("setupCsectionUI");
+    for (var f = 1; f < 15; f++) {
+        var realdata = "";
+        var classStr = "secC-Q-" + f + "-cont";
+        if (document.getElementById("edit-C-edit-text").getElementsByClassName(classStr)[0].hasAttribute("data-real")) { // has data-real attr
+            if ($("#edit-C-edit-text ." + classStr).attr("data-real").length !== 0) {// has non-empty real-data attr
+
+                realdata = JSON.parse($("#edit-C-edit-text ." + classStr).attr("data-real"));
+
+                if (f === 1) {
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("field-of-study-" + realdata.toString()));
+                }
+                else if (f === 3) {
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("age-"+(realdata-1).toString()));
+                }
+                else if (f === 4) {
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("gender-"+(realdata-1).toString()));
+                }
+                else if (f === 5) {
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("study-year-"+(realdata-1).toString()));
+                }
+                else if (f === 6) {
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("work-placement-"+realdata.toString()));
+                }
+                else if (f === 8) {//array!!! if there is one
+                    var temparr = [];
+                    for (var s = 0; s < realdata.length; s++){
+                        temparr.push(i18n.__("event-related-" + realdata[s].toString()));
+                    }
+                    $("#edit-C-edit-text ." + classStr).text(temparr.toString());
+                }
+                else if (f === 10) {
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("event-type-"+(realdata-1).toString()));
+                }
+                else if (f === 11) {
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("report-document-"+(realdata-1).toString()));
+                }
+                else if (f === 13) {
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("report-document-" + (realdata - 1).toString()));
+                }
+                //$("#edit-C-edit-text ." + classStr).addClass("w3-light-blue"); //adding background color
+            }
+            else {// data-real exists but nothing inside...
+                $("#edit-C-edit-text ." + classStr).text("");
+            }
+        }
+        else {// no data-real attr. no need to do anything for this...
+            //
+        }
+        //$("#edit-C-edit-text " + classStr).text(i18n.__(""));
+    }
+
+    $("#edit-C-orig-text").html($("#edit-C-edit-text").html())
+}
+
+/* Clears UI for section C where translations were used */
+function clearCsectionUI() {
+    logger.debug("clearCsectionUI");
+    for (var f = 1; f < 15; f++) {
+        var classStr = "secC-Q-" + f + "-cont";
+        var elem = document.getElementById("edit-C-edit-text").getElementsByClassName("secC-Q-" + f + "-cont")[0];
+        if (elem === undefined) { // there is no such element. just quitting...
+            return;
+        }
+        if (elem.hasAttribute("data-real")) {
+            $("#edit-C-edit-text ." + classStr).empty();
+            //$("#edit-C-edit-text ." + classStr).removeClass("w3-light-blue"); //remove background color
+        }
+    }
+}
 
 /* THIS IS SETTING UP UI TRANSLATION */
 function setupTranslations() {
