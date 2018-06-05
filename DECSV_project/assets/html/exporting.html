@@ -4,6 +4,19 @@
 <head>
     <meta charset="utf-8" />
     <title></title>
+    <script>
+        'use strict';
+
+        document.addEventListener('dragover', function (event) {
+            event.preventDefault();
+            return false;
+        }, false);
+
+        document.addEventListener('drop', function (event) {
+            event.preventDefault();
+            return false;
+        }, false);
+    </script>
     <script>window.logger = require('electron-log');</script>
     <script>window.$ = require('jquery');</script>
     <script>window.i18n = new (require('../translations/i18n')); logger.debug("setupTranslations(exporting.html)");</script>

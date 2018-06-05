@@ -8,10 +8,15 @@ const autoUpdater = remote.autoUpdater;
 const path = require('path');
 const url = require('url');
 
-const Store = require('electron-store');
+//const Store = require('electron-config');
+const Store = require("electron-store");
+
+//import intUtils from './intUtils.js';
+const intUtils = require(path.join(__dirname, './intUtils.js'));
+const parseUtils = require(path.join(__dirname,'./parseUtils.js'));
 
 ipcRenderer.on('output-to-chrome-console', function (event, data) {
-    console.log("#%#%#%#%#%#%#%#%#%#%#%#%#%#%#%#%#%%#%#%#%");
+    console.log("#%#%#%#%#% OUTPUT_CHROME %#%#%%#%#%#%");
     console.log(data);
 });
 
@@ -22,7 +27,14 @@ $.fn.ignore = function (sel) {
     return this.clone().find(sel || ">*").remove().end();
 };
 
+var langopt_123 = {
+    name: "app-configuration",
+    cwd: remote.app.getPath('userData')
+}
+var langstore_123 = new Store(langopt_123);
 /* This sets up the language that ALL select2 select-fields will use */
+$.fn.select2.defaults.set('language', langstore_123.get("app-lang","en"));
+/*
 $.fn.select2.amd.define('select2/i18n/current_lang', [], function () {
     // Current language $("#open-file-prompt-text").text(i18n.__('open-files'));
     return {
@@ -70,21 +82,24 @@ $.fn.select2.amd.define('select2/i18n/current_lang', [], function () {
         }
     };
 });
+*/
 
-/* Getting global ABOUT-window creator from app.js */
-let aboutCreatFunc = remote.getGlobal('createAboutWin');
+/* Getting global functions.... */
+let aboutCreatFunc = remote.getGlobal('createAboutWin');// does not take parameters
+let createDummyDialog = remote.getGlobal('createDummyDialog');// takes in calling BrowserWindow-element as parameter
 
-const enable_onclicks = false; // NEEDS TO BE DELETED AT SOME POINT
 logger.debug("Running init...");
 
 ///////////////////////////////////////////////////////// STARTUP FUNCTIONS
 setupTranslations();
-set_KW_choose_selector();
-set_app_lang_selector();
-set_kw_list_available_select();
-updateSettingsUI();
-setupKWSelector();
-setupCreateProjSelector();
+intUtils.selectUtils.setSettingsLoadedKW();
+
+intUtils.selectUtils.setAppLang();
+intUtils.selectUtils.setKWListAvailable();
+
+intUtils.updateSettingsUI();
+intUtils.selectUtils.setupEditKW();
+intUtils.selectUtils.setCreateProjSelect();
 ///////////////////////////////////////////////////////// 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////// WINDOW CONTROL BUTTONS FUNCTIONALITY
@@ -108,57 +123,102 @@ document.getElementById("win-maximize-restore-icon").onclick = function () {
     }
 }
 document.getElementById("win-close-icon").onclick = function () {
-    logger.debug("win-close icon/button"); //NEEDS UPDATE!!!!!!
-    var no_yellows = true;
-    $('#proj-files-ul li.w3-yellow').each(function (i) {
-        no_yellows = false;
-        var done = ($(this).attr('data-done') === "true");
+    logger.debug("win-close icon/button");
+    var country = "";
+    var lang = "";
+    var done = false;
 
+    // checking if we have project and/or event open
+    if (window.currentProject !== undefined) {
+
+    // going through yellow file list elements (as in currently opened/selected)
+        $('#proj-files-ul li.w3-yellow').each(function (i) {
+            done = ($(this).attr('data-done') === "true");
+            country = $(this).attr('data-country');
+            country = $(this).attr('data-lang');
+        });
+    
+        // since we are closing, we need to clear the edit sections of the UI
+
+        // clearing translations (no need to have them saved)
         $("#edit-A-orig-text .secA-Q").empty();
         $("#edit-B-orig-text .secB-Q").empty();
         for (var k = 1; k < 15; k++) {
             $("#edit-C-orig-text .secC-Q-" + k).empty();
         }
+
+        // taking text to be saved
         var dataA = $("#edit-A-orig-text").html();
         var dataB = $("#edit-B-orig-text").html();
+        intUtils.sectionUtils.clearCsectionUI();
         var dataC = $("#edit-C-orig-text").html();
         var dataKW = [];
-
         $("#file-chosen-kw-ul li").each(function (i) {
-            var value = $(this).attr("data-value");
-            $(this).find('span').remove();
-            var name = $(this).text();
-            dataKW.push([value, name]);
+            var value = $(this).attr("data-value").substring(3, test.length - 1);
+            //$(this).find('span').remove(); // no need to remove span, since we don't need text
+            dataKW.push(value);
+        });
+        var notes = [];
+        $("#proj-notes-ul li").each(function (i) {
+            var text = $(this).ignore("span").text();
+            notes.push(text);
         });
 
-        var notes = [];
-        $("#proj-notes-ul li").each(function (i) {
-            var text = $(this).ignore("span").text();
-            //logger.error("text_3: " + text);
-            notes.push(text);
-        });
-        
-        saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
-    });
-    if (no_yellows) {
-        var notes = [];
-        $("#proj-notes-ul li").each(function (i) {
-            var text = $(this).ignore("span").text();
-            //logger.error("text_4: " + text);
-            notes.push(text);
-        });
-        var dataA = "";
-        var dataB = "";
-        var dataC = "";
-        var dataKW = "";
-        var done = "";
-        saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
+        // saving these to window-variable and backup, but since we are closing, but NO into actual file (no need to promp, because handleClosing() deals with it)
+        saveProject(0, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+    }
+    else {
+        logger.warn("No open project to be saved! Window.currentProject undefined!");
     }
     firstWindow.close();
 }
 document.getElementById('win-about-icon').onclick = function () {
     logger.debug("win-about icon/button");
     aboutCreatFunc();
+}
+
+document.getElementById("save-cur-edits-btn").onclick = function () {
+    logger.debug("save current pending changes button");
+
+    var country = "";
+    var lang = "";
+    var done = false;
+
+    $('#proj-files-ul li.w3-yellow').each(function (i) {
+        done = ($(this).attr('data-done') === "true");
+        country = $(this).attr('data-country');
+        country = $(this).attr('data-lang');
+    });
+
+    // since we are closing, we need to clear the edit sections of the UI
+
+    // clearing translations (no need to have them saved)
+    $("#edit-A-orig-text .secA-Q").empty();
+    $("#edit-B-orig-text .secB-Q").empty();
+    for (var k = 1; k < 15; k++) {
+        $("#edit-C-orig-text .secC-Q-" + k).empty();
+    }
+
+    // taking text to be saved
+    var dataA = $("#edit-A-orig-text").html();
+    var dataB = $("#edit-B-orig-text").html();
+    intUtils.sectionUtils.clearCsectionUI();
+    var dataC = $("#edit-C-orig-text").html();
+    var dataKW = [];
+    $("#file-chosen-kw-ul li").each(function (i) {
+        var value = $(this).attr("data-value").substring(3, test.length - 1);
+        //$(this).find('span').remove(); // no need to remove span, since we don't need text
+        dataKW.push(value);
+    });
+    var notes = [];
+    $("#proj-notes-ul li").each(function (i) {
+        var text = $(this).ignore("span").text();
+        notes.push(text);
+    });
+
+
+    // saving, because user wanted to click the button....
+    saveProject(1, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -173,6 +233,14 @@ document.getElementById("proj-note-input-btn").onclick = function () {
         logger.info("adding project note: " + $("#proj-note-input-field").val().trim());
         addProjNote($("#proj-note-input-field").val().trim());
         $("#proj-note-input-field").val("");
+        intUtils.markPendingChanges(true, window.currentFile);
+        var notes = [];
+        $("#proj-notes-ul li").each(function (i) {
+            var text = $(this).ignore("span").text();
+            notes.push(text);
+        });
+        // saving, because user wanted to click the button....
+        saveProject(0, "", "", "", [], notes);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
     }
 }
 /* Follows input into project notes field */
@@ -186,6 +254,14 @@ document.getElementById("proj-note-input-field").onkeypress = function (e) {
             logger.info("adding project note: " + $("#proj-note-input-field").val().trim());
             addProjNote($("#proj-note-input-field").val().trim());
             $("#proj-note-input-field").val("");
+            intUtils.markPendingChanges(true, window.currentFile);
+            var notes = [];
+            $("#proj-notes-ul li").each(function (i) {
+                var text = $(this).ignore("span").text();
+                notes.push(text);
+            });
+            // saving, because user wanted to click the button....
+            saveProject(0, "", "", "", [], notes);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
         }
     }
 }
@@ -203,7 +279,7 @@ document.getElementById("new-proj-create-input").onkeypress = function (e) {//
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////// SETTINGS LISTENERS UPDATE BUTTONS
-document.getElementById("check-app-updates-button").onclick = function () {
+document.getElementById("check-app-updates-button").onclick = function () { //NEEDSTOBECHANGED
     logger.debug("check-app-updates button");
     $("#check-app-updates-button").addClass("element-disabled");
     $("#update-download-progress").css("width", "0%");
@@ -290,8 +366,10 @@ document.getElementById("check-app-updates-button").onclick = function () {
     ipcRenderer.send("check-updates", "");
 }
 
-document.getElementById("downloadandupdatekeywords").onclick = function () {
+document.getElementById("downloadandupdatekeywords").onclick = function () {//NEEDSTOBECHANGED
     logger.debug("downloadandupdatekeywords button");
+    createDummyDialog(firstWindow);
+    /*
     var loadable_kw_lists = $("#kw-list-available-choose").val();
     logger.debug("WOULD be downloading: " + loadable_kw_lists);
 
@@ -303,18 +381,20 @@ document.getElementById("downloadandupdatekeywords").onclick = function () {
     
     //checkAndUpdateKWLists();
     // REMEMBER TO SET "NAME" TO KW LISTS properties-file FROM THE FIRST ELEMENT within the .json file, when you have downloaded them!!!!!!
+    */
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////// UPPER NAV BAR LISTENERS / BUTTONS
 document.getElementById("addfilebutton").onclick = function () {
     logger.debug("addfile button");
+    createDummyDialog(firstWindow);
+    return;
     //
-    var proj_name = window.currentProject;
-    addFilesPrompt(proj_name);
+    addFilesPrompt(); //NEEDSTOBECHANGED
 }
 
-document.getElementById("projinfobutton").onclick = function () {//
+document.getElementById("projinfobutton").onclick = function () {// NEEDSTOBECHANGED
     logger.debug("projinfo button");
     
     var value = $("#footer-nav-btn3").val();
@@ -337,7 +417,7 @@ document.getElementById("projinfobutton").onclick = function () {//
             name: window.currentProject,
             cwd: proj_base
         }
-        const store = new Store(options);
+        const store = new Store(options);//
         var obj = store.get('kw-per-file', {});
         var allkw = [];
         for (var k in obj) {
@@ -406,96 +486,78 @@ document.getElementById("projinfobutton").onclick = function () {//
         }
         
     }
-    toggleViewMode(12);
-    toggleViewMode(10);
+    intUtils.toggleViewMode(12);
+    intUtils.toggleViewMode(10);
 }
 
 document.getElementById("projstartbutton").onclick = function () {//
     logger.debug("projectstart button");
-    toggleViewMode(1);
-    toggleViewMode(9);
+    intUtils.toggleViewMode(1);
+    intUtils.toggleViewMode(9);
 }
 
 /* ASYNC answers to EXPORT-window about the current project's name (IPC to file_export.js) */
 ipcRenderer.on('get-project-data', function (event, fromWindowId) {
     logger.debug("RECEIVED REQUESST");
-    console.log("fromwindowID: "+fromWindowId);
-    var result = window.currentProject;
+    logger.debug("fromwindowID: " + fromWindowId);
+    var result = [];
+    result.push(window.currentProject, window.currentFileContent);
     var fromWindow = BrowserWindow.fromId(fromWindowId);
     fromWindow.webContents.send('get-project-data-reply', result);
 });
 
-document.getElementById("exportprojbutton").onclick = function () {
-    logger.debug("exportproject button");    
+document.getElementById("exportprojbutton").onclick = function () {// NEEDSTOBECHANGED
+    logger.debug("exportproject button");
+    createDummyDialog(firstWindow);
+    return;
+
     //export "done" marked project files 
     var options = {
         type: 'info',
         title: "Exporting files",
         message: "Files marked 'DONE' will be exported!",
         detail: "Exporting files into csv-format. Editing will be disabled until export is finished.",
-        buttons: [i18n.__('conf-yes', true), i18n.__('conf-no', true)]
+        buttons: [i18n.__('conf-yes'), i18n.__('conf-no')]
     };
 
     ////////////////////////////////////////////////////////////////// Saving before exporting..... 
-    var no_yellows = true;
-    $('#proj-files-ul li.w3-yellow').each(function (i) {
-        no_yellows = false;
-        var done = ($(this).attr('data-done') === "true");
+    var country = "";
+    var lang = "";
+    var done = false;
 
-        //$("#edit-A-orig-text .secA-Q").empty();
-        //$("#edit-B-orig-text .secB-Q").empty();
-        //for (var k = 1; k < 15; k++) {
-        //    $("#edit-C-orig-text .secC-Q-" + k).empty();
-        //}
+    if (window.currentProject !== undefined) {
+
+    // going through yellow file list elements (as in currently opened/selected)
+        $('#proj-files-ul li.w3-yellow').each(function (i) {
+            done = ($(this).attr('data-done') === "true");
+            country = $(this).attr('data-country');
+            lang = $(this).attr('data-lang');
+        });
+
+    
         var dataA = $("#edit-A-orig-text").html();
         var dataB = $("#edit-B-orig-text").html();
+        intUtils.sectionUtils.clearCsectionUI();
         var dataC = $("#edit-C-orig-text").html();
         var dataKW = [];
 
         $("#file-chosen-kw-ul li").each(function (i) {
-            var value = $(this).attr("data-value");
-            //$(this).find('span').remove();
-            var name = $(this).ignore("span").text();
-            dataKW.push([value, name]);
-            //console.log("¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤");
-            //console.log([value, name]);
+            var value = $(this).attr("data-value").substring(3, test.length - 1);
+            $(this).find('span').remove();
+            dataKW.push(value);
         });
 
         var notes = [];
         $("#proj-notes-ul li").each(function (i) {
-            //console.log("QWRQWERWRWRQEWQEWQE=================");
-            //console.log(i);
             var text = $(this).ignore("span").text();
-            //console.log(text);
-            //console.log($(this).text());
-            //logger.error("text_1: "+text);
             notes.push(text);
         });
-        //$("#preview-third-1").addClass("no-display");
-        //$("#preview-third-2").addClass("no-display");
-        //$("#preview-third-3").addClass("no-display");
-        //$("#preview-third-start").removeClass("no-display");
-        saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
-    });
-    if (no_yellows) {
-        var notes = [];
-        $("#proj-notes-ul li").each(function (i) {
-            //console.log("ASDASDASDASDASDASDASDASD");
-            //console.log(i);
-            var text = $(this).ignore("span").text();
-            //console.log(text);
-            //console.log($(this).text());
-            //logger.error("text_2: " + text);
-            notes.push(text);
-        });
-        var dataA = "";
-        var dataB = "";
-        var dataC = "";
-        var dataKW = "";
-        var done = "";
-        saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
+
+        // saving, because we are about to export files. can't have them exported unsaved, right? :) (saving to backup files and window-variable)
+        saveProject(0, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+    } else {
+        logger.warn("No open project to be saved! Window.currentProject undefined!");
     }
-            //////////////////////////////////////////////////7
 
     dialog.showMessageBox(firstWindow, options, function (index) {
         if (index === 0) {
@@ -506,7 +568,7 @@ document.getElementById("exportprojbutton").onclick = function () {
             var asdwin = new BrowserWindow({
                 width: 500,
                 height: 400,
-                resizable: false,
+                resizable: true,
                 devTools: true,
                 frame: false,
                 backgroundColor: '#dadada',
@@ -526,87 +588,115 @@ document.getElementById("exportprojbutton").onclick = function () {
             asdwin.loadURL(winurl);
         }
     });
-
+    
 }
 
 document.getElementById("closeprojbutton").onclick = function () {
     logger.debug("closeproject button");
     var options = {
         type: 'info',
-        title: "Confirmation",
-        message: "Close project " + window.currentProject+"?",
+        title: i18n.__('conf-title'),
+        message: "Close project '" + window.currentProject+"'?",
         detail: "Are you sure you want to close this project?",
-        buttons: [i18n.__('conf-yes', true), i18n.__('conf-no', true)]
+        buttons: [i18n.__('conf-yes'), i18n.__('conf-no')]
     };
 
     dialog.showMessageBox(firstWindow, options, function (index) {
         if (index === 0) {
-            var no_yellows = true;
-            //save before closing
-            $('#proj-files-ul li.w3-yellow').each(function (i) {
-                no_yellows = false;
-                var done = ($(this).attr('data-done') === "true");
+            //save before closing, but only when prompted
+            var country = "";
+            var lang = "";
+            var done = false;
 
-                $("#edit-A-orig-text .secA-Q").empty();
-                $("#edit-B-orig-text .secB-Q").empty();
-                for (var k = 1; k < 15; k++) {
-                    $("#edit-C-orig-text .secC-Q-" + k).empty();
+            if (window.currentProject !== undefined) {
+                var close_opt = {
+                    name: "app-configuration",
+                    cwd: remote.app.getPath('userData')
                 }
-                var dataA = $("#edit-A-orig-text").html();
-                var dataB = $("#edit-B-orig-text").html();
-                var dataC = $("#edit-C-orig-text").html();
-                var dataKW = [];
+                var close_store = new Store(close_opt)
+                // testing if pending edits that need to be saved
+                if (close_store.get("edits", [false, null])[0]) {
 
-                $("#file-chosen-kw-ul li").each(function (i) {
-                    var value = $(this).attr("data-value");
-                    $(this).find('span').remove();
-                    var name = $(this).text();
-                    dataKW.push([value, name]);
-                });
+                    $('#proj-files-ul li.w3-yellow').each(function (i) {
+                        done = ($(this).attr('data-done') === "true");
+                        country = $(this).attr('data-country');
+                        lang = $(this).attr('data-lang');
+                    });
 
-                var notes = [];
-                $("#proj-notes-ul li").each(function (i) {
-                    var text = $(this).ignore("span").text();
-                    //logger.error("text_1: "+text);
-                    notes.push(text);
-                });
-                $("#preview-third-1").addClass("no-display");
-                $("#preview-third-2").addClass("no-display");
-                $("#preview-third-3").addClass("no-display");
-                $("#preview-third-start").removeClass("no-display");
-                saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
-            });
-            if (no_yellows) {
-                var notes = [];
-                $("#proj-notes-ul li").each(function (i) {
-                    var text = $(this).ignore("span").text();
-                    //logger.error("text_2: " + text);
-                    notes.push(text);
-                });
-                var dataA = "";
-                var dataB = "";
-                var dataC = "";
-                var dataKW = "";
-                var done = "";
-                saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
+                    $("#edit-A-orig-text .secA-Q").empty();
+                    $("#edit-B-orig-text .secB-Q").empty();
+                    for (var k = 1; k < 15; k++) {
+                        $("#edit-C-orig-text .secC-Q-" + k).empty();
+                    }
+                    var dataA = $("#edit-A-orig-text").html();
+                    var dataB = $("#edit-B-orig-text").html();
+                    intUtils.sectionUtils.clearCsectionUI();
+                    var dataC = $("#edit-C-orig-text").html();
+                    var dataKW = [];
+
+                    $("#file-chosen-kw-ul li").each(function (i) {
+                        var value = $(this).attr("data-value").substring(3, test.length - 1);
+                        $(this).find('span').remove();
+                        dataKW.push(value);
+                    });
+
+                    var notes = [];
+                    $("#proj-notes-ul li").each(function (i) {
+                        var text = $(this).ignore("span").text();
+                        notes.push(text);
+                    });
+
+
+                    var options = {
+                        type: 'info',
+                        title: i18n.__("conf-title"),
+                        message: "There are pending changes!",
+                        detail: "Do you wish to save these changes?",
+                        buttons: [i18n.__('conf-yes'), i18n.__('conf-no')]
+                    };
+
+                    dialog.showMessageBox(firstWindow, options, function (index) {
+                        if (index === 0) {
+                            //save changes into file
+                            // saving, because we are about to close the current project and return into start-view (only backup-file, but need to be prompted to save to file)
+                            saveProject(1, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+                        }
+                        else {
+                            //remove backup data
+                            saveProject(2);
+                        }
+                    });
+                }
+            } else {
+                logger.warn("No open project to be saved! Window.currentProject undefined!");
             }
-            //
+
+            // Setting UI to start view (hiding edit-view preview-parts A, B and C away)
+            $("#preview-third-1").addClass("no-display");
+            $("#preview-third-2").addClass("no-display");
+            $("#preview-third-3").addClass("no-display");
+            $("#preview-third-start").removeClass("no-display");
+
+            // deleting window-variables that identify the current project
             window.currentProject = undefined;
             window.currentFile = undefined;
             window.currentFileContent = undefined;
-            setViewButtonSets("project-closed");
-            clearElements();
+            window.currentEvent = undefined;
+
+            // Clearing section items and setting footer button mode. Also toggling proper view
+            intUtils.setFooterBtnMode("project-closed");
+            intUtils.sectionUtils.clearElements();
             $("#titlebar-appname").text("DECSV");// {Alpha version " + remote.app.getVersion() + "}")
-            $("#preview-cur-file-name").text("Current file: NONE");
-            $("#preview-subid").text("Submission ID:");
-            $("#preview-subdate").text("Submission Date:");
-            toggleViewMode(0);
-            toggleViewMode(10);
+            //$("#preview-cur-file-name").text("Current file: NONE");
+            //$("#preview-subid").text("Submission ID:");
+            //$("#preview-subdate").text("Submission Date:");
+            intUtils.toggleViewMode(0);
+            intUtils.toggleViewMode(10);
         }
     });
 }
 
-document.getElementById("settingsbutton").onclick = function () {
+document.getElementById("settingsbutton").onclick = function () {//NEEDSTOBECHANGED
     logger.debug("settings button");
     if ($('#footer-nav-btn3').val() === "settings") {
         // do nothing. you are already at settings...
@@ -615,19 +705,19 @@ document.getElementById("settingsbutton").onclick = function () {
         // CHECK SETTINGS FROM FILES > and update view like you wanted to
         $("#app-lang-selector").val(null).trigger("change");
         $("#kw-list-available-choose").val(null).trigger("change");
-        updateSettingsUI();
+        intUtils.updateSettingsUI();
     }
-    toggleViewMode(7);
-    toggleViewMode(10);
+    intUtils.toggleViewMode(7);
+    intUtils.toggleViewMode(10);
 }
 
 document.getElementById("back-to-start-button").onclick = function () {
     logger.debug("to start button");
-    toggleViewMode(0);
-    toggleViewMode(10);
+    intUtils.toggleViewMode(0);
+    intUtils.toggleViewMode(10);
 }
 
-document.getElementById("loginbutton").onclick = function () { // DISABLED FOR NOW
+document.getElementById("loginbutton").onclick = function () { // DISABLED FOR NOW NEEDSTOBECHANGED
     logger.debug("login button");
     /*
 
@@ -652,8 +742,8 @@ document.getElementById("create-proj-button").onclick = function () {
     $("#create-proj-error").text("");
     $("#create-proj-country-select").val(null).trigger("change");
     $("#create-proj-language-select").val(null).trigger("change");
-    toggleViewMode(10);
-    toggleViewMode(13);
+    intUtils.toggleViewMode(10);
+    intUtils.toggleViewMode(13);
 }
 
 document.getElementById("open-proj-button").onclick = function () {
@@ -663,23 +753,29 @@ document.getElementById("open-proj-button").onclick = function () {
     if (fs.existsSync(path.join(docpath, "SLIPPS DECSV\\Projects\\"))){
         var options = {
             title: i18n.__('open-project-prompt-window-title'),
-            defaultPath: path.join(docpath, "SLIPPS DECSV\\Projects\\"), //This need verifications!!!
-            properties: ['openDirectory'
+            defaultPath: path.join(docpath, "SLIPPS DECSV\\Projects\\"),
+            filters: [
+                { name: 'DECSV project file', extensions: ['decsv'] }
+            ],
+            properties: ['openFile'
             ]
-        }
+        }// This need verifications!!!
         function callback(pname) {
 
             if (pname !== undefined) {
-                var projname = pname[0].split("\\").pop();
+                var opened_res = openAndViewProject(pname[0]);
+                var file_ext = pname[0].split('.').pop();
+                var projname = pname[0].split('\\').pop();
+                projname = projname.split(".");
+                projname.pop();
+                projname.join(".");
                 logger.debug("PROJECT NAME: " + projname);
-                var opened_res = openAndViewProject(projname);
                 //readFile(fileNames);
                 if (opened_res[0]) {
-                    logger.info("OPENED EXISTING PROJECT: "+projname);
+                    logger.info("Successfully opened project '"+projname+"'!");
                 }
                 else {
-                    logger.error("FAILED TO OPEN EXISTING PROJECT!");
-                    logger.error("REASON: " + opened_res[1]);
+                    logger.error("Failed to open existing project! Reason: "+opened_res[1]);
                     $("#proj-open-error").text(opened_res[1]);
                 }
                 return;
@@ -700,22 +796,22 @@ document.getElementById("open-proj-button").onclick = function () {
 document.getElementById("secAmodetoggle").onclick = function () {
     logger.debug("secAmodetoggle button");
     console.log("toggle A");
-    toggleViewMode(2);
-    toggleViewMode(9);
+    intUtils.toggleViewMode(2);
+    intUtils.toggleViewMode(9);
 }
 
 document.getElementById("secBmodetoggle").onclick = function () {
     logger.debug("secBmodetoggle button");
     console.log("toggle B");
-    toggleViewMode(3);
-    toggleViewMode(9);
+    intUtils.toggleViewMode(3);
+    intUtils.toggleViewMode(9);
 }
 
 document.getElementById("secCmodetoggle").onclick = function () {
     logger.debug("secCmodetoggel button");
     console.log("toggle C");
-    toggleViewMode(4);
-    toggleViewMode(9);
+    intUtils.toggleViewMode(4);
+    intUtils.toggleViewMode(9);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////
 /* Login/Register div */
@@ -796,28 +892,28 @@ document.getElementById("footer-nav-btn3").onclick = function () {//
     //save settings
     //edit ABC save
     if (value === "editA") {
-        toggleViewMode(1);
-        toggleViewMode(9);
+        intUtils.toggleViewMode(1);
+        intUtils.toggleViewMode(9);
         // save A edits and update preview
         $("#edit-A-orig-text").html($("#edit-A-edit-text").html());
-        updatePreview();
-        updateCensoredList();
+        intUtils.sectionUtils.updatePreview();
+        intUtils.sectionUtils.updateCensoredList();
     }
     else if (value === "editB") {
-        toggleViewMode(1);
-        toggleViewMode(9);
+        intUtils.toggleViewMode(1);
+        intUtils.toggleViewMode(9);
         // save B edits and update preview
         $("#edit-B-orig-text").html($("#edit-B-edit-text").html());
-        updatePreview();
-        updateCensoredList();
+        intUtils.sectionUtils.updatePreview();
+        intUtils.sectionUtils.updateCensoredList();
     }
     else if (value === "editC") {
-        toggleViewMode(1);
-        toggleViewMode(9);
+        intUtils.toggleViewMode(1);
+        intUtils.toggleViewMode(9);
         // save C edits and update preview
         $("#edit-C-orig-text").html($("#edit-C-edit-text").html());
-        updatePreview();
-        updateCensoredList();
+        intUtils.sectionUtils.updatePreview();
+        intUtils.sectionUtils.updateCensoredList();
     }
     else if (value === "login") {
         //login
@@ -837,10 +933,10 @@ document.getElementById("footer-nav-btn3").onclick = function () {//
     else if (value === "settings") {
         var options = {
             type: 'info',
-            title: "Confirmation",
+            title: i18n.__('conf-title'),
             message: "Save these settings?",
             detail: "If you set language, it will take effect on next startup.",
-            buttons: [i18n.__('conf-yes', true), i18n.__('conf-no', true)]
+            buttons: [i18n.__('conf-yes'), i18n.__('conf-no')]
         };
 
         dialog.showMessageBox(firstWindow, options, function (index) {
@@ -875,40 +971,40 @@ document.getElementById("footer-nav-btn4").onclick = function () {
     //cancel settings
     //edit ABC cancel
     if (value === "editA") {
-        toggleViewMode(1);
-        toggleViewMode(9);
+        intUtils.toggleViewMode(1);
+        intUtils.toggleViewMode(9);
         // cancel editmode A
         $("#edit-A-edit-text").html($("#edit-A-orig-text").html());
-        setupCensorSelect();
+        intUtils.sectionUtils.setupCensorSelect();
     }
     else if (value === "editB") {
-        toggleViewMode(1);
-        toggleViewMode(9);
+        intUtils.toggleViewMode(1);
+        intUtils.toggleViewMode(9);
         //cancel editmode B
         $("#edit-B-edit-text").html($("#edit-B-orig-text").html());
-        setupCensorSelect();
+        intUtils.sectionUtils.setupCensorSelect();
     }
     else if (value === "editC") {
-        toggleViewMode(1);
-        toggleViewMode(9);
+        intUtils.toggleViewMode(1);
+        intUtils.toggleViewMode(9);
         //cancel editmode C
         $("#edit-C-edit-text").html($("#edit-C-orig-text").html());
-        setupCensorSelect();
+        intUtils.sectionUtils.setupCensorSelect();
     }
     else if (value === "register") {
-        toggleViewMode(5);
-        toggleViewMode(10);
+        intUtils.toggleViewMode(5);
+        intUtils.toggleViewMode(10);
     }
-    else if (value === "settings") {
+    else if (value === "settings") { //NEEDSTOBECHANGED
         $("#app-lang-selector").val(null).trigger("change");
         $("#kw-list-available-choose").val(null).trigger("change");
-        updateSettingsUI();
+        intUtils.updateSettingsUI();
         // revert changes in settings
     }
     else if (value === "forgotPW") { 
 
-        toggleViewMode(5);
-        toggleViewMode(10);
+        intUtils.toggleViewMode(5);
+        intUtils.toggleViewMode(10);
     }
     
 }
@@ -931,12 +1027,12 @@ document.getElementById("footer-nav-btn5").onclick = function () {
                     "data-done": true
                 });
             }
-            setViewButtonSets("preview");
+            intUtils.setFooterBtnMode("preview");
         });
     }
     else if (value === "login") {
-        toggleViewMode(6);
-        toggleViewMode(10);
+        intUtils.toggleViewMode(6);
+        intUtils.toggleViewMode(10);
         // register view
     }
     
@@ -969,178 +1065,11 @@ document.getElementById("footer-nav-btn6").onclick = function () {//
         // Move to next file
     }
     else if (value === "login") {
-        toggleViewMode(14);
-        toggleViewMode(10);
+        intUtils.toggleViewMode(14);
+        intUtils.toggleViewMode(10);
     }
 }
 /////////////////////////////////////////////////////////////////////////////////////////
-
-/* Set value of footer (bottom) buttons */
-function setFooterBtnValue(value) {
-    logger.debug("setFooterBtnValue");
-    logger.debug("Value: "+value);
-    $("#footer-nav-btn1").val(value);
-    $("#footer-nav-btn2").val(value);
-    $("#footer-nav-btn3").val(value);
-    $("#footer-nav-btn4").val(value);
-    $("#footer-nav-btn5").val(value);
-    $("#footer-nav-btn6").val(value);
-}
-
-/* Set visibility of various UI buttons (mainly footer) */
-function setViewButtonSets(view) {
-    logger.debug("setViewButtonSets");
-    logger.debug("View: "+view);
-    if (view === "preview") {
-        $("#footer-nav-btn1").removeClass("no-display");
-        $("#footer-nav-btn2").addClass("no-display");
-        $("#footer-nav-btn3").addClass("no-display");
-        $("#footer-nav-btn4").addClass("no-display");
-        $("#footer-nav-btn5").removeClass("no-display");
-        $("#footer-nav-btn6").removeClass("no-display");
-
-        $("#footer-nav-btn1").text("Previous file");
-        $("#footer-nav-btn6").text("Next file");
-
-        $('#proj-files-ul li.w3-yellow').each(function (i) { 
-            if ($(this).attr("data-done") === "true") {
-                $("#footer-nav-btn5").text("Mark as Not Done");
-            }
-            else {
-                $("#footer-nav-btn5").text("Mark as Done");
-            }
-        });
-
-        if (window.currentFile === undefined) {
-            $("#footer-nav-btn1").addClass("no-display");
-            $("#footer-nav-btn5").addClass("no-display");
-            $("#footer-nav-btn6").addClass("no-display");
-        }
-    }
-    else if (view === "login"){
-        $("#footer-nav-btn1").addClass("no-display");
-        $("#footer-nav-btn2").addClass("no-display");
-        $("#footer-nav-btn3").removeClass("no-display");
-        $("#footer-nav-btn4").addClass("no-display");
-        $("#footer-nav-btn5").removeClass("no-display");
-        $("#footer-nav-btn6").removeClass("no-display");
-
-        $("#footer-nav-btn3").text("Login");
-        $("#footer-nav-btn5").text("Register");
-        $("#footer-nav-btn6").text("Forgot Password?");
-    }
-    else if (view === "register"){
-        $("#footer-nav-btn1").addClass("no-display");
-        $("#footer-nav-btn2").addClass("no-display");
-        $("#footer-nav-btn3").removeClass("no-display");
-        $("#footer-nav-btn4").removeClass("no-display");
-        $("#footer-nav-btn5").addClass("no-display");
-        $("#footer-nav-btn6").addClass("no-display");
-
-        $("#footer-nav-btn3").text("Register");
-        $("#footer-nav-btn4").text("Cancel");
-    }
-    else if (view === "editA") {
-        $("#footer-nav-btn1").addClass("no-display");
-        $("#footer-nav-btn2").addClass("no-display");
-        $("#footer-nav-btn3").removeClass("no-display");
-        $("#footer-nav-btn4").removeClass("no-display");
-        $("#footer-nav-btn5").addClass("no-display");
-        $("#footer-nav-btn6").addClass("no-display");
-
-        $("#footer-nav-btn3").text("Save");
-        $("#footer-nav-btn4").text("Cancel");
-    }
-    else if (view === "editB") {
-        $("#footer-nav-btn1").addClass("no-display");
-        $("#footer-nav-btn2").addClass("no-display");
-        $("#footer-nav-btn3").removeClass("no-display");
-        $("#footer-nav-btn4").removeClass("no-display");
-        $("#footer-nav-btn5").addClass("no-display");
-        $("#footer-nav-btn6").addClass("no-display");
-
-        $("#footer-nav-btn3").text("Save");
-        $("#footer-nav-btn4").text("Cancel");
-    }
-    else if (view === "editC") {
-        $("#footer-nav-btn1").addClass("no-display");
-        $("#footer-nav-btn2").addClass("no-display");
-        $("#footer-nav-btn3").removeClass("no-display");
-        $("#footer-nav-btn4").removeClass("no-display");
-        $("#footer-nav-btn5").addClass("no-display");
-        $("#footer-nav-btn6").addClass("no-display");
-
-        $("#footer-nav-btn3").text("Save");
-        $("#footer-nav-btn4").text("Cancel");
-    }
-    else if (view === "create-proj") {
-        $("#footer-nav-btn1").addClass("no-display");
-        $("#footer-nav-btn2").addClass("no-display");
-        $("#footer-nav-btn3").removeClass("no-display");
-        $("#footer-nav-btn4").addClass("no-display");
-        $("#footer-nav-btn5").addClass("no-display");
-        $("#footer-nav-btn6").addClass("no-display");
-
-        $("#footer-nav-btn3").text("Create project");
-    }
-    else if (view === "start") {
-        $("#footer-nav-btn1").addClass("no-display");
-        $("#footer-nav-btn2").addClass("no-display");
-        $("#footer-nav-btn3").addClass("no-display");
-        $("#footer-nav-btn4").addClass("no-display");
-        $("#footer-nav-btn5").addClass("no-display");
-        $("#footer-nav-btn6").addClass("no-display");
-    }
-    else if (view === "information") {
-        $("#footer-nav-btn1").addClass("no-display");
-        $("#footer-nav-btn2").addClass("no-display");
-        $("#footer-nav-btn3").addClass("no-display");
-        $("#footer-nav-btn4").addClass("no-display");
-        $("#footer-nav-btn5").addClass("no-display");
-        $("#footer-nav-btn6").addClass("no-display");
-    }
-    else if (view === "settings") {
-        $("#footer-nav-btn1").addClass("no-display");
-        $("#footer-nav-btn2").addClass("no-display");
-        $("#footer-nav-btn3").removeClass("no-display");
-        $("#footer-nav-btn4").removeClass("no-display");
-        $("#footer-nav-btn5").addClass("no-display");
-        $("#footer-nav-btn6").addClass("no-display");
-
-        $("#footer-nav-btn3").text("Save");
-        $("#footer-nav-btn4").text("Cancel");
-    }
-    else if (view === "project-open") {
-        $("#addfilebutton").removeClass("no-display");
-        $("#projinfobutton").removeClass("no-display");
-        $("#projstartbutton").removeClass("no-display");
-        $("#exportprojbutton").removeClass("no-display");
-        $("#closeprojbutton").removeClass("no-display");
-        $("#back-to-start-button").addClass("no-display");
-    }
-    else if (view === "project-closed") {
-        $("#addfilebutton").addClass("no-display");
-        $("#projinfobutton").addClass("no-display");
-        $("#projstartbutton").addClass("no-display");
-        $("#exportprojbutton").addClass("no-display");
-        $("#closeprojbutton").addClass("no-display");
-        $("#back-to-start-button").removeClass("no-display");
-    }
-    else if (view === "forgotPW"){
-        $("#footer-nav-btn1").addClass("no-display");
-        $("#footer-nav-btn2").addClass("no-display");
-        $("#footer-nav-btn3").removeClass("no-display");
-        $("#footer-nav-btn4").removeClass("no-display");
-        $("#footer-nav-btn5").addClass("no-display");
-        $("#footer-nav-btn6").addClass("no-display");
-
-        $("#footer-nav-btn3").text("Request reset");
-        $("#footer-nav-btn4").text("Cancel");
-    }
-    else {
-        logger.error("Invalid input in setViewButtonSets!");
-    }
-}
 
 
 ///////////////////////////////////////////////////////////////
@@ -1169,38 +1098,40 @@ function createProjAsync(project_name = "", project_country = "", project_lang =
             title: "Create new project",
             message: "Project name: '" + project_name + "'\r\nCountry: '" + project_country + "'\r\nLanguage: '" + project_lang+"'",
             detail: "Would you like to create project with these values?",
-            buttons: [i18n.__('conf-yes', true), i18n.__('conf-no', true)]
+            buttons: [i18n.__('conf-yes'), i18n.__('conf-no')]
         };
 
         dialog.showMessageBox(firstWindow, options, function (index) {
             if (index === 0) {
                 //continue
-            
-    logger.debug("createProjAsync");
-    ipcRenderer.on('async-create-project-reply', (event, arg) => {
-        //console.log("RETURNED FROM APP: ");
-        //console.log(arg);
-        logger.debug("ASYNC RETURNED (CREATE PROJECT)");
-        if (arg[0]){
-            var opened_res = openAndViewProject(project_name);
 
-            if (opened_res[0]) {
-                logger.debug("OPENED CREATED PROJECT");
-            }
-            else {
-                logger.debug("FAILED TO OPEN CREATED PROJECT!");
-                logger.debug("REASON: " + opened_res[1]);
-                $("#create-proj-error").text(opened_res[1]);
-            }
-        }
-        else {
-            var reason = arg[1];
-            logger.debug("FAILED TO CREATE NEW PROJECT!! REASON: " + reason);
-            $("#create-proj-error").text(reason);
-        }
-        ipcRenderer.removeAllListeners('async-create-project-reply');
-    })
-    ipcRenderer.send('async-create-project', project_name, project_country, project_lang);
+                logger.debug("createProjAsync");
+                ipcRenderer.on('async-create-project-reply', (event, arg) => {
+                    //console.log("RETURNED FROM APP: ");
+                    //console.log(arg);
+                    logger.debug("ASYNC RETURNED (CREATE PROJECT)");
+                    if (arg[0]) {
+                        var opened_res = openAndViewProject(arg[1]);
+
+                        if (opened_res[0]) {
+                            logger.debug("OPENED CREATED PROJECT");
+                            logger.info("New project '" + project_name + "' opened successfully!");
+                        }
+                        else {
+                            //logger.debug("FAILED TO OPEN CREATED PROJECT!");
+                            //logger.debug("REASON: " + opened_res[1]);
+                            logger.error("Failed to open new project '" + project_name + "'! Reason: " + opened_res[1]);
+                            $("#create-proj-error").text(opened_res[1]);
+                        }
+                    }
+                    else {
+                        var reason = arg[1];
+                        logger.error("Unable to create new project '" + project_name + "'! Reason: " + reason);
+                        $("#create-proj-error").text(reason);
+                    }
+                    ipcRenderer.removeAllListeners('async-create-project-reply');
+                })
+                ipcRenderer.send('async-create-project', project_name, project_country, project_lang);
             }
             else {
                 return;
@@ -1209,8 +1140,9 @@ function createProjAsync(project_name = "", project_country = "", project_lang =
     }
 }
 
+/* NEED TO BE DEACTIVATED!!! */
 /* Handles moving source files into project folder and generating temp-files ASYNC!! (IPC to app.js) */
-function sourceFiles2ProjAsync(files) { // Last object of "files" will be name of the project where files will be added to
+function sourceFiles2ProjAsync(files) { // Last object of "files" will be name of the project where files will be added to NEEDSTOBECHANGED
     logger.debug("sourceFiles2ProjAsync");
     var proj_name = files[files.length - 1];
     var docpath = remote.app.getPath('documents');
@@ -1219,7 +1151,7 @@ function sourceFiles2ProjAsync(files) { // Last object of "files" will be name o
         name: proj_name,
         cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\')
     }
-    const f2p_store = new Store(f2p_options);
+    const f2p_store = new Store(f2p_options);//
     var pre_dirfiles = f2p_store.get('source-files', []);
     logger.debug(pre_dirfiles);
 
@@ -1256,7 +1188,7 @@ function sourceFiles2ProjAsync(files) { // Last object of "files" will be name o
                 // fileS,"temp#"+fileS+".json",false
                 for (var a = 0; a < arg[1].length; a++) {
                     var fileArr = [];
-                    fileArr.push(arg[1][a][0], arg[1][a][1],arg[1][a][2]);
+                    fileArr.push(arg[1][a][0], arg[1][a][1],arg[1][a][2]); // NEEDS UPDATE!!!!!! CUSTOM INPUT
                     addProjFile(fileArr);
                 }
             }
@@ -1295,51 +1227,54 @@ function sourceFiles2ProjAsync(files) { // Last object of "files" will be name o
 }
 
 /* Reads through list of temp-files from proj_properties and then adds them to the EDIT-view filelist */
-function updateFileList(proj_name) {
-    logger.debug("updateFilesList");
-    var docpath = remote.app.getPath('documents');
-    var filelist_options = {
-        name: proj_name,
-        cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\')
+function updateFileList() {
+    logger.debug("updateFileList");
+    var proj_name = window.currentProject;
+    var proj_content = window.currentFileContent;
+    // no need to test window.currentFile, because why would we need to know project source file location?
+
+    if ((proj_name === undefined) || (proj_content === undefined)) {
+        logger.error("Can't update list of files! Window-variable for project name or content(JSON) is undefined!");
+        return;
     }
-    const fl_store = new Store(filelist_options);
-    var tempfiles = fl_store.get("temp-files", {});
-    try {
-        $("#proj-files-ul").empty();
-        for (var k in tempfiles) {
-            //logger.debug("Looping through tempfiles...");
-            if (tempfiles.hasOwnProperty(k)) {
-                var filetemp = k;
-                var fileorig = tempfiles[k]["file"];
-                var filedone = tempfiles[k]["done"];
-                //logger.debug("FROM TEMP FILE IN UPDATEFILELIST");
-                //logger.debug(filedone);
-                //logger.debug(typeof(filedone));
-                var fileArr = [];
-                fileArr.push(fileorig, filetemp, filedone);
-                // filearr 0 = fileoriginal, 1 = filetemp, 2 = filedonestatus
-                addProjFile(fileArr);
-            }
+
+    var tempfiles = proj_content["project-files"];
+
+    $("#proj-files-ul").empty();
+    for (var k in tempfiles) {
+        //logger.debug("Looping through tempfiles...");
+        if (tempfiles.hasOwnProperty(k)) {
+            var filetemp = k;
+            var fileorig = tempfiles[k]["src-file"];
+            var filedone = tempfiles[k]["done"];
+            var filelang = tempfiles[k]["lang"];
+            var filecountry = tempfiles[k]["country"];
+            //logger.debug("FROM TEMP FILE IN UPDATEFILELIST");
+            //logger.debug(filedone);
+            //logger.debug(typeof(filedone));
+            var fileArr = [];
+            fileArr.push(fileorig, filetemp, filedone, filelang, filecountry);// NEEDSTOBECHANGED
+            addProjFile(fileArr);
         }
-    }
-    catch (err){
-        //
-        logger.error("Error trying to read list of temp files (updating list)!");
-        logger.error(err.message);
     }
 }
 
 /* Called when project is opened */
-function openAndViewProject(proj_name) {
+function openAndViewProject(proj_location) {
     logger.debug("openAndViewProject");
+    var file_ext = proj_location.split('.').pop();
+    var proj_name = proj_location.split('\\').pop();
+    proj_name = proj_name.split(".");
+    proj_name.pop();
+    proj_name.join(".");
 
     var regex_filepath_val = /^[^\\/:\*\?"<>\|]+$/;
     var docpath = remote.app.getPath('documents');
     var reason = [];
 
-    if (proj_name === undefined) {
+    if (proj_location === undefined) {
         // Projectname not defined
-        reason.push(false, "Project name not defined!");
+        reason.push(false, "Project to be opened not defined!");
         return reason;
     }
     else if (proj_name.length === 0 || proj_name.length > 100) {
@@ -1352,148 +1287,132 @@ function openAndViewProject(proj_name) {
         reason.push(false, 'Name should not contain <>:"/\\|?*');
         return reason;
     }
-    else if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
-        if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
-            if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name))) {
-                if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source'))) {
-                    if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp'))) {
-                        if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\' + proj_name + '.json'))) {
+    // testing if can be opened properly BEFORE it can be opened! -> .decsv file
+    var read_file = "";
+    try {
+        read_file = fs.readFileSync(proj_location, 'utf8'); 
+    } catch (err) {
+        logger.error("Failed to open project file '"+proj_name+"."+file_ext+"'! Reason: " + err.message);
+        reason.push(false, 'Unable to open project "'+proj_name+'"!');
+        return reason;
+    }
+    // validate JSON form of file contents.......
+    var json_file = {};
+    try {
+        json_file = JSON.parse(read_file);
+    } catch (err) {
+        logger.error("Read project file '" + proj_name + "." + file_ext+"' had invalid JSON! Reason: "+err.message);
+        reason.push(false, 'Project file contents invalid!');
+        return reason;
+    }
 
-                            $("#titlebar-appname").text("DECSV" + " - " + proj_name);// {Alpha version " + remote.app.getVersion() + "}" + " - " + proj_name);
-                            var open_options = {
-                                name: proj_name,
-                                cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name)
-                            }
-                            const open_store = new Store(open_options);
+    $("#titlebar-appname").text("DECSV" + " - " + proj_name); // ONLY AFTER EVERYTHING HAS BEEN CHECKED!!!!!
 
-                            var prog_ver_1 = open_store.get("version", "0.0.0").split(".");
-                            var prog_ver_2 = remote.app.getVersion().split(".");
-                            for (var pr1 = 0; pr1 < prog_ver_1.length; pr1++) {
-                                prog_ver_1[pr1] = parseInt(prog_ver_1[pr1])
-                            }
-                            for (var pr2 = 0; pr2 < prog_ver_2.length; pr2++) {
-                                prog_ver_2[pr2] = parseInt(prog_ver_2[pr2])
-                            }
+    if (!parseUtils.validateProjectJSON(json_file)) {
+        // was NOT valid project file!
+        logger.error("Read project file '" + proj_name + "." + file_ext + "' JSON contents not in par with project template!");
+        reason.push(false, "Project file contents invalid!");
+        return reason;
+    }
+    else if (!parseUtils.validateVersion(json_file["version"])) {
+        // was NOT valid version!
+        logger.error("Read project file '" + proj_name + "." + file_ext + "' version not accepted!");
+        reason.push(false, "Project file version invalid!");
+        return reason;
+    }
 
-                            if (prog_ver_1[0] < prog_ver_2[0]) {
-                                // Projectname not allowed
-                                reason.push(false, 'Project "'+ proj_name +'" is not compatible with this version!'); 
-                                return reason;
-                            }
-
-                            var created_on = new Date(open_store.get("created-on", null));
-                            //console.log(created_on);
-                            $("#proj-info-name").text("Project Name: \"" + proj_name+"\"");
-                            $("#proj-info-created").text("Created: " + created_on);
-
-                            var source_files = open_store.get("source-files", null);
-                            //console.log(source_files);
-
-                            for (var i = 0; i < source_files.length; i++) {
-                                console.log(i + "  " + source_files[i]);
-                            }
-
-                            var temp_files = open_store.get("temp-files", {});
-                            //console.log(temp_files);
-
-                            for (var k in temp_files) {
-                                console.log("1: ");
-                                console.log(k);
-                                if (temp_files.hasOwnProperty(k)) {
-                                    console.log("2: ");
-                                    console.log(temp_files[k]);
-                                    console.log(temp_files[k].file);
-                                }
-                            }
-
-                            var kw_per_file = open_store.get("kw-per-file", null);
-                            //console.log(kw_per_file);
-
-
-                            for (var k in kw_per_file) {
-                                console.log("#1: ");
-                                console.log(k);
-                                if (kw_per_file.hasOwnProperty(k)) {
-                                    console.log("#2: ");
-                                    console.log(kw_per_file[k]);
-                                }
-                            }
-
-                            var proj_notes = open_store.get("notes", null);
-                            //console.log("NOTES: ");
-                            //console.log(proj_notes);
-                            for (var i = 0; i < proj_notes.length; i++) {
-                                //console.log(i + "  " + proj_notes[i]);
-                                addProjNote(proj_notes[i]);
-                            }
-                            window.currentProject = proj_name;
-                            updateFileList(proj_name);
-                            /*
-                            // TESTING
-                            open_store.set("temp-files.source1.file", "temp#source1.json");
-                            open_store.set("kw-per-file.source1", [["en-basic-1", "Confidentiality"], ["en-basic-2", "Checking"], ["en-basic-3", "Verification"]]);
-
-                            open_store.set("notes", ["note_1","note_2","note_14","note_3","note_4"]);
-
-                            // TESTING STORE FOR TEMP FILES TO BE JSON
-                            var temp_options1 = {
-                                name: "temp#source1",
-                                cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp\\')
-                            }
-                            //JOKAINEN " tulee korvata \"
-                            const temp_store1 = new Store(temp_options1);
-                            temp_store1.set("src", "source1.csv");
-                            temp_store1.set("a", "Lorem Ipsum on testiteksti");
-                            temp_store1.set("b", "ASD ASD ASD ASDASD");
-                            temp_store1.set("c", "Tämä tässä on vain testauksen vuoksi");
-                            temp_store1.set("kw", [["en-basic-1", "Confidentiality"], ["en-basic-2", "Checking"], ["en-basic-3", "Verification"]]);
-                            */
-
-
-                            // OPENING "PROJECT START" VIEW
-                            toggleViewMode(1);
-                            toggleViewMode(9);
-                            setViewButtonSets("project-open");
-                            ////////////////////
-                            logger.info("Opened project " + proj_name + "...");
-                            reason.push(true);
-                            return reason;
-                        }
-                        else {
-                            // No project properties file!
-                            reason.push(false, "Project properties file missing!");
-                            return reason;
-                        }
-                    }
-                    else {
-                        // No temp folder!
-                        reason.push(false, "Temp-folder missing!");
-                        return reason;
-                    }
-                }
-                else {
-                    // No source folder!
-                    reason.push(false, "Source-folder missing!");
-                    return reason;
-                }
-            }
-            else {
-                // Project does not exist!
-                reason.push(false, "Project does not exist!");
-                return reason;
-            }
-        }
-        else {
-            // Projects-folder not present!
-            reason.push(false, "Projects-older missing!");
+    // Saving temporary copy to application's userData folders...
+    var apppath = remote.app.getPath('userData');
+    if (!fs.existsSync(path.join(apppath, 'backup_files'))) {
+        logger.warn("No project backup directory!");
+        try {
+            fs.mkdirSync(path.join(apppath, 'backup_files'));
+        } catch (err) {
+            logger.error("Error creating directory for project backups! Reason: " + err.message);
+            reason.push(false, "Unable to create backup directory for projects!");
             return reason;
         }
     }
     else {
-        // Application-folder (at Documents) not present!
-        reason.push(false, "Application-folder missing!");
-        return reason;
+        var backup_dircheck = fs.statSync(path.join(apppath, 'backup_files'));
+        if (backup_dircheck.isDirectory()) {
+            logger.info("Project backup directory located!");
+        }
+        else {
+            try {
+                fs.mkdirSync(path.join(apppath, 'backup_files'));
+            } catch (err) {
+                logger.error("Error creating directory for project backups! Reason: " + err.message);
+                reason.push(false, "Unable to create backup directory for projects!");
+                return reason;
+            }
+        }
     }
+
+    var backup_opt = {
+        name: proj_name,
+        cwd: path.join(apppath, 'backup_files')
+    }
+    logger.info("Saving backup copy: "+path.join(apppath, proj_name+".json"));
+    const backup_store = new Store(backup_opt);
+    backup_store.store = json_file;
+
+    // Adding simple details to UI:
+    $("#proj-info-name").text("Project Name: \"" + proj_name + "\"");
+    $("#proj-info-created").text("Created: " + new Date(json_file["created"]));//NEEDSTOBECHANGED
+
+    //var source_files = open_store.get("source-files", null);
+    //console.log(source_files);
+
+
+    //var temp_files = open_store.get("temp-files", {});
+    //console.log(temp_files);
+    /*
+    for (var k in temp_files) {
+        console.log("1: ");
+        console.log(k);
+        if (temp_files.hasOwnProperty(k)) {
+            console.log("2: ");
+            console.log(temp_files[k]);
+            console.log(temp_files[k].file);
+        }
+    }
+    */
+
+    //var kw_per_file = open_store.get("kw-per-file", null);
+    //console.log(kw_per_file);
+
+    /*
+    for (var k in kw_per_file) {
+        console.log("#1: ");
+        console.log(k);
+        if (kw_per_file.hasOwnProperty(k)) {
+            console.log("#2: ");
+            console.log(kw_per_file[k]);
+        }
+    }
+    */
+
+    var proj_notes = json_file["notes"];
+    //console.log("NOTES: ");
+    //console.log(proj_notes);
+    for (var i = 0; i < proj_notes.length; i++) {
+        //console.log(i + "  " + proj_notes[i]);
+        addProjNote(proj_notes[i]);
+    }
+    window.currentProject = proj_name;
+    window.currentFileContent = json_file;
+    window.currentFile = proj_location;
+    updateFileList();
+
+    // OPENING "PROJECT START" VIEW
+    intUtils.toggleViewMode(1);
+    intUtils.toggleViewMode(9);
+    intUtils.setFooterBtnMode("project-open");
+    ////////////////////
+    logger.info("Opened project " + proj_name + "...");
+    reason.push(true);
+    return reason;
 }
 
 /* Add given note into EDIT-view proj_notes ul-element */
@@ -1515,18 +1434,20 @@ function addProjNote(note) {
         class: "w3-button w3-display-right",
         onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
         onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-        onclick: "$(this.parentElement).remove();"
-    });
+        onclick: "$(this.parentElement).remove();intUtils.markPendingChanges(true, window.currentFile);"
+    });// NEEDSTOBECHANGED
 
     li_node.appendChild(span_node);
 
     $('#proj-notes-ul').append(li_node);
+
 }
 
 /* Add given filename + details into EDIT-view filelist ul-element */
+//fileArr.push(fileorig, filetemp, filedone, filelang, filecountry);
 function addProjFile(fileArr) {
     logger.debug("addProjFile");
-    logger.debug(fileArr);
+    //logger.debug(fileArr);
     /*
     <li class="w3-green w3-hover-blue w3-display-container">File1.csv</li>
         <li class="w3-green w3-hover-blue w3-display-container">File2.csv</li>
@@ -1538,8 +1459,8 @@ function addProjFile(fileArr) {
         <li class="w3-hover-blue w3-display-container">File8.csv</li>
         <li class="w3-hover-blue w3-display-container">File9.csv</li>
     */
-    // filearr 0 = fileoriginal, 1 = filetemp, 2 = filedonestatus
-    var li_string = document.createTextNode(fileArr[1].substring(5,fileArr[1].length-5));
+    // filearr 0 = fileoriginal, 1 = filetemp / name, 2 = filedonestatus, 3 = filelanguage, 4 = filecountry
+    var li_string = document.createTextNode(fileArr[1]);
     //console.log("####################################################");
     //console.log(li_string);
     var li_node = document.createElement("li");
@@ -1550,7 +1471,7 @@ function addProjFile(fileArr) {
     //logger.debug("BEFORE USAGE AT ADDPROJFILE");
     //logger.debug(fileArr[2]);
     //logger.debug(typeof (fileArr[2]));
-    if (fileArr[2]){
+    if (fileArr[2]) {
         classes = classes + " w3-green";
     }
     $(li_node).attr({
@@ -1560,140 +1481,207 @@ function addProjFile(fileArr) {
         onmouseout: "$(this).removeClass('w3-hover-blue');",
         "data-orig": fileArr[0],
         "data-temp": fileArr[1],
-        "data-done": fileArr[2]
+        "data-done": fileArr[2],
+        "data-lang": fileArr[3],
+        "data-country": fileArr[4]
     });
     $('#proj-files-ul').append(li_node);
     $('#proj-files-ul li').off('click');
     $('#proj-files-ul li').on('click', function () {
-        logger.debug('CLICKED FILE :DDD');
-        var done = "";
+        logger.debug('CLICKED FILE OBJECT!');
+        logger.debug($(this).text());
+        var done = false;
         if ($(this).hasClass("w3-yellow")) {
             // do nothing
-            logger.info("Tried to open already showed file!");
+            logger.warn("Tried to open already showed event!");
         }
         else {
             logger.info("Switching files...");
             $('#proj-files-ul li.w3-yellow').each(function (i) {
                 done = ($(this).attr('data-done') === "true");
                 $(this).removeClass('w3-yellow');
-            if ($(this).attr('data-done') === 'true') {
-                $(this).addClass('w3-green');
-            }
-            $("#edit-A-orig-text .secA-Q").empty();
-            $("#edit-B-orig-text .secB-Q").empty();
-    for (var k=1;k<15 ; k++) {
-        $("#edit-C-orig-text .secC-Q-" + k).empty();
-    }
-    var dataA = $("#edit-A-orig-text").html();
-    var dataB = $("#edit-B-orig-text").html();
-    var dataC = $("#edit-C-orig-text").html();
-    var dataKW = [];
-    $("#file-chosen-kw-ul li").each(function (i) {
-        var value = $(this).attr("data-value");
-        $(this).find('span').remove();
-        var name = $(this).text();
-        //logger.debug("THIS IS AFTER REMOVAL!!!!");
-        //logger.debug(name);
+                if ($(this).attr('data-done') === 'true') {
+                    $(this).addClass('w3-green');
+                }
+                $("#edit-A-orig-text .secA-Q").empty();
+                $("#edit-B-orig-text .secB-Q").empty();
+                for (var k = 1; k < 15; k++) {
+                    $("#edit-C-orig-text .secC-Q-" + k).empty();
+                }
+                var dataA = $("#edit-A-orig-text").html();
+                var dataB = $("#edit-B-orig-text").html();
+                intUtils.sectionUtils.clearCsectionUI();
+                var dataC = $("#edit-C-orig-text").html();
+                var dataKW = [];
+                $("#file-chosen-kw-ul li").each(function (i) {
+                    var value = $(this).attr("data-value").substring(3, test.length - 1);
+                    $(this).find('span').remove();
+                    //var name = $(this).text();
+                    //logger.debug("THIS IS AFTER REMOVAL!!!!");
+                    //logger.debug(name);
 
-        dataKW.push([value, name]);
-    });
-    var notes = [];
-    $("#proj-notes-ul li").each(function (i) {
-        var text = $(this).ignore("span").text();
-        //logger.error("text_5: " + text);
-        notes.push(text);
-    });
-
-    saveProject(window.currentFile, window.currentProject, dataA, dataB, dataC, dataKW, notes, done);
-        });
-        $(this).addClass('w3-yellow');
-        $(this).removeClass('w3-green');
-        $("#file-chosen-kw-ul").empty();
-        $("#KW-selector option").each(function (i) {
-            //
-            if (this.hasAttribute("disabled")) {
-                $(this).removeAttr("disabled");
-            }
-        });
-        $("#KW-selector").select2({
-            language: "current_lang",
-            placeholder: i18n.__('select2-kw-add-ph')
-        });
-        openAndShowFile(this);
-    }
+                    dataKW.push(value);
+                });
+                var notes = [];
+                $("#proj-notes-ul li").each(function (i) {
+                    var text = $(this).ignore("span").text();
+                    //logger.error("text_5: " + text);
+                    notes.push(text);
+                });
+                // triggering save project, because we are switching to different event
+                saveProject(dataA, dataB, dataC, dataKW, notes, done);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+            });
+            $(this).addClass('w3-yellow');
+            $(this).removeClass('w3-green');
+            $("#file-chosen-kw-ul").empty();
+            $("#KW-selector option").each(function (i) {
+                //
+                if (this.hasAttribute("disabled")) {
+                    $(this).removeAttr("disabled");
+                }
+            });
+            $("#KW-selector").select2({
+                placeholder: i18n.__('select2-kw-add-ph')
+            });
+            openAndShowFile(this);
+        }
     });
 }
 
-/* Called when temp-file is saved - temp files are saved simultaniously with the project itself */
-function saveProject(file_name, proj_name, dataA, dataB, dataC, dataKW, notes, done) {
+/* Called when window.currentFileContent is modified. backup file is modified in the same time */
+//saveProject(dataA, dataB, dataC, dataKW, notes, done); CUSTOM INPUT
+// dataKW == array of value as in "basic-123" or "basic-65"
 
-    clearCsectionUI(); // is this needed?
-
+/* Mode:
+ * 0 == save to window-variable and backup (set "edits" to true)
+ * 1 == save to previous, but also to actual file (set "edits" to false)
+ * 2 == discard changes. not saving to backup, not saving to file: just set "edits" to false/null, and remove backup file
+ */
+function saveProject(mode=0, dataA="", dataB="", dataC="", kw=[], notes = [], done=false, country="", lang="") {
     logger.debug("saveProject");
-    logger.debug("FILE_NAME: " + file_name);
-    logger.debug("PROJE_NAME: " + proj_name);
-    logger.debug("DATA-A: " + dataA);
-    logger.debug("DATA-B: " + dataB);
-    logger.debug("DATA-C: " + dataC);
-    logger.debug("DATA-KW: " + dataKW);
-    logger.debug("NOTES: " + notes);
-    logger.debug("DONE: "+ done);
-    if ((file_name !== undefined) && (proj_name !== undefined)) {
-        logger.info("Starting saving data to temp and project files...");
-        //
-        var docpath = remote.app.getPath('documents');
-        // store for project properties
-        var options1 = {
-            name: proj_name,
-            cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name)
-        }
-        const store1 = new Store(options1);
-        // store for project temp file
-        var options2 = {
-            name: 'temp#'+file_name,
-            cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp\\')
-        }
-        const store2 = new Store(options2);
+    var file_source = window.currentFile;
+    var proj_name = window.currentProject;
+    var window_json = window.currentFileContent;
+    var current_event = window.currentEvent;
 
-        store2.set('a', dataA);
-        store2.set('b', dataB);
-        store2.set('c', dataC);
-        store2.set('kw', dataKW);
-        store2.set('done', done);
-
-        var origobj = store1.get('kw-per-file', {});
-        var filestatus = store1.get('temp-files', {})
-        filestatus['temp#' + file_name + '.json']['done'] = done;
-        origobj['temp#' + file_name + '.json'] = dataKW;
-        store1.set('temp-files', filestatus)
-        store1.set('kw-per-file', origobj);
-        store1.set('notes', notes);
-
-        logger.info("Saved data to temp-file 'temp#"+file_name+".json' and project '"+proj_name+"' properties file");
+    if ((file_source === undefined) || (proj_name === undefined) || (window_json === undefined)) {
+        logger.error("Unable to save project, because current file, project name or file contents(JSON) is undefined!");
+        return;
+    }
+    // just writing down if we have open event in the edit-view
+    if (current_event !== undefined) {
+        logger.info("No event open in edit-view while saving...");
+        // we can only save notes....
     }
     else {
-        logger.warn("Tried to save file/project, when 'file_name' or 'proj_name' is undefined!");
-        if (proj_name !== undefined) {
-            logger.info("'proj_name' is defined! Saving notes into project...");
-            var docpath = remote.app.getPath('documents');
-            // store for project properties
-            var options3 = {
-                name: proj_name,
-                cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name)
-            }
-            const store3 = new Store(options3);
-            store3.set('notes', notes);
+        logger.info("Event '"+current_event+"' open in edit-view while saving...");
+    }
+
+    var backup_base = path.join(remote.app.getPath("userData"), "backup_files");
+    // trying to create backup directory if not already existing
+    try {
+        if (!fs.existsSync(backup_base)) {
+            fs.mkdirSync(backup_base);
+        }
+        else if (!fs.statSync(backup_base).isDirectory()) {
+            // not directory
+            logger.error("Backup location not a directory! Creating new...");
+            fs.mkdirSync(backup_base);
+        }
+    } catch (err) {
+        logger.error("Unable to create backup directory! Reason: " + err.message);
+        return;
+    }
+
+    var config_opt = {
+        name: "app-configuration",
+        cwd: remote.app.getPath('userData')
+    }
+    //
+    var config_store = new Store(config_opt);
+
+    // discard backups. we are not saving any changes, nor are keeping backups
+    if (mode === 2) {
+        logger.info("Not saving changes! Removing backups without saving to file...");
+        try {
+            fs.unlinkSync(path.join(backup_base, proj_name + ".json"));
+            config_store.set("edits", [false, null]);
+            $("#save-cur-edits-btn").addClass("w3-disabled");
+            $("#save-cur-edits-btn").attr('disabled', 'disabled');
+            $("#preview-cur-edits-title").text("No pending changes");
+            $("#preview-cur-edits-title").css("background-color", "lightgreen");
+        } catch (err) {
+            logger.error("Unable to remove backup file! Reason: " + err.message);
+            return;
+        }
+        return;
+    }
+
+    var backup_opt = {
+        defaults: window_json,
+        name: proj_name,
+        cwd: backup_base
+    }
+    var backup_store = new Store(backup_opt);
+
+    // basics set up, now adding new data to window-variable....
+    window_json["notes"] = notes; // saving notes, if nothing else can be saved
+    if (current_event !== undefined) {
+        logger.info("Because window.currentEvent is not undefined, now saving all data into window.currentFileContent");
+        if (window_json["project-files"].hasOwnProperty(current_event)) {
+            window_json["project-files"][current_event]["a"] = dataA;
+            window_json["project-files"][current_event]["b"] = dataB;
+            window_json["project-files"][current_event]["c"] = dataC;
+            window_json["project-files"][current_event]["country"] = country;
+            window_json["project-files"][current_event]["lang"] = lang;
+            window_json["project-files"][current_event]["kw"] = kw;
         }
     }
+
+    //intUtils.sectionUtils.clearCsectionUI(); // is this needed?
+
+    // adding new json version into window-variable and backup
+    window.currentFileContent = window_json;
+    backup_store.store = window_json;
+    logger.info("successfully saved new data into window-variable and backup file for project '" + proj_name + "'!");
+    
+    config_store.set("edits", [true, file_source])
+    $("#save-cur-edits-btn").removeClass("w3-disabled");
+    $("#save-cur-edits-btn").removeAttr('disabled', 'disabled');
+    $("#preview-cur-edits-title").text("There are pending changes!");
+    $("#preview-cur-edits-title").css("background-color", "yellow");
+    //testing if mode 1 has beens set (write to actual file, and remove backup)
+    if (mode === 1) {
+        logger.info("Saving into actual project file '"+file_source+"'!");
+        // need to write to the actual file... and set "edits" value to [false, null]
+
+        try {
+            //
+            fs.writeFileSync(file_source, JSON.stringify(window_json), "utf8");
+            fs.unlinkSync(path.join(backup_base, proj_name + ".json"));
+            config_store.set("edits", [false, null]);
+            $("#save-cur-edits-btn").addClass("w3-disabled");
+            $("#save-cur-edits-btn").attr('disabled', 'disabled');
+            $("#preview-cur-edits-title").text("No pending changes");
+            $("#preview-cur-edits-title").css("background-color", "lightgreen");
+        } catch (err) {
+            logger.error("Unable to write new source file or remove backup file! Reason: " + err.message);
+            return;
+        }
+        logger.info("Backup file successfully removed, and changes saved!");
+    }
+    
 }
 
+// NEEDS CHANGES!!!!!!
 /* Retrieve data from a temp-file and show it on the window */
-function openAndShowFile(fileObj) {
+function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
     logger.debug("openAndShowFile");
-    window.currentFile = $(fileObj).text();
-    window.fileDoneStatus = ($(fileObj).attr("data-done") === "true");
-    
-    $("#preview-cur-file-name").text("Current file: "+currentFile);
+    //window.currentFile = $(fileObj).text();
+    //window.fileDoneStatus = ($(fileObj).attr("data-done") === "true");
+    window.currentEvent = $(fileObj).text();
+
+    //$("#preview-cur-file-name").text("Current file: NONE");
     $("#preview-third-1").removeClass("no-display");
     $("#preview-third-2").removeClass("no-display");
     $("#preview-third-3").removeClass("no-display");
@@ -1709,7 +1697,7 @@ function openAndShowFile(fileObj) {
         name: 'temp#'+$(fileObj).text(),
         cwd: temp_base
     }
-    const store = new Store(options);
+    const store = new Store(options);//
 
     $("#edit-A-edit-text").html(store.get("a",""));
     $("#edit-A-orig-text").html(store.get("a",""));
@@ -1723,7 +1711,7 @@ function openAndShowFile(fileObj) {
 
 
     */
-    setupCsectionUI();
+    intUtils.sectionUtils.setupCsectionUI();
 
 
 
@@ -1736,8 +1724,8 @@ function openAndShowFile(fileObj) {
         //logger.debug("round: secC-Q-" + k);
     }
 
-    $("#preview-subid").text("Submission ID: " + store.get("subID"));
-    $("#preview-subdate").text("Submission Date: " + store.get("subDATE"));
+    //$("#preview-subid").text("Submission ID: " + store.get("subID"));
+    //$("#preview-subdate").text("Submission Date: " + store.get("subDATE"));
 
     // HERE, YOU CHECK AND SETUP KEYWORDS FOR THIS SPECIFIC FILE (and restart select2) remember to remove all "disabled" attr before adding them!
     // loop start
@@ -1770,7 +1758,7 @@ function openAndShowFile(fileObj) {
             class: "w3-button w3-display-right",
             onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
             onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-            onclick: "$(\"#KW-selector option[value = '" + kw_value + "']\").removeAttr('disabled', 'disabled'); $(this.parentElement).remove(); $(\"#KW-selector\").select2({language: \"current_lang\",placeholder: i18n.__('select2-kw-add-ph')});"
+            onclick: "$(\"#KW-selector option\").each(function(i){if($(this).val().substring(3, $(this).val().length) === \"" + kw_value.substring(3, kw_value.length) + "\"){$(this).removeAttr('disabled', 'disabled')}}); $(this.parentElement).remove(); $(\"#KW-selector\").select2({placeholder: i18n.__('select2-kw-add-ph')});"
         });
         //logger.debug("2# VALUE: " + kw_value + " # TEXT: " + kw_text);
         li_node.appendChild(span_node);
@@ -1782,17 +1770,11 @@ function openAndShowFile(fileObj) {
         //logger.debug("3# VALUE: " + kw_value + " # TEXT: " + kw_text);
         //logger.debug($("#KW-selector option"));
         $("#KW-selector option").each(function (i) {
-            if ($(this).val() === kw_value){
+            if ($(this).val().substring(3, $(this).val().length) === kw_value.substring(3, kw_value.length)){
                 //
                 //logger.debug("YEEEEEEEEE :)");
                 $(this).attr('disabled','disabled');
-                return false;
             }
-            else {
-                //
-                //logger.debug("Nuuuuuuuuu :c");
-            }
-            
         });
 
         //logger.debug("5# VALUE: " + kw_value + " # TEXT: " + kw_text);
@@ -1801,185 +1783,20 @@ function openAndShowFile(fileObj) {
     $("#KW-selector").prop("disabled", false);
     
     $("#KW-selector").select2({
-        language: "current_lang",
         placeholder: i18n.__('select2-kw-add-ph')
     });
     
     $("#file-chosen-kw-ul").removeClass("element-disabled");
     //
 
-    setupCensorSelect();
-    updatePreview();
-    updateCensoredList();
-    setViewButtonSets("preview");
+    intUtils.sectionUtils.setupCensorSelect();
+    intUtils.sectionUtils.updatePreview();
+    intUtils.sectionUtils.updateCensoredList();
+    intUtils.setFooterBtnMode("preview");
 }
 
-/* Update EDIT-view preview sections (non-editable section A, B and C) */
-function updatePreview() {
-    logger.debug("updatePreview");
-    //
-    $("#preview-preview-A").html($("#edit-A-orig-text").html());
-    $("#preview-preview-B").html($("#edit-B-orig-text").html());
-    $("#preview-preview-C").html($("#edit-C-orig-text").html());
-    removeCensored();
-    $("#preview-preview-A .secA-Q-allA").text($("#preview-preview-A .secA-Q-allA").text());
-    $("#preview-preview-B .secB-Q-allA").text($("#preview-preview-B .secB-Q-allA").text());
 
-    for (var i = 1; i < 15; i++) {
-        $("#preview-preview-C .secC-Q-allA .secC-Q-" + i + "-cont").text($("#preview-preview-C .secC-Q-allA .secC-Q-" + i + "-cont").text());
-    }
-}
-
-function updateSettingsUI() {
-    logger.debug("updateSettingsUI");
-    var apppath = remote.app.getPath('userData');
-    var options1 = {
-        name: "app-configuration",
-        cwd: apppath
-    }
-    const store1 = new Store(options1);
-
-    var options2 = {
-        name: "keyword-config",
-        cwd: path.join(apppath, 'keywordlists')
-    }
-    const store2 = new Store(options2);
-
-    var applang = store1.get("app-lang", "en");
-    $("#settings-app-lang-name").text("Current language: " + getFullLangName(applang));
-
-    var kw_update_latest = store2.get("last-successful-update", "----");
-    var kw_local_list = store2.get("local-keywordlists", {});
-    var kw_available_list = store2.get("available-keywordlists", {});
-    var enabled_kw_list = store2.get("enabled-keywordlists", []);
-    var kw_update_date = store2.get("last-successful-update", "----");
-    if ((kw_update_date !== null) && (kw_update_date !== "----")){
-        kw_update_date = new Date(kw_update_date);
-    }
-    else {
-        kw_update_date = "----";
-    }
-    $("#settings-kw-update-date").text("Latest successfull update: " + kw_update_date);
-    $("#kw-list-available-choose").empty();
-    $("#kw-list-available-choose").append(document.createElement("option"));
-    $('#settings-local-kw-lists').empty();
-
-    var localsArr = [];
-
-    //start loop (local lists)
-    for (var k in kw_local_list) { // var i = 0; i < enabled_kw_list.length; i++sadasdasd
-        let list_id = "";
-        let list_name = "";
-        let lang = "";
-        if (kw_local_list.hasOwnProperty(k)) {
-            list_id = k;// list's filename/identification
-            list_name = kw_local_list[k]["name"];// list's name from row 0 (within the file. actual, showable name)
-            lang = list_name.split(' - ')[0];
-            localsArr.push(k);
-            //list_date = new Date(kw_local_list[k]["date"]); // list's update date
-        }
-
-        var li_string = document.createTextNode(list_name);
-        var li_node = document.createElement("li");
-        var span_node = document.createElement("span");
-
-        li_node.appendChild(li_string);
-        logger.debug("is the local KW list within the 'enabled' list?");
-        logger.debug(enabled_kw_list);
-        logger.debug(list_id);
-        if (enabled_kw_list.indexOf(list_id) > -1) {
-            logger.debug("yes");
-            span_node.innerHTML = '&radic;';
-            $(span_node).attr({
-                onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
-                onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-                class: "mark_enabled w3-green w3-button w3-display-right",
-                onclick: "$(this.parentElement).toggleClass('kw-list-enabled'); $(this).toggleClass('w3-red'); $(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { this.innerHTML = '&radic;'; } else { this.innerHTML = '&times;'; }; "
-            });
-            $(li_node).attr({
-                "data-id": list_id,
-                class: "w3-display-container kw-list-enabled"
-            });
-        }
-        else {
-            logger.debug("no");
-            span_node.innerHTML = '&times;';
-            $(span_node).attr({
-                onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
-                onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-                class: "w3-red w3-button w3-display-right",
-                onclick: "$(this.parentElement).toggleClass('kw-list-enabled'); $(this).toggleClass('w3-red'); $(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { this.innerHTML = '&radic;'; } else { this.innerHTML = '&times;'; }; "
-            });
-            $(li_node).attr({
-                "data-id": list_id,
-                class: "w3-display-container"
-            });
-        }
-
-        li_node.appendChild(span_node);
-
-        logger.debug("settings local list elemnt into list....");
-        $('#settings-local-kw-lists').append(li_node);
-    }
-    //<li class="w3-hover-blue w3-display-container kw-list-enabled">list 3<span onclick="$(this.parentElement).toggleClass('kw-list-enabled');$(this).toggleClass('w3-red');$(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="mark_enabled w3-green w3-button w3-display-right">&radic;</span></li>
-    //<li class="w3-hover-blue w3-display-container">list 4<span onclick="$(this.parentElement).toggleClass('kw-list-enabled');$(this).toggleClass('w3-red');$(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="w3-red w3-button w3-display-right">&times;</span></li>
-    //end loop
-    var lang_groups = [];
-    for (var j in kw_available_list) {
-        let list_id = "";
-        let list_name = "";
-        let lang = "";
-        let langlast = "";
-
-        if (kw_available_list.hasOwnProperty(j)) {
-            list_id = j;// list's filename/identification
-            list_name = kw_local_list[j]["name"];// list's name from row 0 (within the file. actual, showable name)
-            lang = list_name.split(' - ')[0];
-            langlast = list_name.substring(lang.length + 3, list_name.length);
-            //logger.debug("list_id: "+list_id);
-            //list_date = new Date(kw_local_list[k]["date"]); // list's update date
-        }
-
-        if (localsArr.indexOf(list_id) > -1){
-            logger.warn("The list '" + list_id + "' is already loaded/local!");
-            continue;
-        }
-        else {
-            logger.info("The list '" + list_id + "' is not loaded/local!");
-            if (lang_groups.indexOf(lang) > -1) {
-                //logger.debug("already have a GROUP in kw list: " + lang);
-                //logger.debug("creating option-element: " + langlast);
-                var option_elem = document.createElement("option");
-                var option_string = document.createTextNode(langlast);
-                $(option_elem).append(option_string);
-
-                $("#kw-list-available-choose optgroup[label='" + lang + "']").append(option_elem);
-            }
-            else {
-                //logger.debug("GROUP will be added to kw list: " + lang);
-                //logger.debug("creating optgroup-element: " + lang);
-                var optgroup_elem = document.createElement("optgroup");
-                $(optgroup_elem).attr({
-                    label: lang
-                });
-                $("#kw-list-available-choose").append(optgroup_elem);
-
-                //logger.debug("creating option-element: " + langlast);
-                var option_elem = document.createElement("option");
-                var option_string = document.createTextNode(langlast);
-                $(option_elem).append(option_string);
-
-                $("#kw-list-available-choose optgroup[label='" + lang + "']").append(option_elem);
-
-            }
-        }
-    }
-
-    //
-    set_kw_list_available_select();
-    set_app_lang_selector();
-}
-
+// NEEDS CHANGES!!!! NEEDSTOBECHANGED
 /* Called when settings on SETTINGS-view are saved */
 function saveSettings() {
     logger.debug("saveSettings");
@@ -2007,529 +1824,15 @@ function saveSettings() {
     $("#settings-local-kw-lists .kw-list-enabled").each(function (i) {
         var kw_list_id = $(this).attr("data-id");
         enabledKW.push(kw_list_id);
-        //logger.debug("ADDED: " + kw_list_id);
+        logger.debug("ADDED KW LIS: " + kw_list_id);
     });
     store2.set("enabled-keywordlists", enabledKW);
 
-    setupKWSelector();
+    intUtils.selectUtils.setupEditKW();
 }
 
-/* Setting up KW-selector on EDIT-view (select2) */
-function setupKWSelector() {
-    var enabledKW = [];
-    var apppath = remote.app.getPath('userData');
 
-    $("#KW-selector").empty();
-    $("#KW-selector").append(document.createElement("option"));
 
-    logger.debug("getting enabled local lists...");
-    $("#settings-local-kw-lists .kw-list-enabled").each(function (i) {
-        var kw_list_id = $(this).attr("data-id");
-        enabledKW.push(kw_list_id);
-        //logger.debug("ADDED: " + kw_list_id);
-    });
-
-    var kw_base = path.join(apppath, 'keywordlists');
-    var kw_groups = [];
-    var kw_current_group = "";
-    logger.debug("GOING TO LOOP enabledKW now....");
-    for (var i = 0; i < enabledKW.length; i++) {
-        //logger.debug("Round: " + i);
-
-        let loadedlist = [];
-        if (fs.existsSync(path.join(kw_base, enabledKW[i] + '.json'))) {
-            logger.info("KW file '" + enabledKW[i] + "' located!");
-            try {
-                //logger.debug("TRYING TO GET KW FILE CONTENTS AND LOOP 'EM");
-                loadedlist = require(path.join(kw_base, enabledKW[i] + '.json'));
-                for (var k in loadedlist) {
-                    //logger.debug("in loop now. current: " + k);
-                    if (loadedlist.hasOwnProperty(k)) {
-                        var kw_tag = k;
-                        var kw_itself = loadedlist[k];
-                        if (Object.keys(loadedlist).indexOf(k) === 0) {//loadedlist.indexof(k) === 0) {// skipping 0, because that is the name
-                            //logger.debug(kw_itself);
-                            kw_current_group = kw_itself;//.substring(kw_itself.split(' - ')[0].length + 3, kw_itself.length);
-                            //logger.debug("First line! taking name...: " + kw_current_group);
-                            continue;
-                        }
-                        if (kw_groups.indexOf(kw_current_group) > -1) {
-                            //logger.debug("Group seems to exist: " + kw_current_group);
-                            var option_elem = document.createElement("option");
-                            var option_text = document.createTextNode(kw_itself);
-                            //logger.debug("KW ITSELF: " + kw_itself);
-                            //logger.debug("KW TAG: " + kw_tag);
-                            $(option_elem).attr({
-                                value: kw_tag
-                            });
-                            $(option_elem).append(option_text);
-                            $("#KW-selector optgroup[label='" + kw_current_group + "']").append(option_elem);
-                            //logger.debug("#KW-selector optgroup[label='" + kw_current_group + "']");
-                        }
-                        else {
-                            //logger.debug("Group seems to NOT exist: " + kw_current_group);
-                            kw_groups.push(kw_current_group);
-                            var optgroup_elem = document.createElement("optgroup");
-                            $(optgroup_elem).attr({
-                                label: kw_current_group
-                            });
-                            $("#KW-selector").append(optgroup_elem);
-
-                            var option_elem = document.createElement("option");
-                            var option_text = document.createTextNode(kw_itself);
-                            //logger.debug("KW ITSELF: " + kw_itself);
-                            //logger.debug("KW TAG: " + kw_tag);
-                            $(option_elem).attr({
-                                value: kw_tag
-                            });
-                            $(option_elem).append(option_text);
-                            $("#KW-selector optgroup[label='" + kw_current_group + "']").append(option_elem);
-                            //logger.debug("#KW-selector optgroup[label='" + kw_current_group + "']");
-                        }
-                    }
-                }
-            } catch (err) {
-                logger.error("Failed to load '" + enabledKW[i] + ".json' KW file...");
-                logger.error(err.message);
-                $("#settings-local-kw-lists li['data-id'='" + enabledKW[i] + "'] span").trigger("click");
-            }
-        }
-        else {
-            logger.warn("No desired KW-file found in keywords directory!");
-            $("#settings-local-kw-lists li[data-id='" + enabledKW[i] + "'] span").trigger("click");
-        }
-    }
-    // here you update kw-selector in case of same words in current file
-    $("#file-chosen-kw-ul li").each(function (i) {//"#KW-selector"
-        logger.debug("TESTING IF THE CURRENT FILE SELECTED KW ARE PRESENT IN SELECT-LIST");
-        var kw_identificator = $(this).attr("data-value");
-        $("#KW-selector option").each(function (i) {
-            // FRIENDSHIP IS MAGIC!
-            if ($(this).attr("") === kw_identificator) {
-                // same and nice :3
-                $(this).attr("disabled", "disabled");
-            }
-        });
-    });
-    $("#KW-selector").select2({
-        language: "current_lang",
-        placeholder: i18n.__('select2-kw-add-ph')
-    });
-}
-
-/* Setting up KW-list-choosing  on SETTINGS-view (select2) */
-function set_KW_choose_selector() {
-    logger.debug("set_KW_choose_selector");
-    $("#KW-selector").select2({
-        language: "current_lang",
-        placeholder: i18n.__('select2-kw-add-ph')
-    });
-    $('#KW-selector').on("select2:select", function (e) {
-        //console.log(e);
-        //console.log(this);
-        var kw_value = e.params.data.id;
-        var kw_text = e.params.data.text;
-        //logger.debug("VALUE: "+kw_value + " # TEXT: " + kw_text);
-        $('#KW-selector').val(null).trigger("change");
-        $("#KW-selector option[value='" + kw_value + "']").attr('disabled', 'disabled');
-
-        var li_string = document.createTextNode(kw_text);
-        var li_node = document.createElement("li");
-        var span_node = document.createElement("span");
-
-        li_node.appendChild(li_string);
-        span_node.innerHTML = "&times;";
-
-        $(li_node).attr({
-            class: "w3-display-container",
-            "data-value": kw_value
-        });
-
-        $(span_node).attr({
-            style: "height: 100%;",
-            class: "w3-button w3-display-right",
-            onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
-            onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-            onclick: "$(\"#KW-selector option[value = '" + kw_value + "']\").removeAttr('disabled', 'disabled'); $(this.parentElement).remove(); $(\"#KW-selector\").select2({language: \"current_lang\",placeholder: i18n.__('select2-kw-add-ph')});"
-        });
-
-        li_node.appendChild(span_node);
-
-        $('#file-chosen-kw-ul').append(li_node);
-
-        $("#KW-selector").select2({
-            language: "current_lang",
-            placeholder: i18n.__('select2-kw-add-ph')
-        });
-    });
-    $('#KW-selector').prop("disabled", true);
-}
-
-/* Setting up language selector for app language (select2) */
-function set_app_lang_selector() {
-    logger.debug("set_app_lang_selector");
-    fs.readdirSync(path.join(__dirname,"..\\translations")).forEach(file => {
-        if (file.split('.').pop() === "js") { return; }
-        var lang = getFullLangName(file.split('.')[0]);
-        if (lang === null) {
-            logger.warn("Requested language not defined in getFullLangName function!! Using placeholder 'NOT_DEFINED'...");
-            lang = "NOT_DEFINED";
-        }
-        $("#app-lang-selector").append('<option value="' + file.split('.')[0] + '">' + lang + '</option>');
-    });
-
-    $("#app-lang-selector").select2({
-        language: "current_lang",
-        placeholder: i18n.__('select2-app-lang-ph'),
-        minimumResultsForSearch: Infinity
-    });
-    ///////////////////////////// BECAUSE LANGUAGE SELECT IS NOT YET WORKING
-    $("#app-lang-selector").prop("disabled", true);
-    ////////////////////////////
-}
-
-/* So that you get full displayed name for short identifier */
-function getFullLangName(lang_short) {
-    logger.debug("getFullLangName");
-    var lang_full = null;
-
-    switch (lang_short) {
-        case "en":
-            lang_full = "English";
-            break;
-        case "fi":
-            lang_full = "Suomi";
-            break;
-        default:
-            //
-    } 
-    return lang_full;
-}
-
-/* Setting up available kw-list selector (select2) */
-function set_kw_list_available_select() { 
-    logger.debug("set_kw_list_available_select");
-    $("#kw-list-available-choose").select2({
-        language: "current_lang",
-        placeholder: i18n.__('select2-kw-list-ph')
-    });
-}
-
-    // Input "0" =  "start" view
-    // Input "1" =  "preview" view
-    // Input "2" =  "edit A" view
-    // Input "3" =  "edit B" view
-    // Input "4" =  "edit C" view
-    // Input "5" =  "login" view
-    // Input "6" =  "register" view
-    // Input "7" =  "settings" view
-    // Input "8" =  "confirmation(disabled)" view
-    // Input "12" = "information" view
-    // Input "13" = "create project" view
-    // Input "14" = "forgot password" view
-
-    // Input "9" = enable sidepanels (under toppanel) and toppanel (under navbar)
-    // Input "10" = disable sidepanels (under toppanel) and toppanel (under navbar)
-    // Input "11" = toggle footer NOT USED!!!!!!
-function toggleViewMode(mode) {
-    logger.debug("toggleViewMode: "+mode);
-    if (mode === 0) {
-        setFooterBtnValue("start");
-        setViewButtonSets("start");
-
-        $("#start-div").addClass("is-shown");
-        $("#preview-div").removeClass("is-shown");
-        $("#edita-div").removeClass("is-shown");
-        $("#editb-div").removeClass("is-shown");
-        $("#editc-div").removeClass("is-shown");
-        $("#logreg-div").removeClass("is-shown");
-        $("#settings-div").removeClass("is-shown");
-        $("#information-div").removeClass("is-shown");
-        $("#create-proj-div").removeClass("is-shown");
-
-        $("#proj-open-error").text("");
-    }
-    else if (mode === 1) {
-        setFooterBtnValue("preview");
-        setViewButtonSets("preview");
-
-        $("#addfilebutton").removeClass("element-disabled");
-        $("#exportprojbutton").removeClass("element-disabled");
-
-        $("#closeprojbutton").removeClass("element-disabled");
-        $("#projinfobutton").removeClass("element-disabled");
-        $("#loginbutton").removeClass("element-disabled");
-        $("#settingsbutton").removeClass("element-disabled");
-        $("#projstartbutton").removeClass("element-disabled");
-
-        if (window.currentFile === undefined) {
-            //$("#proj-files-ul").addClass("element-disabled");
-            $("#file-chosen-kw-ul").addClass("element-disabled");
-        }
-        else {
-            $("#proj-files-ul").removeClass("element-disabled");
-            $("#file-chosen-kw-ul").removeClass("element-disabled");
-        }
-
-        $("#start-div").removeClass("is-shown");
-        $("#preview-div").addClass("is-shown");
-        $("#edita-div").removeClass("is-shown");
-        $("#editb-div").removeClass("is-shown");
-        $("#editc-div").removeClass("is-shown");
-        $("#logreg-div").removeClass("is-shown");
-        $("#settings-div").removeClass("is-shown");
-        $("#information-div").removeClass("is-shown");
-        $("#create-proj-div").removeClass("is-shown");
-
-        $('#a-censored-words').removeClass('no-display');
-        $('#b-censored-words').removeClass('no-display');
-        $('#c-censored-words').removeClass('no-display');
-    }
-    else if (mode === 2) {
-        setFooterBtnValue("editA");
-        setViewButtonSets("editA");
-
-        $("#addfilebutton").addClass("element-disabled");
-        $("#exportprojbutton").addClass("element-disabled");
-
-        $("#closeprojbutton").addClass("element-disabled");
-        $("#projinfobutton").addClass("element-disabled");
-        $("#loginbutton").addClass("element-disabled");
-        $("#settingsbutton").addClass("element-disabled");
-        $("#projstartbutton").addClass("element-disabled");
-
-        $("#proj-files-ul").addClass("element-disabled");
-        //$("#file-chosen-kw-ul").addClass("element-disabled");
-
-        $("#start-div").removeClass("is-shown");
-        $("#preview-div").removeClass("is-shown");
-        $("#edita-div").addClass("is-shown");
-        $("#editb-div").removeClass("is-shown");
-        $("#editc-div").removeClass("is-shown");
-        $("#logreg-div").removeClass("is-shown");
-        $("#settings-div").removeClass("is-shown");
-        $("#information-div").removeClass("is-shown");
-        $("#create-proj-div").removeClass("is-shown");
-
-        $('#a-censored-words').removeClass('no-display');
-        $('#b-censored-words').addClass('no-display');
-        $('#c-censored-words').addClass('no-display');
-    }
-    else if (mode === 3) {
-        setFooterBtnValue("editB");
-        setViewButtonSets("editB");
-
-        $("#addfilebutton").addClass("element-disabled");
-        $("#exportprojbutton").addClass("element-disabled");
-
-        $("#closeprojbutton").addClass("element-disabled");
-        $("#projinfobutton").addClass("element-disabled");
-        $("#loginbutton").addClass("element-disabled");
-        $("#settingsbutton").addClass("element-disabled");
-        $("#projstartbutton").addClass("element-disabled");
-
-        $("#proj-files-ul").addClass("element-disabled");
-        //$("#file-chosen-kw-ul").addClass("element-disabled");
-
-        $("#start-div").removeClass("is-shown");
-        $("#preview-div").removeClass("is-shown");
-        $("#edita-div").removeClass("is-shown");
-        $("#editb-div").addClass("is-shown");
-        $("#editc-div").removeClass("is-shown");
-        $("#logreg-div").removeClass("is-shown");
-        $("#settings-div").removeClass("is-shown");
-        $("#information-div").removeClass("is-shown");
-        $("#create-proj-div").removeClass("is-shown");
-
-        $('#a-censored-words').addClass('no-display');
-        $('#b-censored-words').removeClass('no-display');
-        $('#c-censored-words').addClass('no-display');
-    }
-    else if (mode === 4) {
-        setFooterBtnValue("editC");
-        setViewButtonSets("editC");
-
-        $("#addfilebutton").addClass("element-disabled");
-        $("#exportprojbutton").addClass("element-disabled");
-
-        $("#closeprojbutton").addClass("element-disabled");
-        $("#projinfobutton").addClass("element-disabled");
-        $("#loginbutton").addClass("element-disabled");
-        $("#settingsbutton").addClass("element-disabled");
-        $("#projstartbutton").addClass("element-disabled");
-
-        $("#proj-files-ul").addClass("element-disabled");
-        //$("#file-chosen-kw-ul").addClass("element-disabled");
-
-        $("#start-div").removeClass("is-shown");
-        $("#preview-div").removeClass("is-shown");
-        $("#edita-div").removeClass("is-shown");
-        $("#editb-div").removeClass("is-shown");
-        $("#editc-div").addClass("is-shown");
-        $("#logreg-div").removeClass("is-shown");
-        $("#settings-div").removeClass("is-shown");
-        $("#information-div").removeClass("is-shown");
-        $("#create-proj-div").removeClass("is-shown");
-
-        $('#a-censored-words').addClass('no-display');
-        $('#b-censored-words').addClass('no-display');
-        $('#c-censored-words').removeClass('no-display');
-    }
-    else if (mode === 5) {
-        setFooterBtnValue("login");
-        setViewButtonSets("login");
-
-        $("#addfilebutton").addClass("element-disabled");
-        $("#exportprojbutton").addClass("element-disabled");
-
-        $("#start-div").removeClass("is-shown");
-        $("#preview-div").removeClass("is-shown");
-        $("#edita-div").removeClass("is-shown");
-        $("#editb-div").removeClass("is-shown");
-        $("#editc-div").removeClass("is-shown");
-        $("#logreg-div").addClass("is-shown");
-        $("#settings-div").removeClass("is-shown");
-        $("#information-div").removeClass("is-shown");
-        $("#create-proj-div").removeClass("is-shown");
-
-        $("#loginchoices").removeClass("no-display");
-        $("#registerchoices").addClass("no-display");
-
-        $("#login-username").val("");
-        $("#login-pass").val("");
-        $("#login-register-title").text("Login");
-
-        $("#forgot_password_choices").addClass("no-display");
-    }
-    else if (mode === 6) {
-        setFooterBtnValue("register");
-        setViewButtonSets("register");
-
-        $("#addfilebutton").addClass("element-disabled");
-        $("#exportprojbutton").addClass("element-disabled");
-
-        $("#start-div").removeClass("is-shown");
-        $("#preview-div").removeClass("is-shown");
-        $("#edita-div").removeClass("is-shown");
-        $("#editb-div").removeClass("is-shown");
-        $("#editc-div").removeClass("is-shown");
-        $("#logreg-div").addClass("is-shown");
-        $("#settings-div").removeClass("is-shown");
-        $("#information-div").removeClass("is-shown");
-        $("#create-proj-div").removeClass("is-shown");
-
-        $("#loginchoices").addClass("no-display");
-        $("#registerchoices").removeClass("no-display");
-
-        $("#register-username").val("");
-        $("#register-email").val("");
-        $("#register-realname").val("");
-        $("#register-pass").val("");
-        $("#register-retype-pass").val("");
-        $("#login-register-title").text("Register");
-
-        $("#forgot_password_choices").addClass("no-display");
-    }
-    else if (mode === 7) {
-        setFooterBtnValue("settings");
-        setViewButtonSets("settings");
-
-        $("#addfilebutton").addClass("element-disabled");
-        $("#exportprojbutton").addClass("element-disabled");
-
-        $("#start-div").removeClass("is-shown");
-        $("#preview-div").removeClass("is-shown");
-        $("#edita-div").removeClass("is-shown");
-        $("#editb-div").removeClass("is-shown");
-        $("#editc-div").removeClass("is-shown");
-        $("#logreg-div").removeClass("is-shown");
-        $("#settings-div").addClass("is-shown");
-        $("#information-div").removeClass("is-shown");
-        $("#create-proj-div").removeClass("is-shown");
-    }
-    else if (mode === 8) { //CURRENTLY NOT USED!
-        $(".w3-button").toggleClass("element-disabled");
-        $("ul").toggleClass("element-disabled");
-        $(".select2").toggleClass("element-disabled");
-        //$("#subB9").toggleClass("element-disabled");// just because, well, you'd be stuck :'D
-    }
-    else if (mode === 9) {
-        $("#leftsection").removeClass("no-display");
-        $("#rightsection").removeClass("no-display");
-        $("#middleheader").removeClass("no-display");
-    }
-    else if (mode === 10) {
-        $("#leftsection").addClass("no-display");
-        $("#rightsection").addClass("no-display");
-        $("#middleheader").addClass("no-display");
-    }
-    else if (mode === 11) {
-        //$("#window-footer").toggleClass("no-display");
-    }
-    else if (mode === 12) {
-        setFooterBtnValue("information");
-        setViewButtonSets("information");
-
-        $("#addfilebutton").addClass("element-disabled");
-        $("#exportprojbutton").addClass("element-disabled");
-
-        $("#start-div").removeClass("is-shown");
-        $("#preview-div").removeClass("is-shown");
-        $("#edita-div").removeClass("is-shown");
-        $("#editb-div").removeClass("is-shown");
-        $("#editc-div").removeClass("is-shown");
-        $("#logreg-div").removeClass("is-shown");
-        $("#settings-div").removeClass("is-shown");
-        $("#information-div").addClass("is-shown");
-        $("#create-proj-div").removeClass("is-shown");
-    }
-    else if (mode === 13) {
-        setFooterBtnValue("create-proj");
-        setViewButtonSets("create-proj");
-
-        $("#start-div").removeClass("is-shown");
-        $("#preview-div").removeClass("is-shown");
-        $("#edita-div").removeClass("is-shown");
-        $("#editb-div").removeClass("is-shown");
-        $("#editc-div").removeClass("is-shown");
-        $("#logreg-div").removeClass("is-shown");
-        $("#settings-div").removeClass("is-shown");
-        $("#information-div").removeClass("is-shown");
-        $("#create-proj-div").addClass("is-shown");
-
-        $("#new-proj-create-input").val("");
-        $("#create-proj-error").val("");
-    }
-    else if (mode === 14){
-        //forgot password
-        setFooterBtnValue("forgotPW");
-        setViewButtonSets("forgotPW");
-
-        $("#addfilebutton").addClass("element-disabled");
-        $("#exportprojbutton").addClass("element-disabled");
-
-        $("#start-div").removeClass("is-shown");
-        $("#preview-div").removeClass("is-shown");
-        $("#edita-div").removeClass("is-shown");
-        $("#editb-div").removeClass("is-shown");
-        $("#editc-div").removeClass("is-shown");
-        $("#logreg-div").addClass("is-shown");
-        $("#settings-div").removeClass("is-shown");
-        $("#information-div").removeClass("is-shown");
-        $("#create-proj-div").removeClass("is-shown");
-
-        $("#loginchoices").addClass("no-display");
-        $("#registerchoices").addClass("no-display");
-
-        $("#forgot_password_choices").removeClass("no-display");
-        $("#forgot-email").val("");
-        $("#login-register-title").text("Forgot Password?");
-    }
-    else {
-        // If you end up here, blame the incompetent programmer
-        logger.error("Error! Invalid parameter to toggleViewMode-function");
-    }
-}
 
 /*
 function continueQueue() {
@@ -2577,34 +1880,12 @@ function updateFileQueue(files) {
 }
 */
 
-/* Empty contents of all elements */
-function clearElements() {
-    logger.debug("clearElements");
-    $("#proj-files-ul").empty();
-    $("#proj-notes-ul").empty();
-    $("#file-chosen-kw-ul").empty();
-    $("#proj-info-kw-ul").empty();
-    $("#proj-info-files-ul").empty();
-
-    $("#preview-preview-A").empty();
-    $("#preview-preview-B").empty();
-    $("#preview-preview-C").empty();
-
-    $("#edit-A-edit-text").empty();
-    $("#edit-A-orig-text").empty();
-    $("#edit-B-edit-text").empty();
-    $("#edit-B-orig-text").empty();
-    $("#edit-C-edit-text").empty();
-    $("#edit-C-orig-text").empty();
-
-    $("#file-censored-A-ul").empty();
-    $("#file-censored-B-ul").empty();
-    $("#file-censored-C-ul").empty();
-}
-
+// NEEDS UPDATES!!!!!!NEEDSTOBECHANGED
 /* Show file browser so that new files may be imported into current project */
-function addFilesPrompt(project_name) {
+function addFilesPrompt() {
     logger.debug("addFilesPrompt");
+    var project_name = window.currentProject;
+
     var docpath = remote.app.getPath('documents');
     var options = {
         title: i18n.__('open-file-prompt-window-title'),
@@ -2612,39 +1893,19 @@ function addFilesPrompt(project_name) {
         filters: [
             { name: 'Spreadsheet', extensions: ['csv'] }
         ],
-        properties: ['openFile',
-            'multiSelections'
+        properties: ['openFile'
         ]
-    }//, 'xls', 'xlsx'
+    }//, 'xls', 'xlsx', 'multiSelections'<<<<--- because we need to ask where is this file from
     function callback(fileNames) {
 
         if (fileNames !== undefined) {
             fileNames.push(project_name);
-            sourceFiles2ProjAsync(fileNames);
+            sourceFiles2ProjAsync(fileNames);// NEEDSTOBECHANGED
             return;
         }
         logger.warn("No file(s) chosen to be opened!");
     }
     dialog.showOpenDialog(firstWindow, options, callback);
-}
-
-/* Turns .word with .censored class into " ***** " */
-function removeCensored() {
-    logger.debug("removeCensored");
-    //Section A
-    $("#preview-preview-A .secA-Q-allA .censored").each(function (i) {
-        $(this).text("*****");
-    });
-    //Section B
-    $("#preview-preview-B .secB-Q-allA .censored").each(function (i) {
-        $(this).text("*****");
-    });
-    //Section C
-
-    $("#preview-preview-C .secC-Q-allA .censored").each(function (i) {
-        $(this).text("*****");
-    });
-
 }
 
 ///NEEDS UPDATE
@@ -2721,28 +1982,6 @@ function updateKeywordsList() {
 */
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
-/* Update shown list of currently censored lists for each section A, B and C */
-function updateCensoredList() {
-    logger.debug("updateCensoredList");
-    $("#file-censored-A-ul").empty();
-    $("#file-censored-B-ul").empty();
-    $("#file-censored-C-ul").empty();
-    //Section A
-    $("#edit-A-orig-text .censored").each(function (i) {
-        var to_appended = '<li class="w3-display-container">' + $(this).text() + '</li>';
-        $("#file-censored-A-ul").append(to_appended);
-    });
-    //Section B
-    $("#edit-B-orig-text .censored").each(function (i) {
-        var to_appended = '<li class="w3-display-container">' + $(this).text() + '</li>';
-        $("#file-censored-B-ul").append(to_appended);
-    });
-    //Section C
-    $("#edit-C-orig-text .censored").each(function (i) {
-        var to_appended = '<li class="w3-display-container">' + $(this).text() + '</li>';
-        $("#file-censored-C-ul").append(to_appended);
-    });
-}
 
 ///NEEDS UPDATE
 /* True if is found, false otherwise */
@@ -2794,166 +2033,6 @@ function paintEmAll(word, mode) {
 
 }
 */
-
-// SETTING UP SELECTING WORDS
-function setupCensorSelect() {
-    logger.debug("setupCensorSelect");
-    $("#edit-A-edit-text .word").off("click");
-    $("#edit-B-edit-text .word").off("click");
-    $("#edit-C-edit-text .word").off("click");
-
-    $("#edit-A-edit-text .word").on("click", function () {
-        var clicked = $(this).text();
-        logger.debug("CLIECKED: "+clicked);
-        if ($(this).hasClass("censored")) {
-            $(this).removeClass("censored");
-            logger.debug("REMOVE censored");
-        }
-        else {
-            $(this).addClass("censored");
-            logger.debug("ADDING censored");
-        }
-    });
-    $("#edit-B-edit-text .word").on("click", function () {
-        var clicked = $(this).text();
-        logger.debug("CLIECKED: " + clicked);
-        if ($(this).hasClass("censored")) {
-            $(this).removeClass("censored");
-            logger.debug("REMOVE censored");
-        }
-        else {
-            $(this).addClass("censored");
-            logger.debug("ADDING censored");
-        }
-    });
-    $("#edit-C-edit-text .word").on("click", function () {
-        var clicked = $(this).text();
-        logger.debug("CLIECKED: " + clicked);
-        if ($(this).hasClass("censored")) {
-            $(this).removeClass("censored");
-            logger.debug("REMOVE censored");
-        }
-        else {
-            $(this).addClass("censored");
-            logger.debug("ADDING censored");
-        }
-    });
-        }
-/* Setup language and country (in English) selectors on Create Project -view */
-function setupCreateProjSelector() {
-    logger.debug("setupCreateProjSelector");
-    var resultdata1 = "";
-    var resultdata2 = "";
-    try {
-        resultdata1 = JSON.parse(fs.readFileSync(path.join(__dirname,"../select2/language_3b2.json"), "utf8"));
-        resultdata2 = JSON.parse(fs.readFileSync(path.join(__dirname,"../select2/data_countries.json"), "utf8"));
-    }
-    catch (err) {
-        logger.error("Error opening >Create Project< file: " + err.message);
-        return -1;
-    }
-    var testdata1 = $.map(resultdata1, function (obj) {
-        obj.id = obj["alpha2"];
-        obj.text = obj.English;
-        return obj;
-    });
-
-    var testdata2 = $.map(resultdata2, function (obj) {
-        obj.id = obj.Code;
-        obj.text = obj.Name;
-        return obj;
-    });
-    $("#create-proj-country-select").select2({
-        language: "current_lang",
-        placeholder: i18n.__('select2-proj-country-ph'),
-        data: testdata2
-    }
-    );
-
-    $("#create-proj-language-select").select2({
-        language: "current_lang",
-        placeholder: i18n.__('select2-proj-lang-ph'),
-        data: testdata1
-    }
-    );
-
-    $("#create-proj-country-select").val(null).trigger("change");
-    $("#create-proj-language-select").val(null).trigger("change");
-
-}
-
-
-function setupCsectionUI() {
-    logger.debug("setupCsectionUI");
-    for (var f = 1; f < 15; f++) {
-        var realdata = "";
-        var classStr = "secC-Q-" + f + "-cont";
-        if (document.getElementById("edit-C-edit-text").getElementsByClassName(classStr)[0].hasAttribute("data-real")) { // has data-real attr
-            if ($("#edit-C-edit-text ." + classStr).attr("data-real").length !== 0) {// has non-empty real-data attr
-
-                realdata = JSON.parse($("#edit-C-edit-text ." + classStr).attr("data-real"));
-
-                if (f === 1) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("field-of-study-" + realdata.toString()));
-                }
-                else if (f === 3) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("age-"+(realdata-1).toString()));
-                }
-                else if (f === 4) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("gender-"+(realdata-1).toString()));
-                }
-                else if (f === 5) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("study-year-"+(realdata-1).toString()));
-                }
-                else if (f === 6) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("work-placement-"+realdata.toString()));
-                }
-                else if (f === 8) {//array!!! if there is one
-                    var temparr = [];
-                    for (var s = 0; s < realdata.length; s++){
-                        temparr.push(i18n.__("event-related-" + realdata[s].toString()));
-                    }
-                    $("#edit-C-edit-text ." + classStr).text(temparr.toString());
-                }
-                else if (f === 10) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("event-type-"+(realdata-1).toString()));
-                }
-                else if (f === 11) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("report-document-"+(realdata-1).toString()));
-                }
-                else if (f === 13) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("report-document-" + (realdata - 1).toString()));
-                }
-                //$("#edit-C-edit-text ." + classStr).addClass("w3-light-blue"); //adding background color
-            }
-            else {// data-real exists but nothing inside...
-                $("#edit-C-edit-text ." + classStr).text("");
-            }
-        }
-        else {// no data-real attr. no need to do anything for this...
-            //
-        }
-        //$("#edit-C-edit-text " + classStr).text(i18n.__(""));
-    }
-
-    $("#edit-C-orig-text").html($("#edit-C-edit-text").html())
-}
-
-/* Clears UI for section C where translations were used */
-function clearCsectionUI() {
-    logger.debug("clearCsectionUI");
-    for (var f = 1; f < 15; f++) {
-        var classStr = "secC-Q-" + f + "-cont";
-        var elem = document.getElementById("edit-C-edit-text").getElementsByClassName("secC-Q-" + f + "-cont")[0];
-        if (elem === undefined) { // there is no such element. just quitting...
-            return;
-        }
-        if (elem.hasAttribute("data-real")) {
-            $("#edit-C-edit-text ." + classStr).empty();
-            //$("#edit-C-edit-text ." + classStr).removeClass("w3-light-blue"); //remove background color
-        }
-    }
-}
 
 /* THIS IS SETTING UP UI TRANSLATION */
 function setupTranslations() {

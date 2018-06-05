@@ -3,21 +3,28 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="../select2/css/select2.min.css">
+    <script>
+        'use strict';
 
+        document.addEventListener('dragover', function (event) {
+            event.preventDefault();
+            return false;
+        }, false);
+
+        document.addEventListener('drop', function (event) {
+            event.preventDefault();
+            return false;
+        }, false);
+    </script>
     <script>window.logger = require('electron-log');</script>
-    <script>window.$ = require('jquery');</script>
+    <script>window.$ = require('jquery'); var select2_base = require('select2'); select2_base();</script>
+
     <script>
         window.i18n = new (require('../translations/i18n'));
     </script>
-
     <link rel="stylesheet" href="../css/w3.css">
     <link rel="stylesheet" href="../css/custom.css">
-
-    <!--SELECT2 CSS-->
-    <link rel="stylesheet" href="../select2/css/select2.min.css">
-    <!--SELECT2 JS-->
-    <script>require('select2')</script>
-
     <link rel="import" href="./sections/login.html" />
     <link rel="import" href="./sections/preview.html" />
     <link rel="import" href="./sections/edit-a.html" />
@@ -27,8 +34,6 @@
     <link rel="import" href="./sections/settings.html" />
     <link rel="import" href="./sections/information.html" />
     <link rel="import" href="./sections/create-proj.html" />
-
-
 
 </head>
 <body>
@@ -50,7 +55,6 @@
     </header>
 
     <div id="upper-nav-bar" style="min-height:68px;" class="w3-bar w3-gray w3-bottombar w3-border-white disable-select">
-
         <div id="addfilebutton" class="w3-bar-item w3-button no-display">
             <img draggable="false" id="nav-file-icon" class="navbar-image" src="../ui_icons/appbar.add.png" />
             <p class="navbar-text">Add Files</p>
@@ -71,25 +75,21 @@
             <img draggable="false" id="nav-closeproj-icon" class="navbar-image" src="../ui_icons/appbar.close-dark.png" />
             <p class="navbar-text">Close project</p>
         </div>
-
-        <div id="settingsbutton" class="w3-bar-item w3-button">
-            <img draggable="false" id="nav-settings-icon" class="navbar-image" src="../ui_icons/appbar.settings.png" />
-            <p class="navbar-text">Settings</p>
-        </div>
-
         <div id="back-to-start-button" class="w3-bar-item w3-button">
             <img draggable="false" id="nav-start-icon" class="navbar-image" src="../ui_icons/appbar.home.variant.enter.png" />
             <p id="" class="navbar-text">Back to start</p>
         </div>
-
+        <div id="settingsbutton" class="w3-bar-item w3-button">
+            <img draggable="false" id="nav-settings-icon" class="navbar-image" src="../ui_icons/appbar.settings.png" />
+            <p class="navbar-text">Settings</p>
+        </div>
         <div id="loginbutton" class="w3-bar-item w3-button w3-right w3-disabled">
             <img draggable="false" id="nav-login-icon" class="navbar-image" src="../ui_icons/appbar.people.png" />
             <p class="navbar-text">Log in</p>
         </div>
-        <div style="margin-top:15px;"class="w3-bar-item w3-right w3-border-right w3-border-black">
+        <div style="margin-top:15px;" class="w3-bar-item w3-right w3-border-right w3-border-black">
             <p class="navbar-text">Not logged</p>
         </div>
-
     </div>
 
     <div id="middleheader" class="w3-row disable-select no-display">
@@ -100,7 +100,8 @@
             <p style="font-size:11px;">File Contents</p>
         </div>
         <div class="w3-rest w3-gray w3-container">
-            <p id="preview-cur-file-name" style="overflow-x:hidden;text-overflow:ellipsis;white-space:nowrap; font-size:11px;">Current File: NONE</p>
+            <p id="preview-cur-edits-title" style="overflow-x:hidden;text-overflow:ellipsis;white-space:nowrap; font-size:11px;background-color:lightgreen;margin: 5px;display:inline-flex;padding:6px;">No pending changes!</p>
+            <button id="save-cur-edits-btn" style="font-size:11px; display:inline-flex;" class="w3-disabled"  disabled>Save changes</button>
         </div>
     </div>
 
@@ -149,10 +150,12 @@
 
 
 
-                    <div class="w3-bar" style="font-size:smaller;">
-                        <p id="preview-subid" class="w3-bar-item" style="margin: 0; padding-bottom:0;">ID:</p>
-                        <p id="preview-subdate" class="w3-bar-item" style="margin: 0; padding-top:0;">Date:</p>
-                    </div>
+                <div class="w3-bar" style="font-size:smaller;">
+                    <p id="preview-event-country-title" class="w3-bar-item" style="margin: 0; padding-bottom:0;">Event country:</p>
+                    <select id="preview-event-country-select"></select>
+                    <p id="preview-event-lang-title" class="w3-bar-item" style="margin: 0; padding-top:0;">Event Language:</p>
+                    <select id="preview-event-lang-select"></select>
+                </div>
 
                 <div style="height:64px;" class="section-half">
                     <div style="height:38.28px;" class="w3-bar">

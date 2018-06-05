@@ -3,6 +3,19 @@
 <html xmlns="http://www.w3.org/1999/xhtml" style="height: 100%;font-family: 'BlinkMacSystemFont', 'Lucida Grande', 'Segoe UI', Ubuntu, Cantarell, sans-serif;font-size: 14px;line-height: 1.5;overflow: hidden;">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script>
+        'use strict';
+
+        document.addEventListener('dragover', function (event) {
+            event.preventDefault();
+            return false;
+        }, false);
+
+        document.addEventListener('drop', function (event) {
+            event.preventDefault();
+            return false;
+        }, false);
+    </script>
     <style>
         @keyframes spinning {
             0% {

@@ -110,7 +110,8 @@
     <Content Include="assets\select2\css\select2.min.css" />
     <Content Include="assets\select2\data_countries.json" />
     <Content Include="assets\select2\language_3b2.json" />
-    <Content Include="assets\translations\en - Copy.json" />
+    <Content Include="build\icon.png" />
+    <Content Include="en - Copy.json" />
     <Content Include="assets\translations\fi.json" />
     <Content Include="assets\translations\en.json">
       <SubType>Code</SubType>
@@ -158,6 +159,7 @@
     <Content Include="demo_files\en-basic.json" />
     <Content Include="demo_files\fi-basic.json" />
     <Content Include="demo_files\keyword-config.json" />
+    <Content Include="LICENSE" />
     <Content Include="tsconfig.json">
       <SubType>Code</SubType>
     </Content>
@@ -213,6 +215,9 @@
     <Compile Include="assets\js\importing.js">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="assets\js\intUtils.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="assets\js\localsetup.js">
       <SubType>Code</SubType>
     </Compile>
@@ -220,6 +225,15 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\js\old\save_utils_old.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="assets\js\parseUtils.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="assets\js\sectionUtils.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="assets\js\selectUtils.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\translations\i18n.js">

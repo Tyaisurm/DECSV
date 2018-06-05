@@ -24,12 +24,15 @@
   "secCtitle": "Section C",
   "secKtitle": "Tagging",
   "secFtitle": "Review",
-  "quit-conf-title": "Confirmation",
+
   "quit-conf-message": "Close application?",
   "quit-conf-detail": "Are you sure you want to close the application?",
+
+  "conf-title": "Confirmation",
   "conf-yes": "Yes",
   "conf-no": "No",
   "conf-ok": "Ok",
+
   "app-success": "SUCCESS",
   "app-failure": "FAILURE",
 

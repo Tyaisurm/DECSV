@@ -3,7 +3,19 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script>
+        'use strict';
 
+        document.addEventListener('dragover', function (event) {
+            event.preventDefault();
+            return false;
+        }, false);
+
+        document.addEventListener('drop', function (event) {
+            event.preventDefault();
+            return false;
+        }, false);
+    </script>
     <script>window.logger = require('electron-log');</script>
     <script>window.$ = require('jquery');</script>
     <script>window.i18n = new (require('../translations/i18n')); logger.debug("setupTranslations(about.html)");</script>
@@ -35,7 +47,7 @@
     </div>
     <div class="w3-container w3-center" style="transform:translateY(-40px)">
         <p id="about-version"></p>
-        <p>Online-guide available at GitHub (currently WIP)</p>
+        <button id="wiki-button" class="w3-button disable-select w3-round-large w3-blue" style="">For online wiki, click here</button>
         <p>MIT (c) 2018 Jaakko Tuuri</p>
     </div>
 

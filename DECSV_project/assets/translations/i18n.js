@@ -10,11 +10,12 @@ let app = electron.app ? electron.app : electron.remote.app
 module.exports = i18n;
 
 function i18n(check = false) {
-    logger.debug("in main?: " + check);
-    var locale = app.getLocale();
+    logger.debug("Called from main process?: " + check);
+    var locale = "en";//app.getLocale();
      
      
-    const Store = require('electron-store');
+    //const Store = require('electron-config');
+    const Store = require("electron-store");
     var langstore_options = {
         name: "app-configuration",
         cwd: app.getPath('userData')
@@ -23,12 +24,15 @@ function i18n(check = false) {
     var lang = langstore.get('app-lang', 'NOT_FOUND');
     
 
-    if (!!/[^a-zA-Z]/.test(locale)) {
-        locale = locale.substring(0, 2);
-    }
-    if (lang != 'NOT_FOUND') {
+    //if (!!/[^a-zA-Z]/.test(locale)) {
+    //    locale = locale.substring(0, 2);
+    //}
+    if (lang !== 'NOT_FOUND') {
         logger.info("language aquired from configuration file: " + lang);
         locale = lang;
+    }
+    else {
+        logger.warn("No language from configuration file! Using 'en' default...");
     }
     
 
@@ -58,7 +62,7 @@ i18n.prototype.__ = function (phrase,check = false) {
     }
     if (translation === undefined) {
         if (check) {
-        logger.debug("in main");
+        logger.debug("Translation into main process.......");
         }
         logger.error("No translation for '" + phrase + "' found in translation-file! Using placeholder '{**NO_TRANSLATION**}'");
         translation = "{**NO_TRANSLATION**}";

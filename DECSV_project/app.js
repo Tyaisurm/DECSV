@@ -8,7 +8,8 @@ const fs = require('fs');
 const autoUpdater = require("electron-updater").autoUpdater;
 const dialog = electron.dialog;
 const windowStateKeeper = require('electron-window-state');
-const Store = require('electron-store');
+//const Store = require('electron-config');
+const Store = require("electron-store");
 const XLSX = require('xlsx');
 const charDetector = require('charset-detector');
 const iconv = require('iconv-lite');
@@ -19,12 +20,16 @@ let i18n_app = null;
 
 var demostatus = false;
 
+const parseUtils = require("./assets/js/parseUtils.js");
+
 if (require('electron-squirrel-startup')) { app.quit(); }
 
 /////////////////////////////// SETTING LOGGER LEVELS
 logger.transports.file.level = "info";
 logger.transports.console.level = "silly";
 autoUpdater.logger = logger;
+//autoUpdater.autoDownload = false; // so that update won't be downloaded automatically
+
 ///////////////////////////////
 
 const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
@@ -34,13 +39,63 @@ const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) 
             mainWindow.restore();
         }
         mainWindow.focus();
+        // here take [1] command line arg (calling location / opened file) and try to open
+        // HOWEVER, if there is a file open atm, show notification that current needs to be closed...
+        // if nothing is wrong, let's try 1) switch to "open project"-view, 2) try to open arg[1] file, 3) notify if worked or not
+        // THIS ABOVE NEEDS TO BE IN >win32<
+        //
+        // otherwise, you need to listen event in MacOS 'open-file' with event.preventDefault()
+        // in windows parse process.argv
+        if (process.platform == 'win32' && process.argv.length >= 2) {
+            var openFilePath = process.argv[1];
+            data = openFilePath;
+        } else {
+            // do nothing
+        }
     }
 });
 
 if (isSecondInstance) {
     logger.debug("Tried to create second instance!");
     app.quit()
+} else {
+    logger.debug("This instance is first one!");
 }
+
+/* Handle opening files in program (while not open before; that is above in the makeSingleInstance callback) */
+app.on('will-finish-launching', function () {
+    app.on('open-file', function (ev, path) { // this works when called on MacOS
+        event.preventDefault();
+        if (process.platform == 'darwin') {
+            var fileLocation = path;
+
+        } else {
+            // nothing
+            logger.debug("Open-file event fired, but platform was not 'darwin'!");
+        }
+    });
+    app.on('open-url', function (event, url) {// yea.... we don't need this that much.. need to have for MacOS though
+        event.preventDefault();
+        //log("open-url event: " + url)
+
+        // handle if argument is proper file or not
+        var sourcelink = url;
+
+        //dialog.showErrorBox('open-url', `You arrived from: ${url}`)
+    });
+});
+
+
+ipcMain.on('get-ext-file-data', function (event) {// This is used to "ask" what the current file was. "null" is default
+    var data = null
+    if (process.platform == 'win32' && process.argv.length >= 2) {
+        var openFilePath = process.argv[1];
+        data = openFilePath;
+    } else {
+        logger.debug("Tried to call for file data when platform was not 'win32' or file was not defined!");
+    }
+    event.returnValue = data;
+});
 
 /*
 Logger logs are on %AppData%\Roaming\*package: productName*\log.log (or "old" version of the same) by default on windows systems.
@@ -60,8 +115,8 @@ const { ipcMain } = require('electron')
 // create project
 ipcMain.on('async-create-project', (event, project_name, project_country, project_lang) => {
     logger.debug("async-create-project (at app.js)");
-    var sending_back = createNewProject(project_name, project_country, project_lang);
-    event.sender.send('async-create-project-reply', sending_back);
+    var results = createNewProject(project_name, project_country, project_lang);
+    event.sender.send('async-create-project-reply', results);
 });
 
 // NEEDS UPDATE - NOT USED AT THE MOMENT (rimraf)
@@ -73,7 +128,7 @@ ipcMain.on('async-delete-project', (event, arg) => {
 // import files to project folder
 ipcMain.on('async-import-files', (event, arg) => {
     logger.debug("async-import-files (at app.js)");
-    srcFiles2Proj(arg[0], event, arg[1]);
+    //srcFiles2Proj(arg[0], event, arg[1]);
 })
 
 // transform source-folder files into temp files :)
@@ -94,17 +149,21 @@ ipcMain.on('async-create-output', (event, arg) => {
 function createDocStructure() {
     logger.debug("createDocStructure");
     var docpath = app.getPath('documents');
-    if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
-        logger.info("No app documents folder found! Creating one...");
-        fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV'));
-    }
-    if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
-        logger.info("No app PROJECTS folder found! Creating one...");
-        fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects'));
-    }
-    if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Output'))) {
-        logger.info("No app OUTPUT folder found! Creating one...");
-        fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Output'));
+    try {
+        if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
+            logger.info("No app documents folder found! Creating one...");
+            fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV'));
+        }
+        if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
+            logger.info("No app PROJECTS folder found! Creating one...");
+            fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects'));
+        }
+        if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Output'))) {
+            logger.info("No app OUTPUT folder found! Creating one...");
+            fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Output'));
+        }
+    } catch (err) {
+        logger.error("Unable to create file structure into user's documents! Reason: " + err.message);
     }
 }
 
@@ -112,14 +171,24 @@ function createDocStructure() {
 function createAppStructure() {
     logger.debug("createAppStructure");
     var apppath = app.getPath('userData');
-    if (!fs.existsSync(path.join(apppath, 'app-configuration.json'))) {
+    var appconfigcheck = false;
+    if (fs.existsSync(path.join(apppath, 'app-configuration.json'))) {
+        try {
+            appconfigcheck = !fs.statSync(path.join(apppath, 'app-configuration.json')).isDirectory()
+        } catch (err) {
+            logger.error("Error while using statSync! Reason: " + err.message);
+        }
+    }
+
+    if (!appconfigcheck) {
         logger.info("No app configuration file found! Creating one with defaults...");
         var CA1_options = {
             defaults: {
                 "app-lang": "en",
                 "first-use": true,
                 "app-version": app.getVersion(),
-                "demo-files": demostatus
+                "demo-files": demostatus,
+                "edits": [false,null]
             },
             name: "app-configuration",
             cwd: apppath
@@ -145,7 +214,8 @@ function createAppStructure() {
         var appver = CA1_store.get("app-version", "0.0.0");
         var applang = CA1_store.get("app-lang", "en");
         var appfirst = CA1_store.get("first-use", true);
-        var appdemos = CA1_store.get("demo-files", false)
+        var appdemos = CA1_store.get("demo-files", false);
+        var appedits = CA1_store.get("edits", false);
 
         logger.info("Current ver.: " + app.getVersion() + " Ver. in file: " + appver);
         if (appver !== app.getVersion()){
@@ -155,6 +225,7 @@ function createAppStructure() {
             CA1_store.set("first-use", appfirst);
             CA1_store.set("app-version", app.getVersion());
             CA1_store.set("demo-files", appdemos)
+            CA1_store.set("edits", appedits)
         }
         demostatus = appdemos;
         if (demostatus) {
@@ -168,12 +239,31 @@ function createAppStructure() {
 
         // check if consistent with this version, if not, remove and rebuild
     }
-    if (!fs.existsSync(path.join(apppath, 'keywordlists\\keyword-config.json')) || !demostatus) {
+    var keyword_file_check = true;
+    // checking if keyword-config file exists, and if it is file or directory
+    if (fs.existsSync(path.join(apppath, 'keywordlists\\keyword-config.json'))) {
+        if (fs.statSync(path.join(apppath, 'keywordlists\\keyword-config.json')).isDirectory()) {
+            keyword_file_check = false;
+        }
+    }
+    else {
+        keyword_file_check = false;
+    }
+    if (keyword_file_check || !demostatus) {
         logger.info("No keyword configuration file found! Creating one with defaults...");
-        if (!fs.existsSync(path.join(apppath, 'keywordlists'))){ fs.mkdirSync(path.join(apppath, 'keywordlists')); }// just because error when trying to create already existing
-        logger.info("CREATING DEMO FILES TO SHOW FUNCTIONALITY WITH KEYWORDS!");
+        try {
+            if (!fs.existsSync(path.join(apppath, 'keywordlists'))) {
+                fs.mkdirSync(path.join(apppath, 'keywordlists'));
+            }
+            else if (!fs.statSync(path.join(apppath, 'keywordlists')).isDirectory()) {
+                fs.mkdirSync(path.join(apppath, 'keywordlists'));
+            }
+        } catch (err) {
+            logger.error("Unable to create keywordlist directory! Reason: " + err.message);
+        }
+        logger.info("Creating demo keyword files...");
         // #################################################################
-        //      SETTING DEMO FILES - BELOW IS ORIGINAL.....
+        //      SETTING DEMO FILES - BELOW IS ORIGINAL, FURTHER BELOW CURRENT.....
         /*
         var CA2_options = {
             defaults: {
@@ -186,49 +276,49 @@ function createAppStructure() {
             cwd: path.join(apppath, 'keywordlists')
         }
         */
-        var CA2_options = {
-            defaults: {
-                "last-successful-update": "----",
-                "available-keywordlists": {
-                    "en-basic": {
-                        "date": "2017-08-11T15:47:34.847Z",
-                        "name": "English - Basic"
-                    },
-                    "fi-basic": {
-                        "date": "2017-08-11T15:47:34.847Z",
-                        "name": "Suomi - Perus"
-                    }
-                },
-                "local-keywordlists": {
-                    "en-basic": {
-                        "date": "2017-08-11T15:47:34.847Z",
-                        "name": "English - Basic"
-                    },
-                    "fi-basic": {
-                        "date": "2017-08-11T15:47:34.847Z",
-                        "name": "Suomi - Perus"
-                    }
-                },
-                "enabled-keywordlists": ["en-basic"]
-            },
-            name: "keyword-config",
-            cwd: path.join(apppath, 'keywordlists')
-        }
-        const CA2_store = new Store(CA2_options);
-        //
         try {
+            var CA2_options = {
+                defaults: {
+                    "last-successful-update": "----",
+                    "available-keywordlists": {
+                        "en-basic": {
+                            "date": new Date(),
+                            "name": "English - Basic"
+                        },
+                        "fi-basic": {
+                            "date": new Date(),
+                            "name": "Suomi - Perus"
+                        }
+                    },
+                    "local-keywordlists": {
+                        "en-basic": {
+                            "date": new Date(),
+                            "name": "English - Basic"
+                        },
+                        "fi-basic": {
+                            "date": new Date(),
+                            "name": "Suomi - Perus"
+                        }
+                    },
+                    "enabled-keywordlists": ["en-basic"]
+                },
+                name: "keyword-config",
+                cwd: path.join(apppath, 'keywordlists')
+            }
+            const CA2_store = new Store(CA2_options);
+            //
+
             var source_demo_1 = path.join(__dirname, './demo_files/en-basic.json');
             var source_demo_2 = path.join(__dirname, './demo_files/fi-basic.json');
             var destination_demo_1 = path.join(apppath, 'keywordlists/en-basic.json')
             var destination_demo_2 = path.join(apppath, 'keywordlists/fi-basic.json')
-            var content_1 = fs.readFileSync(source_demo_1, 'utf-8');
-            var content_2 = fs.readFileSync(source_demo_2, 'utf-8');
-            fs.writeFileSync(destination_demo_1, content_1, 'utf-8');
-            fs.writeFileSync(destination_demo_2, content_2, 'utf-8');
+            var content_1 = fs.readFileSync(source_demo_1, 'utf8');
+            var content_2 = fs.readFileSync(source_demo_2, 'utf8');
+            fs.writeFileSync(destination_demo_1, content_1, 'utf8');
+            fs.writeFileSync(destination_demo_2, content_2, 'utf8');
         }
         catch (err) {
-            logger.error("Failed to copy demo files!");
-            logger.error(err.message);
+            logger.error("Failed to copy demo files! Reason: " + err.message);
         }
     }
 }
@@ -257,49 +347,73 @@ function createNewProject(proj_name, proj_country, proj_lang) {// %%%%%%%%%%%%%%
         reason.push(false, 'Name should not contain <>:"/\\|?*');
         return reason;
     }
+    else if (proj_country === undefined) {
+        // Project country not defined
+        reason.push(false, "No country defined!");
+        return reason;
+    }
+    else if (proj_lang === undefined) {
+        // Project language not defined
+        reason.push(false, "No language defined!");
+        return reason;
+    }
     else if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
         if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
-            if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name))) {
-                fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name));
-
-                var today = new Date();
-
-                var CA3_options = {
-                    defaults: {
-                        "created-on": today,
-                        "source-files": [],
-                        "temp-files": {},
-                        "kw-per-file": {},
-                        "notes": [],
-                        "country": proj_country,
-                        "lang": proj_lang,
-                        "version": app.getVersion()
-                    },
-                    name: proj_name,
-                    cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name)
-                }
-                const CA3_store = new Store(CA3_options);
-
-                if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source'))) {
-                    fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source'));
-                }
-                if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp'))) {
-                    fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp'));
-                }
-                logger.info("Created project " + proj_name + "...");
-                reason.push(true);
-                return reason;
+            // testing if directory just in case....
+            var project_dircheck = fs.statSync(path.join(docpath, 'SLIPPS DECSV\\Projects')); 
+            if (project_dircheck.isDirectory()) {
+                logger.info("Projects directory in user's documents located!");
             }
             else {
-                // Project with same name exists!
-                reason.push(false, "Project with same name exits!");
+                // Projects-folder not present!
+                createDocStructure();
+                reason.push(false, "Projects-folder missing! Try again.");
                 return reason;
             }
+
+            try {
+                fs.accessSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.decsv'));
+                // if we get past this, project exits...
+                var projFileCheck = fs.statSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.decsv'));
+                if (projFileCheck.isDirectory()) {
+                    throw "Tested project was directory, not file!";
+                }
+
+                reason.push(false, "Project with same name exits!");
+                return reason;
+            } catch (err) {
+                // project does not exist!
+                logger.info("Project with name'"+proj_name+"' does not exits! Creating....");
+            }
+
+            //logger.debug("Creating new properties file.....");
+            var project_data_template = JSON.stringify({
+                "____INFO____": "THIS IS PROJECT FILE FOR DECSV APPLICATION, USED AS PART OF THE SLIPPS EU PROJECT",
+                "created": new Date(),
+                "src-files": [],
+                "project-files": {},
+                "notes": [],
+                "lang-preset": proj_lang,
+                "country-preset": proj_country,
+                "version": app.getVersion()
+            });
+            //const CA3_store = new Store(CA3_options);
+            try {
+                fs.writeFileSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.decsv'), project_data_template, 'utf-8');
+            } catch (err) {
+                logger.error("Failed to write new project file '" + proj_name + ".decsv'! Reason: " + err.message);
+                reason.push(false, "Unable to create new project '" + proj_name + "'!");
+                return reason;
+            }
+            
+            logger.info("Created project '" + proj_name + "'!");
+            reason.push(true, path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.decsv'));
+            return reason;
         }
         else {
             // Projects-folder not present!
             createDocStructure();
-            reason.push(false, "Projects-older missing! Try again.");
+            reason.push(false, "Projects-folder missing! Try again.");
             return reason;
         }
     }
@@ -311,7 +425,7 @@ function createNewProject(proj_name, proj_country, proj_lang) {// %%%%%%%%%%%%%%
     }
 }
 
-// NEEDS UPDATE - NOT CURRENTLY USED
+// NEEDS UPDATE - NOT CURRENTLY USED NEEDSTOBECHANGED
 /* This deletes project directory with given name */
 function removeProject(proj_name) {
     logger.debug("removeProject");
@@ -344,7 +458,7 @@ function removeProject(proj_name) {
 
 }
 
-// NOT CURRENTLY USED
+// NOT CURRENTLY USED NEEDSTOBECHANGED
 /* This function checks and compares temp folder contents of project with it's properties file "temp-files" list */
 function checkTempFiles(proj_name) {
     //
@@ -365,7 +479,7 @@ function checkTempFiles(proj_name) {
                         cwd: proj_base
                     }
                     //logger.debug("proj_name and proj_base: "+proj_name+" & "+proj_base);
-                    const check_store = new Store(check_options);
+                    const check_store = new Store(check_options);//
 
                     var sourceF = check_store.get('source-files', []);
                     var tempF = check_store.get('temp-files', {});
@@ -433,8 +547,9 @@ function checkTempFiles(proj_name) {
     }
 }
 
+/* NEED TO BE DISABLED!!!! */
 /* Imports source files into the project folders */
-function srcFiles2Proj(files,event,ready_src) {
+function srcFiles2ProjsrcFiles2Proj(files, event, ready_src) { // NEEDSTOBECHANGED
     logger.debug("srcFiles2Proj");
     var docpath = app.getPath('documents');
     var proj_name = files.pop();
@@ -533,8 +648,9 @@ function srcFiles2Proj(files,event,ready_src) {
 }
 
 /* Handles needed stuff when application is going to be closed */
-function handleclosing() {
+function handleclosing(callback = function (i) { return i;}) {
     logger.debug("handleClosing");
+    logger.info("Handling things before closing...");
     // do things needed before shutting down
     var CA3_options = {
         name: "app-configuration",
@@ -542,13 +658,76 @@ function handleclosing() {
     }
     const CA3_store = new Store(CA3_options);
 
+    var edit_check = CA3_store.get("edits", [false, null]);
 
-    //CA3_store.set("safe-to-shutdown", true)
-    app.quit();
+    var dial_options_2 = {//app.quit()
+        type: 'info',
+        title: "Saved",
+        message: "Changes were saved!",
+        detail: "Press ok to continue",
+        buttons: [i18n_app.__('conf-ok', true)]
+    }
+
+    if (edit_check[0] && (edit_check[1] !== null)) {
+        logger.info("Unsaved changes possible! Asking user what to do...");
+        // ask if want to save changes, or not
+        var file_ext = edit_check[1].split('.').pop();
+        var proj_name = edit_check[1].split('\\').pop();
+        proj_name = proj_name.split(".");
+        proj_name.pop();
+        proj_name.join(".");
+        var dial_options = {
+            type: 'info',
+            title: i18n_app.__('conf-title', true),
+            message: "There are unsaved changes!",
+            detail: "Do you wish to save these changes?",
+            buttons: [i18n_app.__('conf-yes', true), i18n_app.__('conf-no', true)]
+        };
+
+        dialog.showMessageBox(dial_options, function (index) {
+            if (index === 0) {
+                logger.info("User decided to save backup! Saving to file '" + edit_check[1] + "'");
+                var backup_options = {
+                    name: proj_name,
+                    cwd: path.join(app.getPath('userData'), "backup_files")
+                }
+                const backup_store = new Store(backup_options);
+                var backup_content = backup_store.store;
+
+                CA3_store.set("edits", [false, null]);
+
+                try {
+                    fs.writeFileSync(edit_check[1], JSON.stringify(backup_content), "utf8");
+                    fs.unlinkSync(path.join(app.getPath("userData"), "backup_files\\" + proj_name + ".json"));
+                } catch (err) {
+                    logger.error("Error while writing '" + edit_check[1] + "' or removing backup for it! Reason: " + err.message);
+                }
+            } else {
+                //
+                logger.info("User decided not to save backup! Removing...");
+                try {
+                    fs.unlinkSync(path.join(app.getPath("userData"), "backup_files\\" + proj_name + ".json"));
+                } catch (err) {
+                    logger.error("Unable to unlink backup file for '" + edit_check[1] + "'!");
+                }
+            }
+        });
+        callback(0);
+    }
+    else if (edit_check[1] !== null) {
+        logger.info("Unsaved backup possible, even though it was not mentioned! Trying to remove...");
+        try {
+            fs.unlinkSync(path.join(app.getPath("userData"), "backup_files\\" + proj_name + ".json"));
+        } catch (err) {
+            logger.error("Unable to unlink backup file for '" + edit_check[1] + "'!");
+        }
+        callback(0);
+    } else { callback(1);}
 }
 
 /* Creates opening window (with logo) and main window */
-function createWin() {
+function createWin() {// NEEDSTOBECHANGED
+    setTimeout(function () {
     logger.debug("createWin");
     openWindow = new BrowserWindow({
         width: 300,
@@ -601,13 +780,15 @@ function createWin() {
     });
 
     mainWindow.on('close', (e) => {
+        logger.debug("called close");
 
         if (app.showExitPrompt) {
             e.preventDefault();
+            logger.debug("DEFAULT ON MAINWINDOW (close) PREVENTED");
 
             var options = {
                 type: 'info',
-                title: i18n_app.__('quit-conf-title', true),
+                title: i18n_app.__('conf-title', true),
                 message: i18n_app.__('quit-conf-message', true),
                 detail: i18n_app.__('quit-conf-detail', true),
                 buttons: [i18n_app.__('conf-yes', true), i18n_app.__('conf-no', true)]
@@ -615,8 +796,19 @@ function createWin() {
 
             dialog.showMessageBox(mainWindow, options, function (index) {
                 if (index === 0) {
-                    app.showExitPrompt = false;
-                    handleclosing();
+                    handleclosing(function (i) {
+                        app.showExitPrompt = false;
+                        logger.debug("from handleclosing: '"+i+"'");
+                        logger.debug("calling quit inside callback");
+                        if (aboutWindow !== null) {
+                            logger.info("Re-closing main window....");
+                            aboutWindow.close();// closing about-window, if it is open
+                        } else {
+                            logger.warn("Tried to re-close main window, but it was NULL!");
+                        }
+                        //app.quit();// should we? need to think about darwin options....
+                    });
+                    logger.debug("after handleclosing");
                 }
             });
         }
@@ -631,6 +823,7 @@ function createWin() {
         //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
         openWindow = null;
     });
+    }, 0)
 }
 
 /* Called when all windows are closed */
@@ -638,7 +831,7 @@ app.on('window-all-closed', function () {
     logger.info("all windows closed");
     // On OS X it is common for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
-    if (process.platform !== 'darwin') {
+    if (process.platform !== 'darwin') { // this needs more control!
         app.quit();
     }
 });
@@ -718,7 +911,7 @@ app.on('quit', function () {
     // 4 = downloading %
     // 5 = downloaded
 /* Called from init.js (or somewhere else) when wanted to check updates */
-ipcMain.on("check-updates", (event, arg) => {
+ipcMain.on("check-updates", (event, arg) => { // CREATING LISTENERS IN FUNCTION ONLY SO THAT THE "event"-object CAN BE SAVED
 
 autoUpdater.on('checking-for-update', function () {
     logger.info("Current version: " + app.getVersion().toString());
@@ -727,7 +920,7 @@ autoUpdater.on('checking-for-update', function () {
     arr.push(0);
     event.sender.send("check-updates-reply", arr);
 });
-autoUpdater.on('update-available', function (info) {
+    autoUpdater.on('update-available', function (info) {//NEEDSTOBECHANGED
     logger.info("Update available!");
     var ver = info.version;
     var relDat = info.releaseDate;
@@ -791,34 +984,34 @@ autoUpdater.on('update-not-available', function (info) {
     */
 });
 
-autoUpdater.on('update-downloaded', function (info){//ev, relNot, relNam, relDat, updUrl) {
-    logger.info("Update has been downloaded!");
-    var ver = info.version;
-    var relDat = info.releaseDate;
-    var relNote = info.releaseNotes;
-    var arr = [];
-    arr.push(5, ver, relDat, relNote);
-    event.sender.send("check-updates-reply", arr);
-    clearUpdaterListeners();
-    var options = {
-        type: 'info',
-        title: "Update downloaded",
-        message: "New version "+ver+" is ready to be installed",
-        detail: "Would you like to close the application and update?\r\n\r\nVersion: " + ver ,
-        buttons: [i18n_app.__('conf-yes', true), i18n_app.__('conf-no', true)]
-    }; // DATE NEED TO BE REFORMATTED, AND RELNOTE SHOULD BE PARSED (CONTAINS HTML)
-    // + "\r\nRelease date: " + new Date(relDat) +"\r\n"+relNote,
+    autoUpdater.on('update-downloaded', function (info) {//ev, relNot, relNam, relDat, updUrl) {NEEDSTOBECHANGED
+        logger.info("Update has been downloaded!");
+        var ver = info.version;
+        var relDat = info.releaseDate;
+        var relNote = info.releaseNotes;
+        var arr = [];
+        arr.push(5, ver, relDat, relNote);
+        event.sender.send("check-updates-reply", arr);
+        clearUpdaterListeners();
+        var options = {
+            type: 'info',
+            title: "Update downloaded",
+            message: "New version " + ver + " is ready to be installed",
+            detail: "Would you like to close the application and update now? By default, update will be done when the application gets closed.\r\n\r\nVersion: " + ver,
+            buttons: [i18n_app.__('conf-yes', true), i18n_app.__('conf-no', true)]
+        }; // DATE NEED TO BE REFORMATTED, AND RELNOTE SHOULD BE PARSED (CONTAINS HTML)
+        // + "\r\nRelease date: " + new Date(relDat) +"\r\n"+relNote,
 
-    dialog.showMessageBox(mainWindow, options, function (index) {
-        if (index === 0) {
-            app.showExitPrompt = false;
-            autoUpdater.quitAndInstall();
-        }
-        else {
-            //nothing
-        }
+        dialog.showMessageBox(mainWindow, options, function (index) {
+            if (index === 0) {
+                app.showExitPrompt = false;
+                autoUpdater.quitAndInstall();
+            }
+            else {
+                //nothing
+            }
+        });
     });
-});
 
 autoUpdater.on('download-progress', function (progressObj) {
     var arr = [];
@@ -830,7 +1023,7 @@ autoUpdater.on('download-progress', function (progressObj) {
 });
 
 /* Clears away all listeners after updates have been checked - prevents listener-dublicates */
-function clearUpdaterListeners() {
+function clearUpdaterListeners() { // THIS IS ONLY HERE SO THAT listeners wont get stacked up because of being called multiple times
     logger.debug("clearUpdaterListeners");
     autoUpdater.removeAllListeners('checking-for-update');
     autoUpdater.removeAllListeners('update-available');
@@ -878,9 +1071,25 @@ global.createAboutWin = function () {
         aboutWindow.focus();
     }
 }
+/* Global function that creates dummy "not implemented" dialog with "OK" button */
+global.createDummyDialog = function (callingWindow) {
+    var options = {
+        type: 'info',
+        title: "NOT IMPLEMENTED",
+        message: "This functionality is not yet implemented!",
+        detail: "Click 'ok' to close this notification.",
+        buttons: [i18n_app.__('conf-ok', true)]
+    };
 
+    dialog.showMessageBox(callingWindow, options, function (index) {
+        // no need to deal with anything.... just notifying user
+    });
+}
+
+// NEEDS TO BE REWORKED TO CHANGE READ DATA INTO JSON FORMAT (to be saved into new .decsv file!!)
+//
 /* Creates temp-files from source files within the project's folders */
-function transformSrc2Temp(proj_name, event) {
+function transformSrc2Temp(proj_name, event, ) { // CUSTOM INPUTNEEDSTOBECHANGED
     logger.debug("transformSrc2Temp");
     var docpath = app.getPath('documents');
     var src_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source\\');
@@ -896,7 +1105,7 @@ function transformSrc2Temp(proj_name, event) {
                     cwd: proj_base
                 }
                 //logger.debug("proj_name and proj_base: "+proj_name+" & "+proj_base);
-                const s2t_store = new Store(s2t_options);
+                const s2t_store = new Store(s2t_options);//
 
                 var sourceF = s2t_store.get('source-files', []);
                 var tempF = s2t_store.get('temp-files', {});
@@ -918,7 +1127,7 @@ function transformSrc2Temp(proj_name, event) {
                     name: proj_name,
                     cwd: proj_base
                 }
-                const proj_store = new Store(proj_options);
+                const proj_store = new Store(proj_options);//
                 while (!testvalue) {
                     if (proj_store.has(test_name_base + testvalue_nro.toString())) {
                         // do nothing
@@ -963,9 +1172,7 @@ function transformSrc2Temp(proj_name, event) {
                         if (fs.existsSync(path.join(src_base, fileS))) {// testing if source file exists at project's source folder
 
                             //logger.debug("before reading");
-                            var returnArr = readFile(path.join(src_base, fileS), function () {// reading source file from project's source folder
-                                //
-                            });
+                            var returnArr = readSourceFile(path.join(src_base, fileS)); // CUSTOM INPUT
                             logger.debug("AFTER reading");
 
                             mainWindow.webContents.send("output-to-chrome-console", returnArr);
@@ -1032,7 +1239,7 @@ function transformSrc2Temp(proj_name, event) {
                                 cwd: temp_base
                             }
                             logger.debug("CREATING TEMP FILE: " + "temp#" + temp_finalname);
-                            const temp_store = new Store(temp_options);
+                            const temp_store = new Store(temp_options);//
 
                             //temp_store.set("subID", dataArray[1][0]); // Setting identifier
                             //temp_store.set("subDATE", dataArray[1][1]); // Setting create date
@@ -1043,18 +1250,20 @@ function transformSrc2Temp(proj_name, event) {
                             var elemtextB = '<p class="w3-blue w3-container secB-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
                             elemtextB = elemtextB + '<p class="secB-Q-allA">';
 
-                            elemtextA = elemtextA + currentDataArr[1].replace(/&/g, "&amp;")
+                            
+                            elemtextA = elemtextA + currentDataArr[1]/*.replace(/&/g, "&amp;")
+                                .replace(/"/g, "&quot;")
+                                .replace(/'/g, "&#039;")*/
                                 .replace(/</g, "&lt;")
                                 .replace(/>/g, "&gt;")
+                                .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>');///\b(\w+?)\b/g
+                            elemtextB = elemtextB + currentDataArr[2]/*.replace(/&/g, "&amp;")
                                 .replace(/"/g, "&quot;")
-                                .replace(/'/g, "&#039;")
-                                .replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
-                            elemtextB = elemtextB + currentDataArr[2].replace(/&/g, "&amp;")
+                                .replace(/'/g, "&#039;")*/
                                 .replace(/</g, "&lt;")
                                 .replace(/>/g, "&gt;")
-                                .replace(/"/g, "&quot;")
-                                .replace(/'/g, "&#039;")
-                                .replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
+                                .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>');
+                            
                             //var elemA = "<p>" + elemtextA + "</p>";
                             //var elemB = "<p>" + elemtextB + "</p>";
 
@@ -1084,12 +1293,14 @@ function transformSrc2Temp(proj_name, event) {
                                 }
                                 else if (line === 4 || line === 9 || line === 28 || line === 31 || line === 33) {// open string answers
                                     if (currentDataArr[line] !== undefined) {
-                                        ansText = currentDataArr[line].replace(/&/g, "&amp;")
+                                        
+                                        ansText = currentDataArr[line]/*.replace(/&/g, "&amp;")
+                                            .replace(/"/g, "&quot;")
+                                            .replace(/'/g, "&#039;")*/
                                             .replace(/</g, "&lt;")
                                             .replace(/>/g, "&gt;")
-                                            .replace(/"/g, "&quot;")
-                                            .replace(/'/g, "&#039;")
-                                            .replace(/\b(\w+?)\b/g, '<span class="word">$1</span>');
+                                            .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>');
+                                        
                                     }
                                     else {
                                         ansText = "";
@@ -1194,7 +1405,7 @@ function transformSrc2Temp(proj_name, event) {
 
 // NEEDS const XLSX = require('xlsx');
 /* Reads source file, CSV or XLS or XLSX format into array */
-function readFile(file) {
+function readSourceFile(file, lert_tool) {//NEEDSTOBECHANGED
     logger.debug("readFile");
     logger.debug(file);
     /* check file-extension and name */
@@ -1263,17 +1474,18 @@ function readFile(file) {
     }
 
     /* file has .csv extension */
-    else if (file_ext === 'csv') {
+    if (file_ext === 'csv') {
         logger.debug("file was CSV FORMAT");
         /*Node.js fs*/
         logger.debug("starting reading...");
         var data = "";
         try {
-            data = fs.readFileSync(file);//, 'utf8'
+            data = fs.readFileSync(file, 'utf8');//, 'utf8'
         }
         catch (err) {
-            logger.error("Error opening .csv file: " + err.message);
+            logger.error("Error opening file '"+file_name+"': " + err.message);
             result.push(false);
+            result.push("Couldn't open .csv file!");
             return result;
         }
         //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
@@ -1282,18 +1494,18 @@ function readFile(file) {
         //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
         var detectRes = charDetector(data);
         if (detectRes.length > 0) {
-            logger.info("FOUND HITS FOR ENCODING....");
+            logger.info("Encoding found");
             if (iconv.encodingExists(detectRes[0].charsetName)) {
-                logger.info("encoding EXISTS!");
+                logger.info("encoding EXISTS: " + detectRes[0].charsetName);
                 data = iconv.decode(data, detectRes[0].charsetName);
             }
             else {
-                logger.warn("encoding DOES NOT EXISTS! Defaulting to UTF-8...");
+                logger.warn("Encoding does not exist! Defaulting to UTF-8...");
                 data = data.toString('utf8'); 
             }
         }
         else {
-            logger.warn("NO HITS FOR ENCODING!!! Defaulting to UTF-8...");
+            logger.warn("No hits for encoding found! Defaulting to UTF-8...");
             data = data.toString('utf8'); 
         }
             //console.log("DATA FROM READFILE");
@@ -1302,16 +1514,23 @@ function readFile(file) {
 
 
             //console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>OMAN TULOSTUS");
-       logger.debug("readFile before parsing data to arrays");
-       var output_data = CSVtoArray(data);
-       //logger.debug("outputdata>>>>>>>>");
-       //logger.debug(output_data);
+        logger.debug("############ PARSE FILES NOW (in readFile).....");
+
+        var parseResult = parseUtils.validateAndParseCSV(data, lert_tool);// NEEDSTOBECHANGED
+        //logger.debug("outputdata>>>>>>>>");
+        //logger.debug(output_data);
             //console.log("setting data");
             //window.currentFileContent = output_data;
-       result.push(true);
-       result.push(output_data);
-       logger.debug("readFile RETURNING VALUES");
-       return result;
+        if (!parseResult[0]) {
+            result.push(false);
+            result.push(parseResult[1]); // reason for failure
+            return result;
+        }
+        result.push(true);
+        result.push(parseResult);
+        logger.debug("readFile RETURNING VALUES");
+        logger.info("File '"+file_name+"' content successfully loaded and parsed!");
+        return result;
             //var keys = null;
             //keys = showQuizData(output_data); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             //setupKeywordSelect(output_data[1].length, keys); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1319,6 +1538,7 @@ function readFile(file) {
     else {
         //what lies beyond this land... prob not right file for some reason :D
         result.push(false);
+        result.push("File invalid! Need to be .csv!");
         return result;
     }
 }
@@ -1355,151 +1575,3 @@ function CSVtoArray(text) {
     }
     return arr;
 }*/
-function CSVtoArray(strData, strDelimiter) {
-    logger.debug("CSVtoArray");
-    // Check to see if the delimiter is defined. If not,
-    // then default to comma.
-    strDelimiter = (strDelimiter || ";");
-
-    // Create a regular expression to parse the CSV values.
-    var objPattern = new RegExp(
-        (
-            // Delimiters.
-            "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
-
-            // Quoted fields.
-            "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
-
-            // Standard fields.
-            "([^\"\\" + strDelimiter + "\\r\\n]*))"
-        ),
-        "gi"
-    );
-
-
-    // Create an array to hold our data. Give the array
-    // a default empty first row.
-    var arrData = [[]];
-
-    // Create an array to hold our individual pattern
-    // matching groups.
-    var arrMatches = null;
-
-
-    // Keep looping over the regular expression matches
-    // until we can no longer find a match.
-    while (arrMatches = objPattern.exec(strData)) {
-
-        // Get the delimiter that was found.
-        var strMatchedDelimiter = arrMatches[1];
-
-        // Check to see if the given delimiter has a length
-        // (is not the start of string) and if it matches
-        // field delimiter. If id does not, then we know
-        // that this delimiter is a row delimiter.
-        if (
-            strMatchedDelimiter.length &&
-            strMatchedDelimiter !== strDelimiter
-        ) {
-
-            // Since we have reached a new row of data,
-            // add an empty row to our data array.
-            arrData.push([]);
-
-        }
-
-        var strMatchedValue;
-
-        // Now that we have our delimiter out of the way,
-        // let's check to see which kind of value we
-        // captured (quoted or unquoted).
-        if (arrMatches[2]) {
-
-            // We found a quoted value. When we capture
-            // this value, unescape any double quotes.
-            strMatchedValue = arrMatches[2].replace(
-                new RegExp("\"\"", "g"),
-                "\""
-            );
-
-        } else {
-
-            // We found a non-quoted value.
-            strMatchedValue = arrMatches[3];
-
-        }
-
-
-        // Now that we have our value string, let's add
-        // it to the data array.
-        arrData[arrData.length - 1].push(strMatchedValue);
-    }
-
-    // Return the parsed data.
-    return (arrData);
-}
-
-
-/* This function takes in raw data from read .csv file and turns it into arrays (ONLY CSV FORMATS!!!) */
-function parseCSV2Array(csv) {
-    logger.debug("parseCSV2Array");
-    //logger.debug(csv);
-    //console.log("RAW CSV DATA IN");
-    //console.log(csv);
-
-    var separators = ['\"\",\"\"', ',\"\"', '\"\"'];
-    //var separators_NEW = ['\";\"']; // the second " at the start and the end of the line need to be removed seperately (this->" something ";" something 2 "<-this)
-    var newlines = ['\r\n', '\n']; //<- so that no weird stuff happens... hopefully
-
-    //console.log(typeof (csv));
-    //var lines = csv.split("\n");
-    var lines = csv.split(new RegExp(newlines.join('|'), 'g'));
-    //console.log(JSON.stringify(lines[0]));
-
-
-    //var temptemp = CSVtoArray(csv);
-    //mainWindow.webContents.send("output-to-chrome-console", temptemp);
-    //mainWindow.webContents.send("output-to-chrome-console", lines);
-
-    lines[0] = lines[0].substring(1, lines[0].length - 3);
-    //console.log(JSON.stringify(lines[0]));
-    lines[1] = lines[1].substring(1, lines[1].length - 3);
-    //console.log(JSON.stringify(lines[1]));
-    if (lines[2].length !== 0) {
-        lines[2] = lines[2].substring(1, lines[2].length - 3);
-    }
-
-    var headers = lines[0].split(new RegExp(separators_NEW.join('|'), 'g'));
-    var contents = lines[1].split(new RegExp(separators_NEW.join('|'), 'g'));
-    if (lines[2].length !== 0) {
-        var keys = lines[2].split(new RegExp(separators_NEW.join('|'), 'g'));
-    }
-    //console.log(">>>>>>>>>>>>>>>>>>>>>>>>HEADERS");
-    //console.log(headers);
-    //console.log(">>>>>>>>>>>>>>>>>>>>>>>>CONTENTS");
-    //console.log(contents);
-
-    var result = new Array(); //was Array(2)
-    var i = 0;
-    for (i = 0; i < 2; i++) {
-        result[i] = [];
-    }
-    if (lines[2].length !== 0) {
-        result[2] = [];
-    }
-
-    //result[0][0] = headers[0];
-    for (i = 0; i < headers.length; i++) {
-        result[0][i] = headers[i];
-    }
-    for (i = 0; i < contents.length; i++) {
-        result[1][i] = contents[i];
-    }
-    if (lines[2].length !== 0) {
-        for (i = 0; i < keys.length; i++) {
-            result[2][i] = keys[i];
-        }
-    }
-
-    return result;
-}

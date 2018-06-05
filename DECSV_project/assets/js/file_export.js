@@ -4,34 +4,37 @@ const dialog = remote.dialog;
 const thiswindow = remote.getCurrentWindow();
 const path = require('path');
 const fs = require('fs');
-const Store = require('electron-store');
+//const Store = require('electron-config');
+const Store = require("electron-store");
 const htmlParser = require('html-parse-stringify2');
 const shell = remote.shell;
 const parentwindow = thiswindow.getParentWindow();
 const ipcRenderer = require('electron').ipcRenderer;
 
 var projectname = "";
-var file_version = "1.0.0";
+var projectJSON = {};
+var file_version = "2.0.0";// upped from 1.0.0!
 
 /* This is about retrieving project's name from another window */
 $(document).ready(setTimeout(function () { 
     $("#exportlist").empty();
-ipcRenderer.on('get-project-data-reply', function (event, output) {
-    logger.debug("Project name received: "+output);
-    projectname = output;
-    if (projectname !== undefined){
-        var result = parseDoneFiles(projectname);
-        notesOutput(projectname);
+    ipcRenderer.on('get-project-data-reply', function (event, output) {
+        logger.debug("Project name received: " + output[0]);
+        projectname = output[0];
+        projectJSON = output[1];
+        if (projectname !== undefined) {
+            var result = parseDoneFiles(projectname, projectJSON);
+            notesOutput(projectname, projectJSON);
 
-        //console.log(result);// proj_name, file_store.get("src",""),file_store.get("subID", 0), file_store.get("subDATE", new Date()), file_store.get("kw", []), done_a, done_b, done_c, file_store.get("lang", ""), file_store.get("country", ""), tempFileName.substring(5, tempFileName.length - 5));
-        
-        for (var i = 0; i < result.length; i++) {
-            writeFile_csv(result[i]);
+            //console.log(result);// proj_name, file_store.get("src",""),file_store.get("subID", 0), file_store.get("subDATE", new Date()), file_store.get("kw", []), done_a, done_b, done_c, file_store.get("lang", ""), file_store.get("country", ""), tempFileName.substring(5, tempFileName.length - 5));
+
+            for (var i = 0; i < result.length; i++) {
+                writeFile_csv(result[i]);
+            }
+
         }
-        
-    }
-})
-parentwindow.webContents.send('get-project-data', thiswindow.id);
+    });
+    parentwindow.webContents.send('get-project-data', thiswindow.id);
 }, 0));
 
 /* THIS IS SETTING UP UI TRANSLATION */
@@ -61,6 +64,7 @@ $("#view-button").on("click", function () {
 });
 ///////////////////////////////////////////////////////////////////////////////
 
+// NEEDS MODIFICATION
 /* This function takes in an array filled with data, and then writes a csv-file based on it */
 // resultArr.push(proj_name, file_store.get("src", ""), file_store.get("subID", 0), file_store.get("subDATE", new Date()), file_store.get("kw", []), done_a, done_b, done_c, file_store.get("lang", ""), file_store.get("country", ""), tempFileName.substring(5, tempFileName.length - 5)
 function writeFile_csv(dataArray) {
@@ -179,6 +183,9 @@ function addFile2List(file, status) {
 // object delimiter "" and "",""
 // .parse(htmlString, options)
 // .stringify(AST) AbstractSyntaxTree    htmlParser
+
+// NEEEEEDS MODIFICATION
+
 function parseDoneFiles(proj_name) {
     logger.debug("parseDoneFiles: " + proj_name);
     var docpath = app.getPath('documents');
@@ -194,7 +201,7 @@ function parseDoneFiles(proj_name) {
                     name: proj_name,
                     cwd: proj_base
                 }
-                const proj_store = new Store(proj_options);
+                const proj_store = new Store(proj_options);//
                 var proj_temps = proj_store.get('temp-files', {});
                 var finishedArr = [];
                 for (var tempFileName in proj_temps) {
@@ -205,7 +212,7 @@ function parseDoneFiles(proj_name) {
                             name: tempFileName.substring(0, tempFileName.length - 5),
                             cwd: temp_base
                         }
-                        const file_store = new Store(file_options);
+                        const file_store = new Store(file_options);//
                         if (!file_store.get("done", false)) {
                             logger.info("File '" + tempFileName + "' not ready! Skipping...");
                             continue;
@@ -282,8 +289,8 @@ function parseDoneFiles(proj_name) {
                             }
                             
                             var obj = tf_c[0].children[obj_o];
-                            //console.log("OBJECT");
-                            //console.log(obj);
+                            console.log("OBJECT");
+                            console.log(obj);
                             var check = false;
                             if (obj.children.length !== 0) {
                                 for (var k = 0; k < obj.children.length; k++) {
@@ -311,10 +318,10 @@ function parseDoneFiles(proj_name) {
                             } else {
                                 // no children.... testing realdata
                                 if (obj.attrs.hasOwnProperty("data-real")) {
-                                    //console.log("¤¤¤%¤%%¤¤%%¤¤%¤%¤%¤%%¤%¤%¤%¤%¤%¤¤%¤%¤%¤%%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤");
-                                    //console.log(obj.attrs["data-real"]);
-                                    //console.log(obj.attrs.hasOwnProperty("data-real"));
-                                    //console.log(obj.attrs["data-real"].length);
+                                    console.log("¤¤¤%¤%%¤¤%%¤¤%¤%¤%¤%%¤%¤%¤%¤%¤%¤¤%¤%¤%¤%%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤%¤");
+                                    console.log(obj.attrs["data-real"]);
+                                    console.log(obj.attrs.hasOwnProperty("data-real"));
+                                    console.log(obj.attrs["data-real"].length);
                                     if (obj.attrs["data-real"].length !== 0) {
                                         var rex = /&quot;/g;
                                         var string_src = obj.attrs["data-real"];
@@ -373,6 +380,7 @@ function parseDoneFiles(proj_name) {
     }
 }
 
+// NEEDS MODIFICATION
 function notesOutput(proj_name) {
     logger.debug("notesOutput");
     var docpath = app.getPath('documents');
@@ -395,7 +403,7 @@ function notesOutput(proj_name) {
                 name: proj_name,
                 cwd: proj_base
             }
-            const proj_store = new Store(proj_options);
+            const proj_store = new Store(proj_options);//
             var notes = proj_store.get("notes", []);
             var basestring = "####### DECSV (version " + remote.app.getVersion() + "), project '"+proj_name+"' notefile #######\r\n";
             basestring = basestring +"############### START ###############\r\n";
