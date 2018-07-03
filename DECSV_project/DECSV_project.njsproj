@@ -56,6 +56,7 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\css\w3.css" />
+    <Content Include="assets\html\importwizard.html" />
     <Content Include="assets\html\exporting.html">
       <SubType>Code</SubType>
     </Content>
@@ -205,6 +206,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="app.js" />
+    <Compile Include="assets\js\importwizard.js" />
     <Compile Include="assets\js\file_export.js" />
     <Compile Include="assets\js\about.js">
       <SubType>Code</SubType>
@@ -216,9 +218,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\js\intUtils.js">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="assets\js\localsetup.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\js\old\fileIO_old.js">

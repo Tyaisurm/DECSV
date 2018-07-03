@@ -1,6 +1,6 @@
 {
   "name": "decsv",
-  "productName": "DECSV",
+  "productName": "SLIPPS Teacher Tool",
   "version": "2.0.0",
   "description": "SLIPPS survey results review and edit application.",
   "main": "app.js",
@@ -47,7 +47,7 @@
       "ext": "decsv",
       "name": "DECSV Project File",
       "role": "Editor",
-      "description": "File containing project data for SLIPPS DECSV application."
+      "description": "File containing project data for SLIPPS Teacher Tool"
     }
   },
   "homepage": "https://github.com/Tyaisurm/DECSV",

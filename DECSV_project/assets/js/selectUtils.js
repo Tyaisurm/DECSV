@@ -1,5 +1,5 @@
 ﻿const remote = require("electron").remote;
-const Store = require("electron-config");
+//const Store = require("electron-config");
 const fs = require("fs");
 const path = require('path');
 
@@ -194,6 +194,8 @@ function setSettingsLoadedKW() {
         placeholder: i18n.__('select2-kw-add-ph')
     });
     $('#KW-selector').on("select2:select", function (e) {
+        //NEEDSTOBECHANGED save project to temp here
+
         //console.log(e);
         //console.log(this);
         var kw_value = e.params.data.id;
@@ -225,7 +227,7 @@ function setSettingsLoadedKW() {
             onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
             onclick: "$(\"#KW-selector option\").each(function(i){if($(this).val().substring(3, $(this).val().length) === \"" + kw_value.substring(3, kw_value.length) + "\"){$(this).removeAttr('disabled', 'disabled')}}); $(this.parentElement).remove(); $(\"#KW-selector\").select2({placeholder: i18n.__('select2-kw-add-ph')});"
         });
-
+        // //NEEDSTOBECHANGED save project to temp here (when object deleted...) 
         li_node.appendChild(span_node);
 
         $('#file-chosen-kw-ul').append(li_node);

@@ -17,7 +17,9 @@
             return false;
         }, false);
     </script>
-    <script>window.logger = require('electron-log');</script>
+    <script>
+        window.logger = require('electron-log');
+    </script>
     <script>window.$ = require('jquery'); var select2_base = require('select2'); select2_base();</script>
 
     <script>
@@ -151,7 +153,7 @@
 
 
                 <div class="w3-bar" style="font-size:smaller;">
-                    <p id="preview-event-country-title" class="w3-bar-item" style="margin: 0; padding-bottom:0;">Event country:</p>
+                    <p id="preview-event-country-title" class="w3-bar-item" style="margin: 0; padding-bottom:0;">Event Country:</p>
                     <select id="preview-event-country-select"></select>
                     <p id="preview-event-lang-title" class="w3-bar-item" style="margin: 0; padding-top:0;">Event Language:</p>
                     <select id="preview-event-lang-select"></select>

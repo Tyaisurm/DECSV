@@ -1,4 +1,32 @@
-﻿const electron = require('electron');
+﻿'use strict';
+//////////////////////////////////// CUSTOM ERROR MESSAGE
+process.on('uncaughtException', function (err) {
+    const electron = require('electron');
+    const uncaugetdia = electron.dialog ? electron.dialog : electron.remote.dialog;
+    const shell = electron.shell;
+    logger.error("Uncaught Exception!");
+    logger.error(err.message);
+    var uncaughtoptions = {
+        type: 'error',
+        title: "Uncaught Exception",
+        message: "Unknown error!",
+        detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\nERROR: " + err.message,
+        buttons: ["Close notification", "Open Wiki"]
+    };
+
+    uncaugetdia.showMessageBox(uncaughtoptions, function (index) {
+        // no need to deal with anything.... just notifying user
+        if (index === 1) {
+            //open wiki
+            shell.openExternal("https://github.com/Tyaisurm/DECSV/wiki");
+        } else {
+            // close, do nothing
+        }
+    });
+});
+////////////////////////////////////
+
+const electron = require('electron');
 const app = electron.app;
 const logger = require('electron-log');
 const BrowserWindow = electron.BrowserWindow; 
@@ -25,12 +53,12 @@ const parseUtils = require("./assets/js/parseUtils.js");
 if (require('electron-squirrel-startup')) { app.quit(); }
 
 /////////////////////////////// SETTING LOGGER LEVELS
-logger.transports.file.level = "info";
+logger.transports.file.level = "verbose";
 logger.transports.console.level = "silly";
-autoUpdater.logger = logger;
-//autoUpdater.autoDownload = false; // so that update won't be downloaded automatically
-
+logger.transports.file.appName = 'SLIPPS Teacher Tool';
 ///////////////////////////////
+autoUpdater.logger = logger;
+
 
 const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
     // Someone tried to run a second instance, we should focus our window
@@ -76,6 +104,7 @@ app.on('will-finish-launching', function () {
     });
     app.on('open-url', function (event, url) {// yea.... we don't need this that much.. need to have for MacOS though
         event.preventDefault();
+        logger.debug("Open-url event fired! Ignoring...");
         //log("open-url event: " + url)
 
         // handle if argument is proper file or not
@@ -85,17 +114,215 @@ app.on('will-finish-launching', function () {
     });
 });
 
-
-ipcMain.on('get-ext-file-data', function (event) {// This is used to "ask" what the current file was. "null" is default
-    var data = null
-    if (process.platform == 'win32' && process.argv.length >= 2) {
-        var openFilePath = process.argv[1];
-        data = openFilePath;
-    } else {
-        logger.debug("Tried to call for file data when platform was not 'win32' or file was not defined!");
+/* These settings are here, so we can control what settings components get and to validate saved settings */
+/* Allows windows fetch settings from one place*/
+/* Returns array, where there is 2 stringify-ed JSONs */
+global.getSettings = function () {
+    // 
+    var apppath = app.getPath('userData');
+    var returnable = [];
+    var config1 = {
+        name: "app-configuration",
+        cwd: apppath
     }
-    event.returnValue = data;
-});
+    var store1 = new Store(config1);
+    var json1 = store1.store;
+    //
+    var config2 = {
+        name: "keyword-config",
+        cwd: path.join(apppath, 'keywordlists')
+    }
+    const store2 = new Store(config2);
+    var json2 = store2.store;
+    //
+    if (parseUtils.validateSettings(json1,1)) {
+        // settings valid; giving them out
+        //returnable.push(json1);
+    } else {
+        // settings invalid; need to give out defaults
+        json1 = {
+            "app-lang": "en",
+            "first-use": false,
+            "app-version": app.getVersion(),
+            "demo-files": true,
+            "latest-update-check": null,
+            "latest-update-install": null,
+            "zoom": 1,
+            "edits": [
+                false,
+                null
+            ]
+        }
+        //returnable.push(json1);
+        };
+    
+    if (parseUtils.validateSettings(json2, 2)) {
+        // settings valid; giving them out
+        //returnable.push(json2);
+    } else {
+        // settings invalid; need to give out defaults
+        json2 = {
+            
+            "last-successful-update": null,
+                "available-keywordlists": {
+                "en-basic": {
+                    "date": "2018-06-25T13:05:48.801Z",
+                        "name": "English - Basic"
+                },
+                "fi-basic": {
+                    "date": "2018-06-25T13:05:48.801Z",
+                        "name": "Suomi - Perus"
+                }
+            },
+            "local-keywordlists": {
+                "en-basic": {
+                    "date": "2018-06-25T13:05:48.801Z",
+                        "name": "English - Basic"
+                },
+                "fi-basic": {
+                    "date": "2018-06-25T13:05:48.801Z",
+                        "name": "Suomi - Perus"
+                }
+            },
+            "enabled-keywordlists": [
+                "en-basic"
+            ]
+        }
+        //returnable.push(JSONjson2);
+    }
+    try {
+        returnable.push(JSON.stringify(json1), JSON.stringify(json2));
+    } catch (err) {
+        // error in changing JSON to string
+        logger.error("Error while parsing getSettings");
+        logger.error(err.message);
+        returnable = [];
+        returnable.push("{}", "{}");
+    }
+    return returnable;
+
+};
+/* Allows windows to set settings from single place */
+/* 0 is settings for application, 1 is settings for keywords */
+global.setSettings =  function (settings) {
+    //
+    var json1 = {};
+    var json2 = {};
+    if (!(settings instanceof Array)) {
+        //settings is not an array
+        return [false,1];
+    }
+    else if (settings.length !== 2) {
+        //settings array not size of 2
+        return [false,2];
+    }
+    try {
+        json1 = JSON.parse(settings[0]);
+        json2 = JSON.parse(settings[1]);
+    } catch (err) {
+        logger.error("Error while parsing setSettings()");
+        logger.error(err.message);
+        return [false, 3];
+        // was error in changing incoming string into JSON object
+    }
+
+    
+    //
+    if (parseUtils.validateSettings(json1,1)) {
+        // settings valid - now we can save them
+    } else {
+        // settings invalid; saving default settings
+        json1 = {
+            "app-lang": "en",
+            "first-use": false,
+            "app-version": app.getVersion(),
+            "demo-files": true,
+            "latest-update-check": null,
+            "latest-update-install": null,
+            "zoom": 1,
+            "edits": [
+                false,
+                null
+            ]
+        };
+    }
+    if (parseUtils.validateSettings(json2, 2)) {
+        // settings valid; giving them out
+    } else {
+        // settings invalid; need to give out defaults
+        json2 = {
+
+            "last-successful-update": null,
+            "available-keywordlists": {
+                "en-basic": {
+                    "date": "2018-06-25T13:05:48.801Z",
+                    "name": "English - Basic"
+                },
+                "fi-basic": {
+                    "date": "2018-06-25T13:05:48.801Z",
+                    "name": "Suomi - Perus"
+                }
+            },
+            "local-keywordlists": {
+                "en-basic": {
+                    "date": "2018-06-25T13:05:48.801Z",
+                    "name": "English - Basic"
+                },
+                "fi-basic": {
+                    "date": "2018-06-25T13:05:48.801Z",
+                    "name": "Suomi - Perus"
+                }
+            },
+            "enabled-keywordlists": [
+                "en-basic"
+            ]
+        };
+    }
+    var apppath = app.getPath('userData');
+    var config1 = {
+        name: "app-configuration",
+        cwd: apppath
+    }
+    var store1 = new Store(config1);
+    store1.store = json1;
+    //
+    var config2 = {
+        name: "keyword-config",
+        cwd: path.join(apppath, 'keywordlists')
+    }
+    const store2 = new Store(config2);
+    store2.store = json2;
+
+    /* CALL FORCE UPDATE TO ALL WINDOWS HERE!!!!!!!! */
+
+    forceInterfaceUpdate(json1, json2)
+
+};
+
+/* sends info to all webContents with proper  */
+function forceInterfaceUpdate(intset1 = {}, intset2 = {}) {
+    //
+    if (!parseUtils.validateSettings(intset1,1)) {
+        //
+        return false;
+    }
+    else if (!parseUtils.validateSettings(intset2,2)) {
+        //
+        return false;
+    }
+    var webconts = electron.webContents.getAllWebContents();
+
+    var tobesent = {
+        "app": intset1,
+        "kw": intset2
+    }
+
+    for (var id = 0; id < webconts.length; id++) {
+        // send current settings to each renderer process (they need listener for this!!!)
+        webconts[id].send('force-interface-update', tobesent);
+    }
+    return true;
+}
 
 /*
 Logger logs are on %AppData%\Roaming\*package: productName*\log.log (or "old" version of the same) by default on windows systems.
@@ -112,6 +339,18 @@ createAppStructure();
 //////////////////////////////////////////////////////////// IPC MAIN LISTENERS
 const { ipcMain } = require('electron')
 
+/* This is called to get the file that was tried to use with the application */
+ipcMain.on('get-ext-file-data', function (event) {// This is used to "ask" what the current file / process argument[1] was. "null" is returned default
+    var data = null
+    if (process.platform == 'win32' && process.argv.length >= 2) {
+        var openFilePath = process.argv[1];
+        data = openFilePath;
+    } else {
+        logger.debug("Tried to call for file data when platform was not 'win32' or file was not defined!");
+    }
+    event.returnValue = data;
+});
+
 // create project
 ipcMain.on('async-create-project', (event, project_name, project_country, project_lang) => {
     logger.debug("async-create-project (at app.js)");
@@ -119,7 +358,7 @@ ipcMain.on('async-create-project', (event, project_name, project_country, projec
     event.sender.send('async-create-project-reply', results);
 });
 
-// NEEDS UPDATE - NOT USED AT THE MOMENT (rimraf)
+// NEEDS UPDATE - NOT USED AT THE MOMENT
 // delete project
 ipcMain.on('async-delete-project', (event, arg) => {
     logger.debug("async-delete-project (at app.js)");
@@ -186,6 +425,9 @@ function createAppStructure() {
             defaults: {
                 "app-lang": "en",
                 "first-use": true,
+                "latest-update-check": null,
+                "latest-update-install": null,
+                "zoom":1,
                 "app-version": app.getVersion(),
                 "demo-files": demostatus,
                 "edits": [false,null]
@@ -213,6 +455,11 @@ function createAppStructure() {
         const CA1_store = new Store(CA1_options);
         var appver = CA1_store.get("app-version", "0.0.0");
         var applang = CA1_store.get("app-lang", "en");
+
+        var appupcheck = CA1_store.get("latest-update-check", null);
+        var appupinst = CA1_store.get("latest-update-install", null);
+        var appzoom = CA1_store.get("zoom", 1);
+
         var appfirst = CA1_store.get("first-use", true);
         var appdemos = CA1_store.get("demo-files", false);
         var appedits = CA1_store.get("edits", false);
@@ -222,10 +469,18 @@ function createAppStructure() {
             logger.info("Config version old! Overwriting..."); 
             CA1_store.clear();
             CA1_store.set("app-lang", applang);
+
+            CA1_store.set("latest-update-check", appupcheck);
+            CA1_store.set("latest-update-install", appupinst);
+            CA1_store.set("zoom", appzoom);
+
             CA1_store.set("first-use", appfirst);
             CA1_store.set("app-version", app.getVersion());
             CA1_store.set("demo-files", appdemos)
             CA1_store.set("edits", appedits)
+        }
+        if (typeof(appdemos) !== typeof(true)) {
+            appdemos = false;
         }
         demostatus = appdemos;
         if (demostatus) {
@@ -279,24 +534,24 @@ function createAppStructure() {
         try {
             var CA2_options = {
                 defaults: {
-                    "last-successful-update": "----",
+                    "last-successful-update": null,
                     "available-keywordlists": {
                         "en-basic": {
-                            "date": new Date(),
+                            "date": new Date().toISOString(),
                             "name": "English - Basic"
                         },
                         "fi-basic": {
-                            "date": new Date(),
+                            "date": new Date().toISOString(),
                             "name": "Suomi - Perus"
                         }
                     },
                     "local-keywordlists": {
                         "en-basic": {
-                            "date": new Date(),
+                            "date": new Date().toISOString(),
                             "name": "English - Basic"
                         },
                         "fi-basic": {
-                            "date": new Date(),
+                            "date": new Date().toISOString(),
                             "name": "Suomi - Perus"
                         }
                     },
@@ -324,7 +579,7 @@ function createAppStructure() {
 }
 
 /* Creates new project with a given name into Documents-folder */
-function createNewProject(proj_name, proj_country, proj_lang) {// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Test if country and language given!!!!
+function createNewProject(proj_name, proj_country, proj_lang) {//
     var reason = [];
     logger.debug("createNewProject");
     logger.debug(proj_name);
@@ -334,27 +589,27 @@ function createNewProject(proj_name, proj_country, proj_lang) {// %%%%%%%%%%%%%%
 
     if (proj_name === undefined) {
         // Projectname not defined
-        reason.push(false, "No name defined!");
+        reason.push(false, 1);
         return reason;
     }
     else if (proj_name.length === 0 || proj_name.length > 100) {
         // Projectname length 0 or over 100 characters
-        reason.push(false, "Name should have 1-100 characters!");
+        reason.push(false, 2);
         return reason;
     }
     else if (!regex_filepath_val.test(proj_name)) {
         // Projectname not allowed
-        reason.push(false, 'Name should not contain <>:"/\\|?*');
+        reason.push(false, 3);
         return reason;
     }
     else if (proj_country === undefined) {
         // Project country not defined
-        reason.push(false, "No country defined!");
+        reason.push(false, 4);
         return reason;
     }
     else if (proj_lang === undefined) {
         // Project language not defined
-        reason.push(false, "No language defined!");
+        reason.push(false, 5);
         return reason;
     }
     else if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
@@ -367,7 +622,7 @@ function createNewProject(proj_name, proj_country, proj_lang) {// %%%%%%%%%%%%%%
             else {
                 // Projects-folder not present!
                 createDocStructure();
-                reason.push(false, "Projects-folder missing! Try again.");
+                reason.push(false, 6);
                 return reason;
             }
 
@@ -379,7 +634,7 @@ function createNewProject(proj_name, proj_country, proj_lang) {// %%%%%%%%%%%%%%
                     throw "Tested project was directory, not file!";
                 }
 
-                reason.push(false, "Project with same name exits!");
+                reason.push(false, 7);
                 return reason;
             } catch (err) {
                 // project does not exist!
@@ -389,7 +644,7 @@ function createNewProject(proj_name, proj_country, proj_lang) {// %%%%%%%%%%%%%%
             //logger.debug("Creating new properties file.....");
             var project_data_template = JSON.stringify({
                 "____INFO____": "THIS IS PROJECT FILE FOR DECSV APPLICATION, USED AS PART OF THE SLIPPS EU PROJECT",
-                "created": new Date(),
+                "created": new Date().toISOString(),
                 "src-files": [],
                 "project-files": {},
                 "notes": [],
@@ -402,25 +657,25 @@ function createNewProject(proj_name, proj_country, proj_lang) {// %%%%%%%%%%%%%%
                 fs.writeFileSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.decsv'), project_data_template, 'utf-8');
             } catch (err) {
                 logger.error("Failed to write new project file '" + proj_name + ".decsv'! Reason: " + err.message);
-                reason.push(false, "Unable to create new project '" + proj_name + "'!");
+                reason.push(false, 8);
                 return reason;
             }
             
             logger.info("Created project '" + proj_name + "'!");
-            reason.push(true, path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.decsv'));
+            reason.push(true, 11, path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.decsv'));
             return reason;
         }
         else {
             // Projects-folder not present!
             createDocStructure();
-            reason.push(false, "Projects-folder missing! Try again.");
+            reason.push(false, 9);
             return reason;
         }
     }
     else {
         // Application-folder (at Documents) not present!
         createDocStructure();
-        reason.push(false, "Application-folder missing! Try again.");
+        reason.push(false, 10);
         return reason;
     }
 }
@@ -774,9 +1029,10 @@ function createWin() {// NEEDSTOBECHANGED
     mainWindow.on('ready-to-show', function () {
         //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
         mainWindowState.manage(mainWindow);
-        openWindow.hide();
+        // because testing
+        //openWindow.hide();
         mainWindow.show();
-        openWindow.close();
+        //openWindow.close();
     });
 
     mainWindow.on('close', (e) => {
@@ -1225,7 +1481,7 @@ function transformSrc2Temp(proj_name, event, ) { // CUSTOM INPUTNEEDSTOBECHANGED
                                     "src": fileS.toString(),
                                     "src-data": [],
                                     "subID": 0,
-                                    "subDATE": new Date(),
+                                    "subDATE": new Date().toISOString(),
                                     "a": "",
                                     "b": "",
                                     "c": "",

@@ -5,6 +5,10 @@ const path = require('path');
 const selectUtils = require("./selectUtils.js")
 const sectionUtils = require("./sectionUtils.js")
 
+/* Global settings getter and setter */
+var getSettings = remote.getGlobal('getSettings');
+var setSettings = remote.getGlobal('setSettings');
+
 // Input "0" =  "start" view
 // Input "1" =  "preview" view
 // Input "2" =  "edit A" view
@@ -489,7 +493,15 @@ function setFooterBtnMode(view) {
 }
 
 function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
+    // NEED TO CALL "GETSETTINGS" FIRST IN ORDER TO CORRECTLY INITIALIZE
+    //
+    //NEEDSTOBECHANGED
+    var settingsJSON = getSettings();
+    var store1 = JSON.parse(settingsJSON[0]);
+    var store2 = JSON.parse(settingsJSON[1]);
+    var apppath = remote.app.getPath('userData');
     logger.debug("updateSettingsUI");
+    /*
     var apppath = remote.app.getPath('userData');
     var options1 = {
         name: "app-configuration",
@@ -502,17 +514,18 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
         cwd: path.join(apppath, 'keywordlists')
     }
     const store2 = new Store(options2);
+    */
 
-    var applang = store1.get("app-lang", "en");
+    var applang = store1["app-lang"];
     $("#settings-app-lang-name").text("Current language: " + selectUtils.getFullLangName(applang));
 
-    var kw_update_latest = store2.get("last-successful-update", "----");
-    var kw_local_list = store2.get("local-keywordlists", {});
-    var kw_available_list = store2.get("available-keywordlists", {});
-    var enabled_kw_list = store2.get("enabled-keywordlists", []);
-    var kw_update_date = store2.get("last-successful-update", "----");
-    if ((kw_update_date !== null) && (kw_update_date !== "----")) {
-        kw_update_date = new Date(kw_update_date);
+    var kw_update_latest = store2["last-successful-update"];
+    var kw_local_list = store2["local-keywordlists"];
+    var kw_available_list = store2["available-keywordlists"];
+    var enabled_kw_list = store2["enabled-keywordlists"];
+    var kw_update_date = store2["last-successful-update"];
+    if ((kw_update_date !== null) && !isNaN(Date.parse(kw_update_date))) {
+        kw_update_date = new Date(kw_update_date).toISOString();
     }
     else {
         kw_update_date = "----";
@@ -647,7 +660,7 @@ function markPendingChanges(value = false, file_source) {
         name: "app-configuration",
         cwd: remote.app.getPath('userData')
     }
-    var config_store = new Store(config_opt);
+    var config_store = new Store(config_opt);//NEEDSTOBECHANGED
     if (value) {
         config_store.set("edits", [true, file_source])
         $("#save-cur-edits-btn").removeClass("w3-disabled");

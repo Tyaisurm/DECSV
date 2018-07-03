@@ -1,4 +1,32 @@
-﻿const remote = require('electron').remote;
+﻿'use strict';
+//////////////////////////////////// CUSTOM ERROR MESSAGE
+process.on('uncaughtException', function (err) {
+    const electron = require('electron');
+    const uncaugetdia = electron.dialog ? electron.dialog : electron.remote.dialog;
+    const shell = electron.shell;
+    logger.error("Uncaught Exception!");
+    logger.error(err.message);
+    var uncaughtoptions = {
+        type: 'error',
+        title: "Uncaught Exception",
+        message: "Unknown error!",
+        detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\nERROR: " + err.message,
+        buttons: ["Close notification", "Open Wiki"]
+    };
+
+    uncaugetdia.showMessageBox(uncaughtoptions, function (index) {
+        // no need to deal with anything.... just notifying user
+        if (index === 1) {
+            //open wiki
+            shell.openExternal("https://github.com/Tyaisurm/DECSV/wiki");
+        } else {
+            // close, do nothing
+        }
+    });
+});
+////////////////////////////////////
+
+const remote = require('electron').remote;
 const { ipcRenderer } = require('electron')
 const BrowserWindow = remote.BrowserWindow;
 const dialog = remote.dialog;
@@ -87,6 +115,10 @@ $.fn.select2.amd.define('select2/i18n/current_lang', [], function () {
 /* Getting global functions.... */
 let aboutCreatFunc = remote.getGlobal('createAboutWin');// does not take parameters
 let createDummyDialog = remote.getGlobal('createDummyDialog');// takes in calling BrowserWindow-element as parameter
+
+/* Global settings getter and setter */
+var getSettings = remote.getGlobal('getSettings');
+var setSettings = remote.getGlobal('setSettings');
 
 logger.debug("Running init...");
 
@@ -686,7 +718,7 @@ document.getElementById("closeprojbutton").onclick = function () {
             // Clearing section items and setting footer button mode. Also toggling proper view
             intUtils.setFooterBtnMode("project-closed");
             intUtils.sectionUtils.clearElements();
-            $("#titlebar-appname").text("DECSV");// {Alpha version " + remote.app.getVersion() + "}")
+            $("#titlebar-appname").text("SLIPPS Teacher Tool");// {Alpha version " + remote.app.getVersion() + "}")
             //$("#preview-cur-file-name").text("Current file: NONE");
             //$("#preview-subid").text("Submission ID:");
             //$("#preview-subdate").text("Submission Date:");
@@ -696,7 +728,7 @@ document.getElementById("closeprojbutton").onclick = function () {
     });
 }
 
-document.getElementById("settingsbutton").onclick = function () {//NEEDSTOBECHANGED
+document.getElementById("settingsbutton").onclick = function () {//NEEDSTOBECHANGED 
     logger.debug("settings button");
     if ($('#footer-nav-btn3').val() === "settings") {
         // do nothing. you are already at settings...
@@ -898,6 +930,7 @@ document.getElementById("footer-nav-btn3").onclick = function () {//
         $("#edit-A-orig-text").html($("#edit-A-edit-text").html());
         intUtils.sectionUtils.updatePreview();
         intUtils.sectionUtils.updateCensoredList();
+        //NEEDSTOBECHANGED save project to temp
     }
     else if (value === "editB") {
         intUtils.toggleViewMode(1);
@@ -906,6 +939,7 @@ document.getElementById("footer-nav-btn3").onclick = function () {//
         $("#edit-B-orig-text").html($("#edit-B-edit-text").html());
         intUtils.sectionUtils.updatePreview();
         intUtils.sectionUtils.updateCensoredList();
+        //NEEDSTOBECHANGED save project to temp
     }
     else if (value === "editC") {
         intUtils.toggleViewMode(1);
@@ -914,6 +948,7 @@ document.getElementById("footer-nav-btn3").onclick = function () {//
         $("#edit-C-orig-text").html($("#edit-C-edit-text").html());
         intUtils.sectionUtils.updatePreview();
         intUtils.sectionUtils.updateCensoredList();
+        //NEEDSTOBECHANGED save project to temp
     }
     else if (value === "login") {
         //login
@@ -1111,7 +1146,7 @@ function createProjAsync(project_name = "", project_country = "", project_lang =
                     //console.log(arg);
                     logger.debug("ASYNC RETURNED (CREATE PROJECT)");
                     if (arg[0]) {
-                        var opened_res = openAndViewProject(arg[1]);
+                        var opened_res = openAndViewProject(arg[2]);
 
                         if (opened_res[0]) {
                             logger.debug("OPENED CREATED PROJECT");
@@ -1125,7 +1160,8 @@ function createProjAsync(project_name = "", project_country = "", project_lang =
                         }
                     }
                     else {
-                        var reason = arg[1];
+                        var reason_id = arg[1];
+                        var reason = i18n.__('create-proj-fail-'+reason_id);
                         logger.error("Unable to create new project '" + project_name + "'! Reason: " + reason);
                         $("#create-proj-error").text(reason);
                     }
@@ -1306,10 +1342,11 @@ function openAndViewProject(proj_location) {
         return reason;
     }
 
-    $("#titlebar-appname").text("DECSV" + " - " + proj_name); // ONLY AFTER EVERYTHING HAS BEEN CHECKED!!!!!
-
-    if (!parseUtils.validateProjectJSON(json_file)) {
+    $("#titlebar-appname").text("SLIPPS Teacher Tool" + " - " + proj_name); // ONLY AFTER EVERYTHING HAS BEEN CHECKED!!!!!
+    var validateJSONresult = parseUtils.validateProjectJSON(json_file);
+    if (!validateJSONresult[0]) {
         // was NOT valid project file!
+        logger.debug("Error code: "+validateJSONresult[1]);
         logger.error("Read project file '" + proj_name + "." + file_ext + "' JSON contents not in par with project template!");
         reason.push(false, "Project file contents invalid!");
         return reason;
@@ -1557,7 +1594,9 @@ function addProjFile(fileArr) {
  * 1 == save to previous, but also to actual file (set "edits" to false)
  * 2 == discard changes. not saving to backup, not saving to file: just set "edits" to false/null, and remove backup file
  */
-function saveProject(mode=0, dataA="", dataB="", dataC="", kw=[], notes = [], done=false, country="", lang="") {
+function saveProject(mode = 0, dataA = "", dataB = "", dataC = "", kw = [], notes = [], done = false, country = "", lang = "") {
+
+    // NEED TO CALL GETSETTINGS!!!! 
     logger.debug("saveProject");
     var file_source = window.currentFile;
     var proj_name = window.currentProject;
@@ -1796,9 +1835,10 @@ function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
 }
 
 
-// NEEDS CHANGES!!!! NEEDSTOBECHANGED
+// NEEDS CHANGES!!!! NEEDSTOBECHANGED 
 /* Called when settings on SETTINGS-view are saved */
 function saveSettings() {
+    // okay, we need to create json here, that will be sent to main setSettings(json) function.....
     logger.debug("saveSettings");
     var applang = $("#app-lang-selector").val();
     var apppath = remote.app.getPath('userData');
@@ -2041,5 +2081,5 @@ function setupTranslations() {
 
     // Set text to window here...
 
-    $("#titlebar-appname").text("DECSV");// {Alpha version " + remote.app.getVersion() + "}");
+    $("#titlebar-appname").text("SLIPPS Teacher Tool");// {Alpha version " + remote.app.getVersion() + "}");
 }

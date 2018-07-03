@@ -1,4 +1,32 @@
-﻿const remote = require('electron').remote;
+﻿'use strict';
+//////////////////////////////////// CUSTOM ERROR MESSAGE
+process.on('uncaughtException', function (err) {
+    const electron = require('electron');
+    const uncaugetdia = electron.dialog ? electron.dialog : electron.remote.dialog;
+    const shell = electron.shell;
+    logger.error("Uncaught Exception!");
+    logger.error(err.message);
+    var uncaughtoptions = {
+        type: 'error',
+        title: "Uncaught Exception",
+        message: "Unknown error!",
+        detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\nERROR: " + err.message,
+        buttons: ["Close notification", "Open Wiki"]
+    };
+
+    uncaugetdia.showMessageBox(uncaughtoptions, function (index) {
+        // no need to deal with anything.... just notifying user
+        if (index === 1) {
+            //open wiki
+            shell.openExternal("https://github.com/Tyaisurm/DECSV/wiki");
+        } else {
+            // close, do nothing
+        }
+    });
+});
+////////////////////////////////////
+
+const remote = require('electron').remote;
 const app = remote.app;
 const dialog = remote.dialog;
 const thiswindow = remote.getCurrentWindow();
@@ -408,7 +436,7 @@ function notesOutput(proj_name) {
             var basestring = "####### DECSV (version " + remote.app.getVersion() + "), project '"+proj_name+"' notefile #######\r\n";
             basestring = basestring +"############### START ###############\r\n";
 
-            for (var i = 0; i < notes.length;i++) {
+            for (var i = 0; i < notes.length; i++) {
                 basestring = basestring + "> "+notes[i] + "\r\n"
             }
 

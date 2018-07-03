@@ -17,7 +17,9 @@
             return false;
         }, false);
     </script>
-    <script>window.logger = require('electron-log');</script>
+    <script>
+        window.logger = require('electron-log');
+    </script>
     <script>window.$ = require('jquery');</script>
     <script>window.i18n = new (require('../translations/i18n')); logger.debug("setupTranslations(exporting.html)");</script>
     <link rel="stylesheet" href="../css/w3.css">
@@ -28,7 +30,7 @@
     <header style="min-height:32px;max-height:32px;" class="w3-display-container w3-blue disable-select">
         <div id="titlebar-left-corner" class="w3-display-topleft w3-bar">
             <img draggable="false" id="slipps-title-icon" class="w3-bar-item" src="../ui_icons/SLIPPS.logo-76.png" />
-            <p id="titlebar-appname" class="w3-bar-item">DECSV - Export files</p>
+            <p id="titlebar-appname" class="w3-bar-item">Export files</p>
         </div>
         <div id="titlebar-window-controls" style="width:58px;" class="w3-bar w3-display-topright no-drag">
             <img draggable="false" id="win-close-icon" class="w3-bar-item w3-button corner-buttons w3-hover-red" style="padding: 3px 16px;" src="../ui_icons/appbar.close.png" />
