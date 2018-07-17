@@ -18,6 +18,9 @@
   "select2-app-lang-ph": "Select language",
   "select2-proj-country-ph": "Select country",
   "select2-proj-lang-ph": "Select survey language",
+  "select2-event-country-ph": "Event country",
+  "select2-event-lang-ph": "Event language",
+  "select2-surveytool-ph": "Select used survey tool",
 
   "secAtitle(unused)": "Section A",
   "secBtitle(unused)": "Section B",

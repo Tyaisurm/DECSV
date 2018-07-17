@@ -73,7 +73,49 @@ function setCreateProjSelect() {
 
     $("#create-proj-country-select").val(null).trigger("change");
     $("#create-proj-language-select").val(null).trigger("change");
+}
 
+/* Setting up country and language selector, that is shown on edit-view for individual events */
+function setEditSelects() {
+    logger.debug("setEditSelects");
+    var resultdata1 = "";
+    var resultdata2 = "";
+    try {
+        resultdata1 = JSON.parse(fs.readFileSync(path.join(__dirname, "../select2/language_3b2.json"), "utf8"));
+        resultdata2 = JSON.parse(fs.readFileSync(path.join(__dirname, "../select2/data_countries.json"), "utf8"));
+    }
+    catch (err) {
+        logger.error("Error opening >Edit Select< file: " + err.message);
+        return -1;
+    }
+    var testdata1 = $.map(resultdata1, function (obj) {
+        obj.id = obj["alpha2"];
+        obj.text = obj.English;
+        return obj;
+    });
+
+    var testdata2 = $.map(resultdata2, function (obj) {
+        obj.id = obj.Code;
+        obj.text = obj.Name;
+        return obj;
+    });
+    $("#preview-event-country-select").select2({
+        placeholder: i18n.__('select2-event-country-ph'),
+        data: testdata2
+    }
+    );
+
+    $("#preview-event-lang-select").select2({
+        placeholder: i18n.__('select2-event-lang-ph'),
+        data: testdata1
+    }
+    );
+
+    $("#preview-event-country-select").val(null).trigger("change");
+    $("#preview-event-lang-select").val(null).trigger("change");
+
+    $("#preview-event-country-select").prop("disabled", true);
+    $("#preview-event-lang-select").prop("disabled", true);
 }
 
 /* Setting up KW-selector on EDIT-view (select2) */
@@ -257,12 +299,42 @@ function getFullLangName(lang_short) {
     return lang_full;
 }
 
+/* Sets up select field for import wizard window */
+function setImportSelect() {
+    logger.debug("setImportSelect");
+    var resultdata1 = "";
+    try {
+        console.log(fs.readFileSync(path.join(__dirname, "../select2/surveytools.json"), "utf8"));
+        resultdata1 = JSON.parse(fs.readFileSync(path.join(__dirname, "../select2/surveytools.json"), "utf8"));
+    }
+    catch (err) {
+        logger.error("Error opening >Import Wizard< file: " + err.message);
+        return -1;
+    }
+    var testdata1 = $.map(resultdata1, function (obj) {
+        obj.id = obj["id"];
+        obj.text = obj["name"];
+        return obj;
+    });
+    
+    $("#file-import-tool").select2({
+        placeholder: i18n.__('select2-surveytool-ph'),
+        data: testdata1
+    }
+    );
+
+    $("#file-import-tool").val(null).trigger("change");
+
+    return 0;
+}
+
 module.exports = {
     setAppLang: setAppLang,
     setKWListAvailable: setKWListAvailable,
     setCreateProjSelect: setCreateProjSelect,
     setSettingsLoadedKW: setSettingsLoadedKW,
     setupEditKW: setupEditKW,
-    getFullLangName: getFullLangName
-
+    getFullLangName: getFullLangName,
+    setEditSelects: setEditSelects,
+    setImportSelect: setImportSelect
 }

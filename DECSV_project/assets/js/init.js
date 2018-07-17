@@ -1,17 +1,21 @@
 ﻿'use strict';
+
 //////////////////////////////////// CUSTOM ERROR MESSAGE
-process.on('uncaughtException', function (err) {
+process.on('uncaughtException', (err) => {
+    
     const electron = require('electron');
     const uncaugetdia = electron.dialog ? electron.dialog : electron.remote.dialog;
+    const app = electron.app ? electron.app : electron.remote.app;
     const shell = electron.shell;
     logger.error("Uncaught Exception!");
-    logger.error(err.message);
+    logger.error(err);
     var uncaughtoptions = {
         type: 'error',
         title: "Uncaught Exception",
-        message: "Unknown error!",
-        detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\nERROR: " + err.message,
-        buttons: ["Close notification", "Open Wiki"]
+        message: "Unknown error occurred!",
+        detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\n#### ERROR #####\r\n" + err,
+        buttons: ["Close application", "Open Wiki"],
+        browserWindow: electron.remote.getCurrentWindow()
     };
 
     uncaugetdia.showMessageBox(uncaughtoptions, function (index) {
@@ -21,16 +25,20 @@ process.on('uncaughtException', function (err) {
             shell.openExternal("https://github.com/Tyaisurm/DECSV/wiki");
         } else {
             // close, do nothing
+            logger.error("Closing application because of error....");
+            app.exit();
         }
     });
 });
 ////////////////////////////////////
 
-const remote = require('electron').remote;
-const { ipcRenderer } = require('electron')
+const electron = require('electron');
+const remote = electron.remote;
+const ipcRenderer = electron.ipcRenderer;
 const BrowserWindow = remote.BrowserWindow;
 const dialog = remote.dialog;
 const firstWindow = remote.getCurrentWindow();
+var fileWizard = null;
 const fs = require('fs');
 const autoUpdater = remote.autoUpdater;
 const path = require('path');
@@ -41,27 +49,20 @@ const Store = require("electron-store");
 
 //import intUtils from './intUtils.js';
 const intUtils = require(path.join(__dirname, './intUtils.js'));
-const parseUtils = require(path.join(__dirname,'./parseUtils.js'));
+const parseUtils = require(path.join(__dirname, './parseUtils.js'));
 
 ipcRenderer.on('output-to-chrome-console', function (event, data) {
     console.log("#%#%#%#%#% OUTPUT_CHROME %#%#%%#%#%#%");
     console.log(data);
 });
 
+ipcRenderer.on("force-open-project", function (event, filepath) {
+    // 
+    logger.info("Called open project from main process!");
+    logger.info("PATH: " + filepath);
+    openAndViewProject(filepath);
+});
 
-
-/* New function to make discarding <span> elements easier */
-$.fn.ignore = function (sel) {
-    return this.clone().find(sel || ">*").remove().end();
-};
-
-var langopt_123 = {
-    name: "app-configuration",
-    cwd: remote.app.getPath('userData')
-}
-var langstore_123 = new Store(langopt_123);
-/* This sets up the language that ALL select2 select-fields will use */
-$.fn.select2.defaults.set('language', langstore_123.get("app-lang","en"));
 /*
 $.fn.select2.amd.define('select2/i18n/current_lang', [], function () {
     // Current language $("#open-file-prompt-text").text(i18n.__('open-files'));
@@ -123,7 +124,8 @@ var setSettings = remote.getGlobal('setSettings');
 logger.debug("Running init...");
 
 ///////////////////////////////////////////////////////// STARTUP FUNCTIONS
-setupTranslations();
+jquerySetup();
+
 intUtils.selectUtils.setSettingsLoadedKW();
 
 intUtils.selectUtils.setAppLang();
@@ -132,6 +134,8 @@ intUtils.selectUtils.setKWListAvailable();
 intUtils.updateSettingsUI();
 intUtils.selectUtils.setupEditKW();
 intUtils.selectUtils.setCreateProjSelect();
+intUtils.selectUtils.setEditSelects();
+
 ///////////////////////////////////////////////////////// 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////// WINDOW CONTROL BUTTONS FUNCTIONALITY
@@ -160,9 +164,11 @@ document.getElementById("win-close-icon").onclick = function () {
     var lang = "";
     var done = false;
 
+    
     // checking if we have project and/or event open
     if (window.currentProject !== undefined) {
-
+        logger.info("Project open while closing the main window! window.currentProject = '"+window.currentProject+"'");
+        /*
     // going through yellow file list elements (as in currently opened/selected)
         $('#proj-files-ul li.w3-yellow').each(function (i) {
             done = ($(this).attr('data-done') === "true");
@@ -198,10 +204,12 @@ document.getElementById("win-close-icon").onclick = function () {
 
         // saving these to window-variable and backup, but since we are closing, but NO into actual file (no need to promp, because handleClosing() deals with it)
         saveProject(0, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+        */
     }
     else {
-        logger.warn("No open project to be saved! Window.currentProject undefined!");
+        logger.info("No open project while closing main window! Window.currentProject undefined!");
     }
+    //ipcRenderer.send('set-project-status', null);
     firstWindow.close();
 }
 document.getElementById('win-about-icon').onclick = function () {
@@ -255,6 +263,12 @@ document.getElementById("save-cur-edits-btn").onclick = function () {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////// INPUT LISTENERS
+/* Settings zoom slider value counter */
+document.getElementById("settings-zoomslider").oninput = function () {
+    var value = $("#settings-zoomslider").val();
+    $("#settings-zoomvalue-2").text(value+"%");
+}
+
 /* Project note add button */
 document.getElementById("proj-note-input-btn").onclick = function () {
     logger.debug("proj-note-input-btn button");
@@ -298,6 +312,11 @@ document.getElementById("proj-note-input-field").onkeypress = function (e) {
     }
 }
 
+/* Follows if note is removed */
+$("#proj-notes-ul").on("deleted", function () {
+    intUtils.markPendingChanges(true, window.currentFile);
+});
+
 /* Follows input into new project name field */
 document.getElementById("new-proj-create-input").onkeypress = function (e) {//
     logger.debug("Pressed ENTER at CREATE PROJECT input")
@@ -328,7 +347,7 @@ document.getElementById("check-app-updates-button").onclick = function () { //NE
     // 5 = downloaded
     //     arr.push(5, ver, relDat, relNote); downloaded & available
     ipcRenderer.on('check-updates-reply', (event, arg) => {
-        logger.debug("RETURNED FROM APP: " + arg);
+        logger.debug("RETURNED FROM APP: " + arg);//NEEDSTOBECHANGED
         if (arg[0] === 0) {
             // checking...
             var download_data = "Checking for updates...";
@@ -420,15 +439,14 @@ document.getElementById("downloadandupdatekeywords").onclick = function () {//NE
 ////////////////////////////////////////////////////////////////////////////////////////////////// UPPER NAV BAR LISTENERS / BUTTONS
 document.getElementById("addfilebutton").onclick = function () {
     logger.debug("addfile button");
-    createDummyDialog(firstWindow);
-    return;
-    //
-    addFilesPrompt(); //NEEDSTOBECHANGED
+    addFilesPrompt();
 }
 
 document.getElementById("projinfobutton").onclick = function () {// NEEDSTOBECHANGED
     logger.debug("projinfo button");
-    
+    createDummyDialog(firstWindow);
+    return;
+
     var value = $("#footer-nav-btn3").val();
     if (value === "information"){
         // do NOTHING
@@ -474,7 +492,7 @@ document.getElementById("projinfobutton").onclick = function () {// NEEDSTOBECHA
         var tempUniq = []
         var check = false;
         var counter = 1;
-        for (i = 0; i < allkw.length; i++) {//&%&&%%&&¤&¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+        for (var i = 0; i < allkw.length; i++) {//&%&&%%&&¤&¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
             var current = allkw[i];
             check = false;
             for (var t = 0; t < tempUniq.length; t++) {
@@ -623,7 +641,7 @@ document.getElementById("exportprojbutton").onclick = function () {// NEEDSTOBEC
     
 }
 
-document.getElementById("closeprojbutton").onclick = function () {
+document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECHANGED
     logger.debug("closeproject button");
     var options = {
         type: 'info',
@@ -691,39 +709,88 @@ document.getElementById("closeprojbutton").onclick = function () {
                         if (index === 0) {
                             //save changes into file
                             // saving, because we are about to close the current project and return into start-view (only backup-file, but need to be prompted to save to file)
-                            saveProject(1, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+                            saveProject(1, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang 
                         }
                         else {
                             //remove backup data
                             saveProject(2);
                         }
+                        // Setting UI to start view (hiding edit-view preview-parts A, B and C away)
+                        $("#preview-third-1").addClass("no-display");
+                        $("#preview-third-2").addClass("no-display");
+                        $("#preview-third-3").addClass("no-display");
+                        $("#preview-third-start").removeClass("no-display");
+
+                        // deleting window-variables that identify the current project
+                        ipcRenderer.send('set-project-status', null);
+                        window.currentProject = undefined;
+                        window.currentFile = undefined;
+                        window.currentFileContent = undefined;
+                        window.currentEvent = undefined;
+
+                        // Clearing section items and setting footer button mode. Also toggling proper view
+                        intUtils.setFooterBtnMode("project-closed");
+                        intUtils.sectionUtils.clearElements();
+                        $("#titlebar-appname").text("SLIPPS Teacher Tool");// {Alpha version " + remote.app.getVersion() + "}")
+                        //$("#preview-cur-file-name").text("Current file: NONE");
+                        //$("#preview-subid").text("Submission ID:");
+                        //$("#preview-subdate").text("Submission Date:");
+                        intUtils.toggleViewMode(0);
+                        intUtils.toggleViewMode(10);
                     });
+                } else {
+                    // no edits to be saved
+                    logger.info("No pending edits while closing project!");
+
+                    // Setting UI to start view (hiding edit-view preview-parts A, B and C away)
+                    $("#preview-third-1").addClass("no-display");
+                    $("#preview-third-2").addClass("no-display");
+                    $("#preview-third-3").addClass("no-display");
+                    $("#preview-third-start").removeClass("no-display");
+
+                    // deleting window-variables that identify the current project
+                    ipcRenderer.send('set-project-status', null);
+                    window.currentProject = undefined;
+                    window.currentFile = undefined;
+                    window.currentFileContent = undefined;
+                    window.currentEvent = undefined;
+
+                    // Clearing section items and setting footer button mode. Also toggling proper view
+                    intUtils.setFooterBtnMode("project-closed");
+                    intUtils.sectionUtils.clearElements();
+                    $("#titlebar-appname").text("SLIPPS Teacher Tool");// {Alpha version " + remote.app.getVersion() + "}")
+                    //$("#preview-cur-file-name").text("Current file: NONE");
+                    //$("#preview-subid").text("Submission ID:");
+                    //$("#preview-subdate").text("Submission Date:");
+                    intUtils.toggleViewMode(0);
+                    intUtils.toggleViewMode(10);
                 }
             } else {
                 logger.warn("No open project to be saved! Window.currentProject undefined!");
+
+                // Setting UI to start view (hiding edit-view preview-parts A, B and C away)
+                $("#preview-third-1").addClass("no-display");
+                $("#preview-third-2").addClass("no-display");
+                $("#preview-third-3").addClass("no-display");
+                $("#preview-third-start").removeClass("no-display");
+
+                // deleting window-variables that identify the current project
+                ipcRenderer.send('set-project-status', null);
+                window.currentProject = undefined;
+                window.currentFile = undefined;
+                window.currentFileContent = undefined;
+                window.currentEvent = undefined;
+
+                // Clearing section items and setting footer button mode. Also toggling proper view
+                intUtils.setFooterBtnMode("project-closed");
+                intUtils.sectionUtils.clearElements();
+                $("#titlebar-appname").text("SLIPPS Teacher Tool");// {Alpha version " + remote.app.getVersion() + "}")
+                //$("#preview-cur-file-name").text("Current file: NONE");
+                //$("#preview-subid").text("Submission ID:");
+                //$("#preview-subdate").text("Submission Date:");
+                intUtils.toggleViewMode(0);
+                intUtils.toggleViewMode(10);
             }
-
-            // Setting UI to start view (hiding edit-view preview-parts A, B and C away)
-            $("#preview-third-1").addClass("no-display");
-            $("#preview-third-2").addClass("no-display");
-            $("#preview-third-3").addClass("no-display");
-            $("#preview-third-start").removeClass("no-display");
-
-            // deleting window-variables that identify the current project
-            window.currentProject = undefined;
-            window.currentFile = undefined;
-            window.currentFileContent = undefined;
-            window.currentEvent = undefined;
-
-            // Clearing section items and setting footer button mode. Also toggling proper view
-            intUtils.setFooterBtnMode("project-closed");
-            intUtils.sectionUtils.clearElements();
-            $("#titlebar-appname").text("SLIPPS Teacher Tool");// {Alpha version " + remote.app.getVersion() + "}")
-            //$("#preview-cur-file-name").text("Current file: NONE");
-            //$("#preview-subid").text("Submission ID:");
-            //$("#preview-subdate").text("Submission Date:");
-            intUtils.toggleViewMode(0);
-            intUtils.toggleViewMode(10);
         }
     });
 }
@@ -970,16 +1037,21 @@ document.getElementById("footer-nav-btn3").onclick = function () {//
             type: 'info',
             title: i18n.__('conf-title'),
             message: "Save these settings?",
-            detail: "If you set language, it will take effect on next startup.",
+            detail: "",
             buttons: [i18n.__('conf-yes'), i18n.__('conf-no')]
         };
 
         dialog.showMessageBox(firstWindow, options, function (index) {
             if (index === 0) {
-                saveSettings();
+                logger.info("Now attempting to save settings...");
+                // collect settings from settings window and place them to this list
+                var tobesent = collectSettings();
+
+                setSettings(tobesent);
+                intUtils.selectUtils.setupEditKW();
             }
             else {
-                //
+                // no need to anything else
             }
         });
         //save settings
@@ -1110,6 +1182,76 @@ document.getElementById("footer-nav-btn6").onclick = function () {//
 ///////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////// FUNCTIONS
+
+/* collects settings from settings view and sends back new json object with these */
+function collectSettings() {
+    //
+    logger.debug("collectSettings");
+    var settings = getSettings();
+    /*json1 = {
+            "app-lang": "en",
+            "first-use": false,
+            "app-version": app.getVersion(),
+            "demo-files": true,
+            "latest-update-check": null,
+            "latest-update-install": null,
+            "zoom": 100,
+            "edits": [
+                false,
+                null
+            ]
+        };*/
+    var applang = $("#app-lang-selector").select2('val');
+    if ((applang !== null) && (applang !== undefined) && (applang !== "")) {
+        settings.app["app-lang"] = applang;
+    } else {
+        logger.warn("Settings applang null, undefined or empty string!");
+    }
+    var zoomvalue = 100;
+    try {
+        zoomvalue = Number.parseInt($("#settings-zoomslider").val());
+    } catch (err) {
+        logger.error("Unable to parse settings zoomslider to Int");
+        zoomvalue = 100;
+    }
+    settings.app["zoom"] = zoomvalue;
+    /* json2 = {
+
+            "last-successful-update": null,
+            "available-keywordlists": {
+                "en-basic": {
+                    "date": "2018-06-25T13:05:48.801Z",
+                    "name": "English - Basic"
+                },
+                "fi-basic": {
+                    "date": "2018-06-25T13:05:48.801Z",
+                    "name": "Suomi - Perus"
+                }
+            },
+            "local-keywordlists": {
+                "en-basic": {
+                    "date": "2018-06-25T13:05:48.801Z",
+                    "name": "English - Basic"
+                },
+                "fi-basic": {
+                    "date": "2018-06-25T13:05:48.801Z",
+                    "name": "Suomi - Perus"
+                }
+            },
+            "enabled-keywordlists": [
+                "en-basic"
+            ]
+        };*/
+    var enabledarr = [];
+    $("#settings-local-kw-lists .kw-list-enabled").each(function () {
+        var langtag = $(this).attr("data-id");
+        enabledarr.push(langtag);
+        logger.debug(langtag);
+    });
+    settings.kw["enabled-keywordlists"] = enabledarr;
+
+    return settings;
+}
 
 /* Creates new project ASYNC!! (IPC to app.js) */
 function createProjAsync(project_name = "", project_country = "", project_lang = "") {
@@ -1300,6 +1442,7 @@ function openAndViewProject(proj_location) {
     logger.debug("openAndViewProject");
     var file_ext = proj_location.split('.').pop();
     var proj_name = proj_location.split('\\').pop();
+
     proj_name = proj_name.split(".");
     proj_name.pop();
     proj_name.join(".");
@@ -1311,6 +1454,11 @@ function openAndViewProject(proj_location) {
     if (proj_location === undefined) {
         // Projectname not defined
         reason.push(false, "Project to be opened not defined!");
+        return reason;
+    }
+    else if (file_ext !== 'decsv') {
+        // Project extension is invalid!
+        reason.push(false, "File not valid project file!");
         return reason;
     }
     else if (proj_name.length === 0 || proj_name.length > 100) {
@@ -1437,6 +1585,8 @@ function openAndViewProject(proj_location) {
         //console.log(i + "  " + proj_notes[i]);
         addProjNote(proj_notes[i]);
     }
+
+    ipcRenderer.send('set-project-status', proj_name);
     window.currentProject = proj_name;
     window.currentFileContent = json_file;
     window.currentFile = proj_location;
@@ -1471,8 +1621,8 @@ function addProjNote(note) {
         class: "w3-button w3-display-right",
         onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
         onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-        onclick: "$(this.parentElement).remove();intUtils.markPendingChanges(true, window.currentFile);"
-    });// NEEDSTOBECHANGED
+        onclick: "$(this.parentElement.parentElement).trigger('deleted');$(this.parentElement).remove();"
+    });
 
     li_node.appendChild(span_node);
 
@@ -1608,7 +1758,7 @@ function saveProject(mode = 0, dataA = "", dataB = "", dataC = "", kw = [], note
         return;
     }
     // just writing down if we have open event in the edit-view
-    if (current_event !== undefined) {
+    if (current_event === undefined) {
         logger.info("No event open in edit-view while saving...");
         // we can only save notes....
     }
@@ -1820,7 +1970,14 @@ function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
     }
     // end loop, init element again
     $("#KW-selector").prop("disabled", false);
-    
+    $("#preview-event-country-select").prop("disabled", false);
+    $("#preview-event-lang-select").prop("disabled", false);
+    /*
+     
+     HERE, set proper event country and language to edit select2 elements! NEEDSTOBECHANGED
+     
+     
+     */
     $("#KW-selector").select2({
         placeholder: i18n.__('select2-kw-add-ph')
     });
@@ -1840,33 +1997,74 @@ function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
 function saveSettings() {
     // okay, we need to create json here, that will be sent to main setSettings(json) function.....
     logger.debug("saveSettings");
+    logger.info("Saving settings...");
     var applang = $("#app-lang-selector").val();
+    var uizoom = $("#settings-zoomslider").val();
     var apppath = remote.app.getPath('userData');
     var enabledKW = [];
-    var options1 = {
-        name: "app-configuration",
-        cwd: apppath
-    }
-    const store1 = new Store(options1);
-    if (applang !== "") {
-        store1.set("app-lang", applang);
-    }
-    else {
-        logger.info("No language chosen in settings...");
-    }
-
-    var options2 = {
-        name: "keyword-config",
-        cwd: path.join(apppath, 'keywordlists')
-    }
-    const store2 = new Store(options2);
-    logger.debug("getting enabled local lists...");
     $("#settings-local-kw-lists .kw-list-enabled").each(function (i) {
         var kw_list_id = $(this).attr("data-id");
         enabledKW.push(kw_list_id);
         logger.debug("ADDED KW LIS: " + kw_list_id);
     });
-    store2.set("enabled-keywordlists", enabledKW);
+    var apptemplate = {
+            "app-lang": "en",
+            "first-use": false,
+            "app-version": app.getVersion(),
+            "demo-files": true,
+            "latest-update-check": null,
+            "latest-update-install": null,
+            "zoom": 100,
+            "edits": [
+                false,
+                null
+            ]
+    };
+    // need to validate that we actually have these before saving....
+    var kwtemplate = {
+        "last-successful-update": null,
+        "available-keywordlists": {
+            "en-basic": {
+                "date": "2018-06-25T13:05:48.801Z",
+                "name": "English - Basic"
+            },
+            "fi-basic": {
+                "date": "2018-06-25T13:05:48.801Z",
+                "name": "Suomi - Perus"
+            }
+        },
+        "local-keywordlists": {
+            "en-basic": {
+                "date": "2018-06-25T13:05:48.801Z",
+                "name": "English - Basic"
+            },
+            "fi-basic": {
+                "date": "2018-06-25T13:05:48.801Z",
+                "name": "Suomi - Perus"
+            }
+        },
+        "enabled-keywordlists": [
+            "en-basic"
+        ]
+    };
+    //var options1 = {
+    //    name: "app-configuration",
+    //    cwd: apppath
+    //}
+    //const store1 = new Store(options1);
+    if (applang !== "") {
+        //store1.set("app-lang", applang);
+    }
+    else {
+        logger.info("No language chosen in settings...");
+    }
+
+    //var options2 = {
+    //    name: "keyword-config",
+    //    cwd: path.join(apppath, 'keywordlists')
+    //}
+    //const store2 = new Store(options2);
+    //store2.set("enabled-keywordlists", enabledKW);
 
     intUtils.selectUtils.setupEditKW();
 }
@@ -1920,13 +2118,14 @@ function updateFileQueue(files) {
 }
 */
 
-// NEEDS UPDATES!!!!!!NEEDSTOBECHANGED
-/* Show file browser so that new files may be imported into current project */
+
+/* Show file import wizard so that new files may be imported into current project */
 function addFilesPrompt() {
     logger.debug("addFilesPrompt");
-    var project_name = window.currentProject;
+    //var project_name = window.currentProject;
 
-    var docpath = remote.app.getPath('documents');
+    //var docpath = remote.app.getPath('documents');
+    /*
     var options = {
         title: i18n.__('open-file-prompt-window-title'),
         defaultPath: docpath,
@@ -1946,6 +2145,38 @@ function addFilesPrompt() {
         logger.warn("No file(s) chosen to be opened!");
     }
     dialog.showOpenDialog(firstWindow, options, callback);
+    */
+    logger.debug("create import wizard");
+    logger.info("Opening import wizard -window...");
+    fileWizard = new BrowserWindow({
+        width: 640,
+        height: 600,
+        resizable: false,
+        minWidth: 640,
+        minHeight: 600,
+        devTools: true,
+        frame: false,
+        backgroundColor: '#dadada',
+        show: false,
+        modal: true,
+        parent: firstWindow
+    });
+
+    let fileWizard_url = url.format({
+        protocol: 'file',
+        slashes: true,
+        pathname: path.join(__dirname, '../html/importwizard.html')
+    });
+    fileWizard.loadURL(fileWizard_url);
+
+    fileWizard.on('ready-to-show', function () {
+        fileWizard.show();
+    });
+
+    fileWizard.on('closed', function () {
+        logger.info("File Wizard window closed");
+        fileWizard = null;
+    });
 }
 
 ///NEEDS UPDATE
@@ -2075,11 +2306,64 @@ function paintEmAll(word, mode) {
 */
 
 /* THIS IS SETTING UP UI TRANSLATION */
-function setupTranslations() {
+function setupTranslations(applang = "en") {
     logger.debug("setupTranslations(init.js)");
-    logger.info("Loading translations into UI...");
+    logger.info("Loading translations into UI (init)");
 
     // Set text to window here...
 
     $("#titlebar-appname").text("SLIPPS Teacher Tool");// {Alpha version " + remote.app.getVersion() + "}");
+}
+
+electron.ipcRenderer.on('force-interface-update', (event, settings) => {
+    logger.info("Received call to force interface update (init)");
+    interfaceUpdate(settings);
+});
+/* update interface of this window */
+function interfaceUpdate(settings = {}) {
+    logger.debug("interfaceUpdate (init.js)");
+    //logger.debug(settings.constructor);
+    if (settings.constructor === {}.constructor) {
+        if (Object.keys(settings).length !== 2) {
+            //logger.debug("INT FAIL 1");
+            settings = getSettings();
+        } else if (!settings.hasOwnProperty("app") || !settings.hasOwnProperty("kw")) {
+            //logger.debug("INT FAIL 2");
+            settings = getSettings();
+        }
+    } else if (!parseUtils.validateSettings(settings.app, 1)) {
+        //logger.debug("INT FAIL 4");
+        settings = getSettings();
+    } else if (!parseUtils.validateSettings(settings.kw, 2)) {
+        //logger.debug("INT FAIL 5");
+        settings = getSettings();
+    }
+    /* setting current settings as window object (json) */
+    window.allsettings = settings;
+
+    /* only in main window! */
+    $("body").css("zoom", settings.app.zoom / 100);
+
+    /* Setting up UI texts */
+    setupTranslations(settings.app["app-lang"]);
+}
+
+function jquerySetup() {
+    /* New function to make discarding <span> elements easier */
+    $.fn.ignore = function (sel) {
+        return this.clone().find(sel || ">*").remove().end();
+    };
+    
+    var settings = getSettings();
+
+    /* This sets up the language that ALL select2 select-fields will use */
+    $.fn.select2.defaults.set('language', settings.app["app-lang"]);
+}
+interfaceUpdate();
+
+/* This is used to check if a file was opened with the application (to start it) */
+if (ipcRenderer.sendSync("get-ext-file-data","asd") !== null) {
+    // there is something to be opened....
+    logger.info("There is project that needs to be opened! (App itself just launched)");
+    openAndViewProject(ipcRenderer.sendSync("get-ext-file-data", "asd"));
 }

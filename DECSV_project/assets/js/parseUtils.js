@@ -1,4 +1,7 @@
-﻿const remote = require('electron').remote;
+﻿const electron = require('electron');
+const remote = electron.remote;
+
+const logger = require("electron-log");
 
 function CSVtoArray(strData, strDelimiter) {
     logger.debug("CSVtoArray");
@@ -404,11 +407,11 @@ function validateProjectJSON(json_data = {}) {// NEEDSTOBECHANGED errors give ou
 
 function validateVersion(version = "0.0.0") {
     logger.debug("validateVersion");
-
+    const app = electron.app ? electron.app : electron.remote.app;
     var prog_ver_1 = version.split(".");
-    var prog_ver_2 = remote.app.getVersion().split(".");
+    var prog_ver_2 = app.getVersion().split(".");
     logger.info("Comparing versions from file...");
-    logger.info("Current app version is '" + remote.app.getVersion() + "', current file version is '" + version + "'");
+    logger.info("Current app version is '" + app.getVersion() + "', current file version is '" + version + "'");
 
     // changing version numbers into integers
     for (var pr1 = 0; pr1 < prog_ver_1.length; pr1++) {
@@ -431,17 +434,25 @@ function validateVersion(version = "0.0.0") {
 
 // first is json object od settings, second is mode 1 = application settings, 2 = keyword list settings, -1 = default nothing
 function validateSettings(settings = {}, mode = -1) {
-    //
-    if (mode === -1 || (mode != 1 && mode != 2)) {
+    logger.debug("validateSettings");
+    if (mode === -1 || (mode !== 1 && mode !== 2)) {
         // mode invalid
+        logger.debug("FAIL 0");
         return false;
     }
-    if (!(Object.keys(settings).length === 0 && settings.constructor === Object)) {
-        //settings object invalid
+    if ((settings.constructor !== {}.constructor) && (typeof (settings) !== typeof ({}))) {
+        //settings object not json object
+        logger.debug("FAIL 1");
+        return false;
+    }
+    if (Object.keys(settings).length === 0) {
+        //settings length 0
+        logger.debug("FAIL 2");
         return false;
     }
 
     if (mode === 1) {
+        logger.debug("MODE 1");
         // app settings
         /*"app-lang": "en",
             "first-use": false,
@@ -457,24 +468,28 @@ function validateSettings(settings = {}, mode = -1) {
         if (settings.hasOwnProperty("app-lang")) {
             if (typeof (settings["app-lang"]) !== "string") {
                 // app-lang not a string
+                logger.debug("FAIL 3");
                 return false;
             }
             if (settings.hasOwnProperty("first-use")) {
                 //
                 if (typeof (settings["first-use"]) !== typeof (true)) {
                     // first-use is not boolean
+                    logger.debug("FAIL 4");
                     return false;
                 }
                 if (settings.hasOwnProperty("app-version")) {
-                    if (typeof settings["version"] !== "string") {
+                    if (typeof(settings["app-version"]) !== "string") {
                         //console.log("version is not a string");
                         //return [false, 35];
+                        logger.debug("FAIL 5");
                         return false;
                     }
-                    var ver_test = settings["version"].split(".");
+                    var ver_test = settings["app-version"].split(".");
                     if (ver_test.length !== 3) {
                         //console.log("version number array is not length 3");
                         //return [false, 36];
+                        logger.debug("FAIL 6");
                         return false;
                     }
                     var ver_1 = parseInt(ver_test[0], 10);
@@ -483,6 +498,7 @@ function validateSettings(settings = {}, mode = -1) {
                     if (Number.isNaN(ver_1) || Number.isNaN(ver_2) || Number.isNaN(ver_3)) {
                         //console.log("version number array one to three are Nan");
                         //return [false, 37];
+                        logger.debug("FAIL 7");
                         return false;
                     }
 
@@ -490,8 +506,8 @@ function validateSettings(settings = {}, mode = -1) {
                         if (typeof (settings["demo-files"]) === typeof (true)) {
                             if (settings.hasOwnProperty("zoom")) {
                                 if (typeof (settings["zoom"]) === typeof (1)) {
-                                    var zoommax = 1.5;
-                                    var zoommin = 0.5;
+                                    var zoommax = 150;
+                                    var zoommin = 50;
                                     if (settings["zoom"] >= zoommin && settings["zoom"] <= zoommax) {
                                         if (settings.hasOwnProperty("edits")) {
                                             if (settings["edits"] instanceof Array) {
@@ -502,71 +518,90 @@ function validateSettings(settings = {}, mode = -1) {
                                                                 if (settings["latest-update-check"] === null || !Number.isNaN(Date.parse(settings["latest-update-check"]))) {
                                                                     if (settings["latest-update-install"] === null || !Number.isNaN(Date.parse(settings["latest-update-install"]))) {
                                                                         // app config OK!
+                                                                        logger.debug("SUCCESS");
                                                                         return true;
                                                                     } else {
                                                                         // latest-update-install not null or date
+                                                                        logger.debug("FAIL 8");
                                                                         return false;
                                                                     }
                                                                 } else {
                                                                     // latest-update-check not null or date
+                                                                    logger.debug("FAIL 9");
                                                                     return false;
                                                                 }
                                                             } else {
                                                                 //no latest-update-install or latest-update-check
+                                                                logger.debug("FAIL 10");
                                                                 return false;
                                                             }
                                                         } else {
                                                             // edits second not null or string
+                                                            logger.debug("FAIL 11");
                                                             return false;
                                                         }
                                                     } else {
                                                         // edits array first not boolean
+                                                        logger.debug("FAIL 12");
                                                         return false;
                                                     }
                                                 } else {
                                                     //edits not length 2
+                                                    logger.debug("FAIL 13");
                                                     return false;
                                                 }
                                             } else {
                                                 //edits is not array
+                                                logger.debug("FAIL 14");
                                                 return false;
                                             }
                                         } else {
                                             // no edits
+                                            logger.debug("FAIL 15");
                                             return false;
                                         }
                                     } else {
                                         //zoom invalid
+                                        logger.debug("FAIL 16");
                                         return false;
                                     }
                                 } else {
                                     //zoom invalid
+                                    logger.debug("FAIL 17");
                                     return false;
                                 }
                             } else {
                                 // no zoom
+                                logger.debug("FAIL 18");
                                 return false;
                             }
                         } else {
                             // demo-files not boolean
+                            logger.debug("FAIL 19");
+                            return false;
                         }
                     } else {
                         // no demo-files
+                        logger.debug("FAIL 20");
                         return false
                     }
                 } else {
                     // no app-version
+                    logger.debug("FAIL 21");
                     return false;
                 }
             } else {
                 // no first-use
+                logger.debug("FAIL 22");
                 return false;
             }
         } else {
             // no app-lang in settings
+            logger.debug("FAIL 23");
             return false;
         }
     } else if (mode === 2) {
+        logger.debug("MODE 2");
         // keyword settings
         /*"last-successful-update": null,
             "available-keywordlists": {
@@ -600,7 +635,7 @@ function validateSettings(settings = {}, mode = -1) {
         typeof(qwe["asdasd"]) === "object"
         true
          */
-        if (settings.hasOwnProperty["last-successful-update"]) {
+        if (settings.hasOwnProperty("last-successful-update")) {
             if (settings["last-successful-update"] === null || !Number.isNaN(Date.parse(settings["last-successful-update"]))) {
                 if (settings.hasOwnProperty("available-keywordlists")) {
                     if (settings["available-keywordlists"].constructor === {}.constructor) {
@@ -608,30 +643,36 @@ function validateSettings(settings = {}, mode = -1) {
                         var avkwo = {};
                         for (var avkw in settings["available-keywordlists"]) {
                             avkwo = settings["available-keywordlists"][avkw];
-                            if ((avkwo.constructor === {}.constructor) && (typeof (avkw) !== "string")) {
+                            if ((avkwo.constructor === {}.constructor) && (typeof(avkw) === "string")) {
                                 if (avkwo.hasOwnProperty("date")) {
-                                    if (!Number.isNaN(Date.parse(settings["date"]))) {
+                                    //
+                                    if (!Number.isNaN(Date.parse(avkwo["date"]))) {
                                         if (avkwo.hasOwnProperty("name")) {
                                             if (typeof (avkwo["name"]) === "string") {
                                                 // everything ok. proceed...
                                             } else {
                                                 // name not string
+                                                logger.debug("FAIL 24");
                                                 return false;
                                             }
                                         } else {
                                             // no name field
+                                            logger.debug("FAIL 25");
                                             return false;
                                         }
                                     } else {
                                         // invalid date field
+                                        logger.debug("FAIL 26");
                                         return false;
                                     }
                                 } else {
                                     // no date field on available kw
+                                    logger.debug("FAIL 27");
                                     return false;
                                 }
                             } else {
                                 // content not json object, or it's key is not string
+                                logger.debug("FAIL 28");
                                 return false;
                             }
                         }
@@ -641,30 +682,35 @@ function validateSettings(settings = {}, mode = -1) {
                                 var lkwo = {};
                                 for (var lkw in settings["local-keywordlists"]) {
                                     lkwo = settings["local-keywordlists"][lkw];
-                                    if ((lkwo.constructor === {}.constructor) && (typeof (lkw) !== "string")) {
+                                    if ((lkwo.constructor === {}.constructor) && (typeof (lkw) === "string")) {
                                         if (lkwo.hasOwnProperty("date")) {
-                                            if (!Number.isNaN(Date.parse(settings["date"]))) {
+                                            if (!Number.isNaN(Date.parse(lkwo["date"]))) {
                                                 if (lkwo.hasOwnProperty("name")) {
                                                     if (typeof (lkwo["name"]) === "string") {
                                                         // everything ok. proceed...
                                                     } else {
                                                         // name not string
+                                                        logger.debug("FAIL 29");
                                                         return false;
                                                     }
                                                 } else {
                                                     // no name field
+                                                    logger.debug("FAIL 30");
                                                     return false;
                                                 }
                                             } else {
                                                 // invalid date field
+                                                logger.debug("FAIL 31");
                                                 return false;
                                             }
                                         } else {
                                             // no date field on available kw
+                                            logger.debug("FAIL 32");
                                             return false;
                                         }
                                     } else {
                                         // content not json object, or it's key is not string
+                                        logger.debug("FAIL 33");
                                         return false;
                                     }
                                 }
@@ -677,33 +723,41 @@ function validateSettings(settings = {}, mode = -1) {
                                                 //was string, everything ok
                                             } else {
                                                 //found something else than string
+                                                logger.debug("FAIL 34");
                                                 return false;
                                             }
                                         }
                                         //nothing to be tested anymore
+                                        logger.debug("SUCCESS");
                                         return true;
                                     } else {
                                         //not array
+                                        logger.debug("FAIL 35");
                                         return false;
                                     }
                                 } else {
                                     // no enabled-keywordlists
+                                    logger.debug("FAIL 36");
                                     return false;
                                 }
                             } else {
                                 // not an json object
+                                logger.debug("FAIL 37");
                                 return false;
                             }
                         } else {
                             // no local-keywordlists
+                            logger.debug("FAIL 38");
                             return false;
                         }
                     } else {
                         // not an json object
+                        logger.debug("FAIL 39");
                         return false;
                     }
                 } else {
                     // no available-keywordlists
+                    logger.debug("FAIL 40");
                     return false;
                 }
                 ///////
@@ -713,10 +767,12 @@ function validateSettings(settings = {}, mode = -1) {
                 ////////
             } else {
                 // last-successful-update is not null or valid date
+                logger.debug("FAIL 41");
                 return false;
             }
         } else {
             // no last-successfull-update
+            logger.debug("FAIL 42");
             return false;
         }
 

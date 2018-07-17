@@ -3,15 +3,17 @@
 process.on('uncaughtException', function (err) {
     const electron = require('electron');
     const uncaugetdia = electron.dialog ? electron.dialog : electron.remote.dialog;
+    const app = electron.app ? electron.app : electron.remote.app;
     const shell = electron.shell;
     logger.error("Uncaught Exception!");
-    logger.error(err.message);
+    logger.error(err);
     var uncaughtoptions = {
         type: 'error',
         title: "Uncaught Exception",
-        message: "Unknown error!",
-        detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\nERROR: " + err.message,
-        buttons: ["Close notification", "Open Wiki"]
+        message: "Unknown error occurred!",
+        detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\n#### ERROR #####\r\n" + err,
+        buttons: ["Close application", "Open Wiki"],
+        browserWindow: electron.remote.getCurrentWindow()
     };
 
     uncaugetdia.showMessageBox(uncaughtoptions, function (index) {
@@ -21,6 +23,8 @@ process.on('uncaughtException', function (err) {
             shell.openExternal("https://github.com/Tyaisurm/DECSV/wiki");
         } else {
             // close, do nothing
+            logger.error("Closing application because of error....");
+            app.exit();
         }
     });
 });
@@ -65,12 +69,6 @@ $(document).ready(setTimeout(function () {
     parentwindow.webContents.send('get-project-data', thiswindow.id);
 }, 0));
 
-/* THIS IS SETTING UP UI TRANSLATION */
-function setupTranslations() {
-    logger.info("EXPORT-WINDOW Loading translations into UI...");
-    // Set text here
-}
-setupTranslations();
 
 /////////////////////////////////////////////////////////////////////// SCREEN LISTENERS
 thiswindow.on('focus', function () { $("html").css("opacity", "1"); });
@@ -462,3 +460,42 @@ function notesOutput(proj_name) {
         // no properties file...
     }
 }
+
+/* THIS IS SETTING UP UI TRANSLATION */
+function setupTranslations(applang = "en") {
+    logger.info("Loading translations into UI (file_export)");
+    // Set text here
+}
+ipcRenderer.on('force-interface-update', (event, settings) => {
+    logger.info("Received call to force interface update (about)");
+    interfaceUpdate(settings);
+});
+/* update interface of this window */
+function interfaceUpdate(settings = {}) {
+    logger.debug("interfaceUpdate (file_export.js)");
+    //logger.debug(settings.constructor);
+    if (settings.constructor === {}.constructor) {
+        if (Object.keys(settings).length !== 2) {
+            //logger.debug("INT FAIL 1");
+            settings = getSettings();
+        } else if (!settings.hasOwnProperty("app") || !settings.hasOwnProperty("kw")) {
+            //logger.debug("INT FAIL 2");
+            settings = getSettings();
+        }
+    } else if (!parseUtils.validateSettings(settings.app, 1)) {
+        //logger.debug("INT FAIL 4");
+        settings = getSettings();
+    } else if (!parseUtils.validateSettings(settings.kw, 2)) {
+        //logger.debug("INT FAIL 5");
+        settings = getSettings();
+    }
+    /* setting current settings as window object (json) */
+    window.allsettings = settings;
+
+    /* only in main window! */
+    //$("body").css("zoom", settings.app.zoom / 100);
+
+    /* Setting up UI texts */
+    setupTranslations(settings.app["app-lang"]);
+}
+interfaceUpdate();

@@ -1,7 +1,7 @@
 {
   "name": "decsv",
   "productName": "SLIPPS Teacher Tool",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "SLIPPS survey results review and edit application.",
   "main": "app.js",
   "scripts": {
@@ -63,7 +63,6 @@
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "charset-detector": "0.0.2",
-    "electron-config": "1.0.0",
     "electron-log": "2.2.14",
     "electron-squirrel-startup": "1.0.0",
     "electron-store": "1.3.0",

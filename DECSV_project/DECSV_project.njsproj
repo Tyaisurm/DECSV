@@ -111,6 +111,9 @@
     <Content Include="assets\select2\css\select2.min.css" />
     <Content Include="assets\select2\data_countries.json" />
     <Content Include="assets\select2\language_3b2.json" />
+    <Content Include="assets\select2\surveytools.json">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="build\icon.png" />
     <Content Include="en - Copy.json" />
     <Content Include="assets\translations\fi.json" />

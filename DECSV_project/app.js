@@ -1,19 +1,32 @@
 ﻿'use strict';
 //////////////////////////////////// CUSTOM ERROR MESSAGE
 process.on('uncaughtException', function (err) {
+    //process.exit(1);
     const electron = require('electron');
     const uncaugetdia = electron.dialog ? electron.dialog : electron.remote.dialog;
+    const app = electron.app ? electron.app : electron.remote.app;
     const shell = electron.shell;
     logger.error("Uncaught Exception!");
-    logger.error(err.message);
-    var uncaughtoptions = {
-        type: 'error',
-        title: "Uncaught Exception",
-        message: "Unknown error!",
-        detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\nERROR: " + err.message,
-        buttons: ["Close notification", "Open Wiki"]
-    };
-
+    logger.error(err);
+    var uncaughtoptions = {};
+    if (mainWindow === null) {
+        uncaughtoptions = {
+            type: 'error',
+            title: "Uncaught Exception",
+            message: "Unknown error occurred!",
+            detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\n#### ERROR #####\r\n" + err,
+            buttons: ["Close application", "Open Wiki"]
+        }
+    } else {
+        uncaughtoptions = {
+            type: 'error',
+            title: "Uncaught Exception",
+            message: "Unknown error occurred!",
+            detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\n#### ERROR #####\r\n" + err,
+            buttons: ["Close application", "Open Wiki"],
+            BrowserWindow: mainWindow
+        }
+    }
     uncaugetdia.showMessageBox(uncaughtoptions, function (index) {
         // no need to deal with anything.... just notifying user
         if (index === 1) {
@@ -21,6 +34,8 @@ process.on('uncaughtException', function (err) {
             shell.openExternal("https://github.com/Tyaisurm/DECSV/wiki");
         } else {
             // close, do nothing
+            logger.error("Closing application because of error....");
+            app.exit();
         }
     });
 });
@@ -47,6 +62,9 @@ let aboutWindow = null;
 let i18n_app = null;
 
 var demostatus = false;
+var current_project = null;
+var pre_project = null;
+var showExitPrompt = true;
 
 const parseUtils = require("./assets/js/parseUtils.js");
 
@@ -55,14 +73,14 @@ if (require('electron-squirrel-startup')) { app.quit(); }
 /////////////////////////////// SETTING LOGGER LEVELS
 logger.transports.file.level = "verbose";
 logger.transports.console.level = "silly";
-logger.transports.file.appName = 'SLIPPS Teacher Tool';
+//logger.transports.file.appName = 'SLIPPS Teacher Tool';
 ///////////////////////////////
 autoUpdater.logger = logger;
 
 
 const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
     // Someone tried to run a second instance, we should focus our window
-    if (mainWindow) {
+    if (mainWindow !== null) {
         if (mainWindow.isMinimized()) {
             mainWindow.restore();
         }
@@ -76,9 +94,39 @@ const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) 
         // in windows parse process.argv
         if (process.platform == 'win32' && process.argv.length >= 2) {
             var openFilePath = process.argv[1];
-            data = openFilePath;
+            if (current_project !== null) {
+                // there is a project open
+                logger.warn("Tried to open new project, while old one still exits!");
+                logger.info("# Old: " + current_projet);
+                logger.info("# New: " + openFilePath);
+                // create dialog and notify to exit current project before opening new projects...
+                var options = {
+                    type: 'info',
+                    title: "Project open",
+                    message: "Unable to open new project while there is one open!",
+                    detail: "Please close the current project, and try opening again.",
+                    buttons: [i18n_app.__('conf-ok', true)]
+                };
+                dialog.showMessageBox(options, function (index) {
+                    // no need to deal with anything.... just notifying user
+                    if (index === 1) {
+                        //
+                    } else {
+                        // close, do nothing
+                    }
+                });
+            } else {
+                //no project exist... need to force opening
+                ipcMain.send("force-open-project", openFilePath);
+            }
+
         } else {
             // do nothing
+        }
+    } else {
+        // no mainwindow! if we are opening project, we are settings this variable just in case
+        if (process.platform == 'win32' && process.argv.length >= 2) {
+            pre_project = process.argv[1];
         }
     }
 });
@@ -99,16 +147,18 @@ app.on('will-finish-launching', function () {
 
         } else {
             // nothing
-            logger.debug("Open-file event fired, but platform was not 'darwin'!");
+            logger.info("Open-file event fired, but platform was not 'darwin'!");
+            logger.info("FILE: " + path);
         }
     });
     app.on('open-url', function (event, url) {// yea.... we don't need this that much.. need to have for MacOS though
         event.preventDefault();
-        logger.debug("Open-url event fired! Ignoring...");
+        logger.info("Open-url event fired! Ignoring...");
         //log("open-url event: " + url)
 
         // handle if argument is proper file or not
         var sourcelink = url;
+        logger.info("LINK: " + url);
 
         //dialog.showErrorBox('open-url', `You arrived from: ${url}`)
     });
@@ -118,15 +168,24 @@ app.on('will-finish-launching', function () {
 /* Allows windows fetch settings from one place*/
 /* Returns array, where there is 2 stringify-ed JSONs */
 global.getSettings = function () {
-    // 
+    logger.debug("getSettings");
     var apppath = app.getPath('userData');
-    var returnable = [];
+    var returnable = {
+        "app": {},
+        "kw": {}
+    };
     var config1 = {
         name: "app-configuration",
         cwd: apppath
     }
     var store1 = new Store(config1);
     var json1 = store1.store;
+    try {
+        json1 = JSON.stringify(json1);
+        json1 = JSON.parse(json1);
+    } catch (err) {
+        json1 = {};
+    }
     //
     var config2 = {
         name: "keyword-config",
@@ -134,6 +193,12 @@ global.getSettings = function () {
     }
     const store2 = new Store(config2);
     var json2 = store2.store;
+    try {
+        json2 = JSON.stringify(json2);
+        json2 = JSON.parse(json2);
+    } catch (err) {
+        json2 = {};
+    }
     //
     if (parseUtils.validateSettings(json1,1)) {
         // settings valid; giving them out
@@ -147,7 +212,7 @@ global.getSettings = function () {
             "demo-files": true,
             "latest-update-check": null,
             "latest-update-install": null,
-            "zoom": 1,
+            "zoom": 100,
             "edits": [
                 false,
                 null
@@ -160,10 +225,11 @@ global.getSettings = function () {
         // settings valid; giving them out
         //returnable.push(json2);
     } else {
-        // settings invalid; need to give out defaults
+        // settings invalid; need to give out defaults 
         json2 = {
             
-            "last-successful-update": null,
+            "last-local-update": null,
+            "last-availability-check": null,
                 "available-keywordlists": {
                 "en-basic": {
                     "date": "2018-06-25T13:05:48.801Z",
@@ -190,42 +256,34 @@ global.getSettings = function () {
         }
         //returnable.push(JSONjson2);
     }
-    try {
-        returnable.push(JSON.stringify(json1), JSON.stringify(json2));
-    } catch (err) {
-        // error in changing JSON to string
-        logger.error("Error while parsing getSettings");
-        logger.error(err.message);
-        returnable = [];
-        returnable.push("{}", "{}");
-    }
+
+    returnable.app = json1;
+    returnable.kw = json2;
+    
     return returnable;
 
 };
 /* Allows windows to set settings from single place */
 /* 0 is settings for application, 1 is settings for keywords */
-global.setSettings =  function (settings) {
-    //
+global.setSettings = function (settings = {}) {
+    logger.debug("setSettings");
+    //logger.debug(settings);
     var json1 = {};
     var json2 = {};
-    if (!(settings instanceof Array)) {
-        //settings is not an array
+    if (!(settings.constructor === {}.constructor)) {
+        //settings is not an json object
         return [false,1];
     }
-    else if (settings.length !== 2) {
-        //settings array not size of 2
+    else if (Object.keys(settings).length !== 2) {
+        //settings keys not size of 2
         return [false,2];
     }
-    try {
-        json1 = JSON.parse(settings[0]);
-        json2 = JSON.parse(settings[1]);
-    } catch (err) {
-        logger.error("Error while parsing setSettings()");
-        logger.error(err.message);
+    if (!settings.hasOwnProperty("app") || !settings.hasOwnProperty("kw")) {
+        // no app or kw object in settings object
         return [false, 3];
-        // was error in changing incoming string into JSON object
     }
-
+    json1 = settings.app;
+    json2 = settings.kw;
     
     //
     if (parseUtils.validateSettings(json1,1)) {
@@ -239,7 +297,7 @@ global.setSettings =  function (settings) {
             "demo-files": true,
             "latest-update-check": null,
             "latest-update-install": null,
-            "zoom": 1,
+            "zoom": 100,
             "edits": [
                 false,
                 null
@@ -252,7 +310,8 @@ global.setSettings =  function (settings) {
         // settings invalid; need to give out defaults
         json2 = {
 
-            "last-successful-update": null,
+            "last-local-update": null,
+            "last-availability-check": null,
             "available-keywordlists": {
                 "en-basic": {
                     "date": "2018-06-25T13:05:48.801Z",
@@ -301,13 +360,16 @@ global.setSettings =  function (settings) {
 
 /* sends info to all webContents with proper  */
 function forceInterfaceUpdate(intset1 = {}, intset2 = {}) {
-    //
+    logger.debug("forceInterfaceUpdate (app.js)");
+    //logger.debug(intset1);
+    //logger.debug(intset2);
     if (!parseUtils.validateSettings(intset1,1)) {
         //
+        //logger.debug("FAIL 1");
         return false;
     }
     else if (!parseUtils.validateSettings(intset2,2)) {
-        //
+        //logger.debug("FAIL 2");
         return false;
     }
     var webconts = electron.webContents.getAllWebContents();
@@ -316,7 +378,8 @@ function forceInterfaceUpdate(intset1 = {}, intset2 = {}) {
         "app": intset1,
         "kw": intset2
     }
-
+    //logger.debug(webconts);
+    //logger.debug(webconts.length);
     for (var id = 0; id < webconts.length; id++) {
         // send current settings to each renderer process (they need listener for this!!!)
         webconts[id].send('force-interface-update', tobesent);
@@ -339,16 +402,18 @@ createAppStructure();
 //////////////////////////////////////////////////////////// IPC MAIN LISTENERS
 const { ipcMain } = require('electron')
 
-/* This is called to get the file that was tried to use with the application */
-ipcMain.on('get-ext-file-data', function (event) {// This is used to "ask" what the current file / process argument[1] was. "null" is returned default
-    var data = null
-    if (process.platform == 'win32' && process.argv.length >= 2) {
-        var openFilePath = process.argv[1];
-        data = openFilePath;
-    } else {
-        logger.debug("Tried to call for file data when platform was not 'win32' or file was not defined!");
-    }
-    event.returnValue = data;
+
+ipcMain.on('import-wiz-return', function (event, arg) {
+    //
+});
+
+/* This is called to get the file that was tried to use with the application NEEDSTOBECHANGED */
+ipcMain.on('get-ext-file-data', function (event, arg) {// This is used to "ask" what the current file / process argument[1] was. "null" is returned default
+    event.returnValue = pre_project;
+});
+/* This is used to "update" variable here to keep track if project is open or not */
+ipcMain.on('set-project-status', function (event, arg) {
+    current_project = arg;
 });
 
 // create project
@@ -407,7 +472,7 @@ function createDocStructure() {
 }
 
 /* Creates application's folders and settings-files into user's AppData-folder */
-function createAppStructure() {
+function createAppStructure() { //NEEDSTOBECHANGED
     logger.debug("createAppStructure");
     var apppath = app.getPath('userData');
     var appconfigcheck = false;
@@ -427,7 +492,7 @@ function createAppStructure() {
                 "first-use": true,
                 "latest-update-check": null,
                 "latest-update-install": null,
-                "zoom":1,
+                "zoom":100,
                 "app-version": app.getVersion(),
                 "demo-files": demostatus,
                 "edits": [false,null]
@@ -458,15 +523,16 @@ function createAppStructure() {
 
         var appupcheck = CA1_store.get("latest-update-check", null);
         var appupinst = CA1_store.get("latest-update-install", null);
-        var appzoom = CA1_store.get("zoom", 1);
+        var appzoom = CA1_store.get("zoom", 100);
 
         var appfirst = CA1_store.get("first-use", true);
         var appdemos = CA1_store.get("demo-files", false);
-        var appedits = CA1_store.get("edits", false);
+        var appedits = CA1_store.get("edits", [false,null]);
 
-        logger.info("Current ver.: " + app.getVersion() + " Ver. in file: " + appver);
-        if (appver !== app.getVersion()){
-            logger.info("Config version old! Overwriting..."); 
+        //logger.info("Current ver.: " + app.getVersion() + " Ver. in file: " + appver);
+        var appvercheck = parseUtils.validateVersion(appver);
+        if (!appvercheck) {
+            logger.info("Config major version not same as application major version! Overwriting...");
             CA1_store.clear();
             CA1_store.set("app-lang", applang);
 
@@ -478,6 +544,8 @@ function createAppStructure() {
             CA1_store.set("app-version", app.getVersion());
             CA1_store.set("demo-files", appdemos)
             CA1_store.set("edits", appedits)
+        } else {
+            logger.info("Application config major version same or newer as application version!");
         }
         if (typeof(appdemos) !== typeof(true)) {
             appdemos = false;
@@ -488,13 +556,14 @@ function createAppStructure() {
             logger.info("Demofiles created before!");
         } else {
             CA1_store.set("demo-files", true)
-            logger.info("Demofiles not created before! Creating now...");
+            logger.info("Demofiles not created before! Need to create now...");
             // is false, no demofiles have been done yet
         }
 
         // check if consistent with this version, if not, remove and rebuild
     }
     var keyword_file_check = true;
+    logger.debug(keyword_file_check);
     // checking if keyword-config file exists, and if it is file or directory
     if (fs.existsSync(path.join(apppath, 'keywordlists\\keyword-config.json'))) {
         if (fs.statSync(path.join(apppath, 'keywordlists\\keyword-config.json')).isDirectory()) {
@@ -504,7 +573,8 @@ function createAppStructure() {
     else {
         keyword_file_check = false;
     }
-    if (keyword_file_check || !demostatus) {
+    logger.debug(keyword_file_check);
+    if (!keyword_file_check || !demostatus) {
         logger.info("No keyword configuration file found! Creating one with defaults...");
         try {
             if (!fs.existsSync(path.join(apppath, 'keywordlists'))) {
@@ -534,7 +604,8 @@ function createAppStructure() {
         try {
             var CA2_options = {
                 defaults: {
-                    "last-successful-update": null,
+                    "last-local-update": null,
+                    "last-availability-check": null,
                     "available-keywordlists": {
                         "en-basic": {
                             "date": new Date().toISOString(),
@@ -575,6 +646,8 @@ function createAppStructure() {
         catch (err) {
             logger.error("Failed to copy demo files! Reason: " + err.message);
         }
+    } else {
+        logger.info("Demofiles have been made before (we think), and keyword settings file is present (unsure about contents)");
     }
 }
 
@@ -925,6 +998,7 @@ function handleclosing(callback = function (i) { return i;}) {
 
     if (edit_check[0] && (edit_check[1] !== null)) {
         logger.info("Unsaved changes possible! Asking user what to do...");
+        logger.debug(edit_check[0] + " - " + edit_check[1]);
         // ask if want to save changes, or not
         var file_ext = edit_check[1].split('.').pop();
         var proj_name = edit_check[1].split('\\').pop();
@@ -957,17 +1031,21 @@ function handleclosing(callback = function (i) { return i;}) {
                 } catch (err) {
                     logger.error("Error while writing '" + edit_check[1] + "' or removing backup for it! Reason: " + err.message);
                 }
+                callback(0);
             } else {
                 //
+                CA3_store.set("edits", [false, null]);
+
                 logger.info("User decided not to save backup! Removing...");
                 try {
                     fs.unlinkSync(path.join(app.getPath("userData"), "backup_files\\" + proj_name + ".json"));
                 } catch (err) {
                     logger.error("Unable to unlink backup file for '" + edit_check[1] + "'!");
                 }
+                callback(0);
             }
         });
-        callback(0);
+        
     }
     else if (edit_check[1] !== null) {
         logger.info("Unsaved backup possible, even though it was not mentioned! Trying to remove...");
@@ -1015,7 +1093,7 @@ function createWin() {// NEEDSTOBECHANGED
         backgroundColor: '#dadada',
         show: false
     });
-    //mainWindow.toggleDevTools();//ENABLED
+    //mainWindow.toggleDevTools();//ENABLED NEEDSTOBECHANGED
 
     let win2_url = url.format({
         protocol: 'file',
@@ -1030,17 +1108,18 @@ function createWin() {// NEEDSTOBECHANGED
         //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
         mainWindowState.manage(mainWindow);
         // because testing
-        //openWindow.hide();
         mainWindow.show();
-        //openWindow.close();
+        logger.debug("Hiding and closing start window");
+        openWindow.hide();
+        openWindow.close();
     });
 
     mainWindow.on('close', (e) => {
         logger.debug("called close");
 
-        if (app.showExitPrompt) {
+        if (showExitPrompt) {
             e.preventDefault();
-            logger.debug("DEFAULT ON MAINWINDOW (close) PREVENTED");
+            logger.info("Mainwindow closed... prevented app exit!");
 
             var options = {
                 type: 'info',
@@ -1053,7 +1132,7 @@ function createWin() {// NEEDSTOBECHANGED
             dialog.showMessageBox(mainWindow, options, function (index) {
                 if (index === 0) {
                     handleclosing(function (i) {
-                        app.showExitPrompt = false;
+                        showExitPrompt = false;//
                         logger.debug("from handleclosing: '"+i+"'");
                         logger.debug("calling quit inside callback");
                         if (aboutWindow !== null) {
@@ -1062,7 +1141,9 @@ function createWin() {// NEEDSTOBECHANGED
                         } else {
                             logger.warn("Tried to re-close main window, but it was NULL!");
                         }
-                        //app.quit();// should we? need to think about darwin options....
+
+                        app.quit();// should we? need to think about darwin options....
+
                     });
                     logger.debug("after handleclosing");
                 }
@@ -1111,7 +1192,7 @@ app.on('ready', () => {
 
         logger.debug("setupTranslations(app.js)");
         i18n_app = new (require('./assets/translations/i18n'))(true);
-        app.showExitPrompt = true;
+        showExitPrompt = true;
 
         logger.debug("checking first usage...");
         var options = {
@@ -1171,13 +1252,17 @@ ipcMain.on("check-updates", (event, arg) => { // CREATING LISTENERS IN FUNCTION 
 
 autoUpdater.on('checking-for-update', function () {
     logger.info("Current version: " + app.getVersion().toString());
+    var chekcupdatesettings = getSettings();
+    chekcupdatesettings.app["latest-update-check"] = new Date().toISOString();
+    setSettings(chekcupdatesettings);
     //console.log(event);
     var arr = [];
     arr.push(0);
     event.sender.send("check-updates-reply", arr);
 });
     autoUpdater.on('update-available', function (info) {//NEEDSTOBECHANGED
-    logger.info("Update available!");
+        logger.info("Update available!");
+        logger.info(info);
     var ver = info.version;
     var relDat = info.releaseDate;
     var relNote = info.releaseNotes;
@@ -1199,7 +1284,8 @@ autoUpdater.on('checking-for-update', function () {
     */
 });
     autoUpdater.on('error', function (err) {
-        logger.error("Failed to get updates!");
+        logger.error("Failed to get updates! Full error message logged before!");
+        logger.error(err.message);
     var arr = [];
     arr.push(3);
     event.sender.send("check-updates-reply", arr);
@@ -1242,6 +1328,11 @@ autoUpdater.on('update-not-available', function (info) {
 
     autoUpdater.on('update-downloaded', function (info) {//ev, relNot, relNam, relDat, updUrl) {NEEDSTOBECHANGED
         logger.info("Update has been downloaded!");
+
+        var updatedownloadedsettings = getSettings();
+        updatedownloadedsettings.app["latest-update-install"] = new Date().toISOString();
+        setSettings(updatedownloadedsettings);
+
         var ver = info.version;
         var relDat = info.releaseDate;
         var relNote = info.releaseNotes;
@@ -1260,7 +1351,7 @@ autoUpdater.on('update-not-available', function (info) {
 
         dialog.showMessageBox(mainWindow, options, function (index) {
             if (index === 0) {
-                app.showExitPrompt = false;
+                showExitPrompt = false;
                 autoUpdater.quitAndInstall();
             }
             else {
@@ -1300,7 +1391,7 @@ global.createAboutWin = function () {
             resizable: false,
             minWidth: 500,
             minHeight: 500,
-            devTools: true,
+            devTools: false,
             frame: false,
             backgroundColor: '#dadada',
             show: false
@@ -1323,7 +1414,7 @@ global.createAboutWin = function () {
         });
     }
     else {
-        logger.debug("Refocus about-window...");
+        logger.info("Refocus about-window...");
         aboutWindow.focus();
     }
 }
@@ -1331,7 +1422,7 @@ global.createAboutWin = function () {
 global.createDummyDialog = function (callingWindow) {
     var options = {
         type: 'info',
-        title: "NOT IMPLEMENTED",
+        title: "Not Implemented",
         message: "This functionality is not yet implemented!",
         detail: "Click 'ok' to close this notification.",
         buttons: [i18n_app.__('conf-ok', true)]

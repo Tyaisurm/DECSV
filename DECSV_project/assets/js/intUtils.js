@@ -497,8 +497,18 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
     //
     //NEEDSTOBECHANGED
     var settingsJSON = getSettings();
-    var store1 = JSON.parse(settingsJSON[0]);
-    var store2 = JSON.parse(settingsJSON[1]);
+    var store1 = {};
+    var store2 = {};
+    try {
+        store1 = settingsJSON.app;
+        store2 = settingsJSON.kw;
+    } catch (err) {
+        //
+        logger.error("Unable to update settings UI");
+        logger.error(err.message);
+        return;
+        //throw "Unable to update settings UI";
+    }
     var apppath = remote.app.getPath('userData');
     logger.debug("updateSettingsUI");
     /*
@@ -517,6 +527,11 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
     */
 
     var applang = store1["app-lang"];
+    var zoomvalue = store1["zoom"];
+    /*
+     "latest-update-check": null,
+     "latest-update-install": null,
+     */
     $("#settings-app-lang-name").text("Current language: " + selectUtils.getFullLangName(applang));
 
     var kw_update_latest = store2["last-successful-update"];
@@ -646,6 +661,8 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
         }
     }
 
+    $("#settings-zoomslider").val(zoomvalue);
+    $("#settings-zoomslider").trigger("input");
     //
     selectUtils.setKWListAvailable();
     selectUtils.setAppLang();

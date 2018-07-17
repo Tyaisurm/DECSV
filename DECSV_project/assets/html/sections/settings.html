@@ -4,13 +4,14 @@
             <h1>Settings</h1>
             <p class="w3-bar-item w3-border-bottom w3-border-black">Application</p>
             <div class="w3-bar">
-                <div class="w3-bar-item w3-bar" style="width:50%;display:flex;flex-direction:column;">
+                <div class="w3-bar-item w3-bar" style="width:33.33%;display:flex;flex-direction:column;">
                     <p id="settings-app-lang-name" class="w3-bar-item" style="transform:translateX(-13px);">Current language: English</p>
                     <select style="width:200px;" id="app-lang-selector" class="w3-bar-item">
                         <option></option>
                     </select>
                 </div>
-                <div class="w3-bar-item" style="width:50%;">
+                <div class="w3-bar-item" style="width:33.33%;display:flex;flex-direction:column;">
+                    <p id="settings-update-text">Press "Update" to check for updates</p>
                     <div class="w3-bar">
                         <div id="check-app-updates-button" class="w3-bar-item w3-button">
                             <img draggable="false" id="nav-update-icon" class="navbar-image" src="../ui_icons/appbar.reset.png" />
@@ -20,7 +21,12 @@
                             <div id="update-download-progress" style="width:0%;height:100%;" class="w3-blue"></div>
                         </div>
                     </div>
-                    <p id="settings-update-text">Press "Update" to check for updates</p>
+                </div>
+                <div class="w3-bar-item" style="width:33.33%;display:flex;flex-direction:column;">
+                    <div class="w3-bar">
+                        <p class="w3-bar-item" id="settings-zoomvalue-1">UI Size:</p><p class="w3-bar-item" id="settings-zoomvalue-2">100%</p>
+                    </div>
+                    <input type="range" min="50" max="150" value="100" class="slider" id="settings-zoomslider" />
                 </div>
             </div>
         </div>
