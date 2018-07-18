@@ -423,30 +423,6 @@ ipcMain.on('async-create-project', (event, project_name, project_country, projec
     event.sender.send('async-create-project-reply', results);
 });
 
-// NEEDS UPDATE - NOT USED AT THE MOMENT
-// delete project
-ipcMain.on('async-delete-project', (event, arg) => {
-    logger.debug("async-delete-project (at app.js)");
-})
-
-// import files to project folder
-ipcMain.on('async-import-files', (event, arg) => {
-    logger.debug("async-import-files (at app.js)");
-    //srcFiles2Proj(arg[0], event, arg[1]);
-})
-
-// transform source-folder files into temp files :)
-ipcMain.on('async-transform-files', (event, arg) => {
-    logger.debug("async-transform-files (at app.js)");
-    transformSrc2Temp(arg, event);
-})
-
-// NEEDS UPDATE
-// save chosen temp-files into CSV files (aka. output)
-ipcMain.on('async-create-output', (event, arg) => {
-    logger.debug("async-create-output (at app.js)");
-})
-
 ////////////////////////////////////////////////////////////
 
 /* Creates application's folders into user's Documents-folder */
@@ -750,228 +726,6 @@ function createNewProject(proj_name, proj_country, proj_lang) {//
         createDocStructure();
         reason.push(false, 10);
         return reason;
-    }
-}
-
-// NEEDS UPDATE - NOT CURRENTLY USED NEEDSTOBECHANGED
-/* This deletes project directory with given name */
-function removeProject(proj_name) {
-    logger.debug("removeProject");
-    if (proj_name.length === 0 || proj_name.length > 100) {
-        // Projectname length 0 or over 100 characters
-        return false;
-    }
-    else if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))){
-        if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))){
-            if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name))) {
-
-                //  REMOVE PROJECT DIRECTORY HERE!!!!!!
-
-            }
-            else {
-                // No project with given name found!
-                return false;
-            }
-        }
-        else {
-            // Projects-folder not present!
-            return false;
-        }
-    }
-    else {
-        // No Application-folder (at Documents) not present!
-        return false;
-    }
-
-
-}
-
-// NOT CURRENTLY USED NEEDSTOBECHANGED
-/* This function checks and compares temp folder contents of project with it's properties file "temp-files" list */
-function checkTempFiles(proj_name) {
-    //
-    var docpath = app.getPath('documents');
-    var proj_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\');
-
-    if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
-        if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
-            if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp'))) {
-                if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.json'))) {
-                    var temp_files = [];
-                    fs.readdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp'), (err, files) => {
-                        temp_files = files;
-                    });
-
-                    var check_options = {
-                        name: proj_name,
-                        cwd: proj_base
-                    }
-                    //logger.debug("proj_name and proj_base: "+proj_name+" & "+proj_base);
-                    const check_store = new Store(check_options);//
-
-                    var sourceF = check_store.get('source-files', []);
-                    var tempF = check_store.get('temp-files', {});
-                    var tempLang = check_store.get('lang', null);
-                    var tempCountry = check_store.get('country', null);
-                    var proj_ver = check_store.get("version", null);
-
-                    // compare dir contents with proj properties contents, and either add new (valid) files into properties, or remove non-existing from properties
-
-                    for (var proj_f in tempF) {
-                        //
-                    }
-                    ///////////////////////////////////////////////////////////////////////////////
-                    /*
-                    var temp_options = {
-                        defaults: {
-                            "src": fileS.toString(),
-                            "src-data": [],
-                            "subID": 0,
-                            "subDATE": new Date(),
-                            "a": "",
-                            "b": "",
-                            "c": "",
-                            "kw": [],
-                            "done": false,
-                            "lang": tempLang,
-                            "country": tempCountry,
-                            "version": app.getVersion()
-                        },
-                        name: "temp#" + temp_finalname,
-                        cwd: temp_base
-                    }
-                    logger.debug("CREATING TEMP FILE: " + "temp#" + temp_finalname);
-                    const temp_store = new Store(temp_options);
-                    if (temp_store.get("version", null) !== null) {
-                        // checking version found inside...
-                    }
-                    else {
-                        // no version. too old.
-                    }
-                    */
-                    ///////////////////////////////////////////////////////////////////////////////
-
-
-                }
-                else {
-                    // No project properties file
-                    return false;
-                }
-
-            }
-            else {
-                // No project with given name or tempfolder found!
-                return false;
-            }
-        }
-        else {
-            // Projects-folder not present!
-            return false;
-        }
-    }
-    else {
-        // No Application-folder (at Documents) not present!
-        return false;
-    }
-}
-
-/* NEED TO BE DISABLED!!!! */
-/* Imports source files into the project folders */
-function srcFiles2ProjsrcFiles2Proj(files, event, ready_src) { // NEEDSTOBECHANGED
-    logger.debug("srcFiles2Proj");
-    var docpath = app.getPath('documents');
-    var proj_name = files.pop();
-
-    /* This still needs verifications about folders if they exists */
-
-    var source = null;
-    var dest = null;
-    var dest_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source\\');
-    var readStream = null;
-    var writeStream = null;
-    var result = [];
-    result[0] = true;
-    var filename = null;
-    var rcounter = 0;
-    var wcounter = 0;
-    var check = false;
-
-    if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name))) {
-        if (fs.existsSync(dest_base)) {
-
-            // Loop through the array of files to be imported
-            for (var i = 0; i < files.length; i++) {
-                source = files[i];
-                filename = files[i].split('\\').pop();
-                logger.debug("FILENAME: " + filename);
-                logger.debug("ready_SRC: " + ready_src);
-                // Check if file to be imported is already mentioned in project config file
-                for (var k = 0; k < ready_src.length; k++){
-                    logger.debug("testing ready_src: "+k);
-                    if (ready_src[k] === filename) { check = true; break;}
-                }
-                logger.debug(check);
-                if (check) {
-                    check = false;
-                    rcounter++;
-                    logger.warn("Tried to import file with same name as already existing '"+filename+"'. Skipping file import...");
-                    continue;
-                }
-
-                dest = path.join(dest_base, filename);
-                logger.debug("DEST: "+dest);
-                readStream = fs.createReadStream(source);
-                writeStream = fs.createWriteStream(dest);
-
-                readStream.once('error', (err) => {
-                    logger.error("Error while reading source file while importing!");
-                    logger.error(err.message);
-                    rcounter++;
-                    result[0] = false;
-                    result.push("Error reading source file while importing '"+filename+"'");
-                });
-
-                readStream.once('end', () => {
-                    logger.info("Reading source file completed");
-                    rcounter++;
-                });
-
-                writeStream.on('error', function () {
-                    logger.info("Error while writing source file while importing!");
-                    result[0] = false;
-                    result.push("Error writing to target file while importing '" + filename + "'");
-                });
-
-                writeStream.on('finish', function () {
-                    logger.info("Writing source file completed while importing");
-                    wcounter++;
-                    logger.debug("WCOUNTER and RCOUNTER");
-                    logger.debug(wcounter);
-                    logger.debug(rcounter);
-                    logger.debug("FILES LENGTH: " + files.length);
-                    if (rcounter === files.length) {
-                        logger.debug("sending back now");
-                        event.sender.send('async-import-files-reply', result);
-                    }
-                });
-                logger.debug("Before reading and writing...");
-                readStream.pipe(writeStream);
-            }
-        }
-        else {
-            logger.error();
-            result[0] = false;
-            result.push("Project source-folder does not exist!");
-            event.sender.send('async-import-files-reply', result);
-            // Project data .json not present!
-        }
-    }
-    else {
-        logger.error();
-        result[0] = false;
-        result.push("Project's folder does not exist!");
-        event.sender.send('async-import-files-reply', result);
-        // project source folder or other folders not present!
     }
 }
 
@@ -1436,7 +1190,7 @@ global.createDummyDialog = function (callingWindow) {
 // NEEDS TO BE REWORKED TO CHANGE READ DATA INTO JSON FORMAT (to be saved into new .decsv file!!)
 //
 /* Creates temp-files from source files within the project's folders */
-function transformSrc2Temp(proj_name, event, ) { // CUSTOM INPUTNEEDSTOBECHANGED
+function readAndParseSource(proj_name, event, ) { // CUSTOM INPUTNEEDSTOBECHANGED
     logger.debug("transformSrc2Temp");
     var docpath = app.getPath('documents');
     var src_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source\\');
@@ -1519,7 +1273,7 @@ function transformSrc2Temp(proj_name, event, ) { // CUSTOM INPUTNEEDSTOBECHANGED
                         if (fs.existsSync(path.join(src_base, fileS))) {// testing if source file exists at project's source folder
 
                             //logger.debug("before reading");
-                            var returnArr = readSourceFile(path.join(src_base, fileS)); // CUSTOM INPUT
+                            var returnArr = readSourceFile(path.join(src_base, fileS)); // CUSTOM INPUT NEEDSTOBECHANGED
                             logger.debug("AFTER reading");
 
                             mainWindow.webContents.send("output-to-chrome-console", returnArr);

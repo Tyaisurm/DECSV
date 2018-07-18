@@ -93,7 +93,7 @@ $("#view-button").on("click", function () {
 // NEEDS MODIFICATION
 /* This function takes in an array filled with data, and then writes a csv-file based on it */
 // resultArr.push(proj_name, file_store.get("src", ""), file_store.get("subID", 0), file_store.get("subDATE", new Date()), file_store.get("kw", []), done_a, done_b, done_c, file_store.get("lang", ""), file_store.get("country", ""), tempFileName.substring(5, tempFileName.length - 5)
-function writeFile_csv(dataArray) {
+function writeFile_csv(dataArray) {// NEEDSTOBECHANGED
     logger.debug("writeFile_csv");
     var proj_name = dataArray[0];
     var docpath = app.getPath('documents');
@@ -212,7 +212,7 @@ function addFile2List(file, status) {
 
 // NEEEEEDS MODIFICATION
 
-function parseDoneFiles(proj_name) {
+function parseDoneFiles(proj_name) {// NEEDSTOBECHANGED
     logger.debug("parseDoneFiles: " + proj_name);
     var docpath = app.getPath('documents');
     var src_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source\\');
@@ -407,7 +407,7 @@ function parseDoneFiles(proj_name) {
 }
 
 // NEEDS MODIFICATION
-function notesOutput(proj_name) {
+function notesOutput(proj_name) {// NEEDSTOBECHANGED
     logger.debug("notesOutput");
     var docpath = app.getPath('documents');
     var proj_prop = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\' + proj_name + '.json');

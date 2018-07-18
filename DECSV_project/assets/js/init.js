@@ -51,67 +51,19 @@ const Store = require("electron-store");
 const intUtils = require(path.join(__dirname, './intUtils.js'));
 const parseUtils = require(path.join(__dirname, './parseUtils.js'));
 
+/* so that MAIN-process stuff can be outputted to console, too */
 ipcRenderer.on('output-to-chrome-console', function (event, data) {
     console.log("#%#%#%#%#% OUTPUT_CHROME %#%#%%#%#%#%");
     console.log(data);
 });
 
+/* Someone opened file with this app! */
 ipcRenderer.on("force-open-project", function (event, filepath) {
     // 
     logger.info("Called open project from main process!");
     logger.info("PATH: " + filepath);
     openAndViewProject(filepath);
 });
-
-/*
-$.fn.select2.amd.define('select2/i18n/current_lang', [], function () {
-    // Current language $("#open-file-prompt-text").text(i18n.__('open-files'));
-    return {
-        errorLoading: function () {
-            return i18n.__('select2-cannot-load');
-        },
-        inputTooLong: function (args) {
-            var overChars = args.input.length - args.maximum;
-            var message = i18n.__('select2-del-char-p1') + overChars;
-            if (overChars < 2){
-                message += i18n.__('select2-del-char-p2-1')
-            }
-            else if (overChars >= 2) {
-                message += i18n.__('select2-del-char-p2-2');
-            }
-            return message;
-        },
-        inputTooShort: function (args) {
-            var remainingChars = args.minimum - args.input.length;
-
-            var message = i18n.__('select2-add-char-p1') + remainingChars + i18n.__('select2-add-char-p2');
-
-            return message;
-        },
-        loadingMore: function () {
-            return i18n.__('select2-loading-more');
-        },
-        maximumSelected: function (args) {
-            var message = i18n.__('select2-select-p1') + e.maximum;
-
-            if (args.maximum < 2) {
-                message += i18n.__('select2-select-p2-1');
-            }
-            else if (args.maximum >= 2){
-                message += i18n.__('select2-select-p2-2');
-            }
-
-            return message;
-        },
-        noResults: function () {
-            return i18n.__('select2-no-results');
-        },
-        searching: function () {
-            return i18n.__('select2-searching');
-        }
-    };
-});
-*/
 
 /* Getting global functions.... */
 let aboutCreatFunc = remote.getGlobal('createAboutWin');// does not take parameters
@@ -168,43 +120,7 @@ document.getElementById("win-close-icon").onclick = function () {
     // checking if we have project and/or event open
     if (window.currentProject !== undefined) {
         logger.info("Project open while closing the main window! window.currentProject = '"+window.currentProject+"'");
-        /*
-    // going through yellow file list elements (as in currently opened/selected)
-        $('#proj-files-ul li.w3-yellow').each(function (i) {
-            done = ($(this).attr('data-done') === "true");
-            country = $(this).attr('data-country');
-            country = $(this).attr('data-lang');
-        });
-    
-        // since we are closing, we need to clear the edit sections of the UI
-
-        // clearing translations (no need to have them saved)
-        $("#edit-A-orig-text .secA-Q").empty();
-        $("#edit-B-orig-text .secB-Q").empty();
-        for (var k = 1; k < 15; k++) {
-            $("#edit-C-orig-text .secC-Q-" + k).empty();
-        }
-
-        // taking text to be saved
-        var dataA = $("#edit-A-orig-text").html();
-        var dataB = $("#edit-B-orig-text").html();
-        intUtils.sectionUtils.clearCsectionUI();
-        var dataC = $("#edit-C-orig-text").html();
-        var dataKW = [];
-        $("#file-chosen-kw-ul li").each(function (i) {
-            var value = $(this).attr("data-value").substring(3, test.length - 1);
-            //$(this).find('span').remove(); // no need to remove span, since we don't need text
-            dataKW.push(value);
-        });
-        var notes = [];
-        $("#proj-notes-ul li").each(function (i) {
-            var text = $(this).ignore("span").text();
-            notes.push(text);
-        });
-
-        // saving these to window-variable and backup, but since we are closing, but NO into actual file (no need to promp, because handleClosing() deals with it)
-        saveProject(0, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
-        */
+        
     }
     else {
         logger.info("No open project while closing main window! Window.currentProject undefined!");
@@ -912,40 +828,7 @@ document.getElementById("secCmodetoggle").onclick = function () {
     intUtils.toggleViewMode(4);
     intUtils.toggleViewMode(9);
 }
-//////////////////////////////////////////////////////////////////////////////////////////////
-/* Login/Register div */
-//
 
-//window.onload = function () {
-    /*
-    function getHighlightedWords() {
-        var text = "";
-        var activeEl = document.activeElement;
-        var activeElTagName = activeEl ? activeEl.tagName.toLowerCase() : null;
-        if (
-            (activeElTagName == "textarea") || (activeElTagName == "input" &&
-                /^(?:text|search|password|tel|url)$/i.test(activeEl.type)) &&
-            (typeof activeEl.selec
-
-
-
-tionStart == "number")
-        ) {
-            text = activeEl.value.slice(activeEl.selectionStart, activeEl.selectionEnd);
-        } else if (window.getSelection) {
-            text = window.getSelection().toString();
-        }
-        if (text.length !== 0) {
-            console.log("TÄMÄ ON VALITTU: " + text);
-        }
-        else {
-            //
-        }
-    }
-    document.onmouseup = document.onkeyup = document.onselectionchange = function () {
-        getHighlightedWords();
-    };
-*/
 
 /* Index div footer */
 ///////////////////////////////////////////////////////////////////////////////////////////// INDEX FOOTER WINDOW LISTENERS / BUTTONS
@@ -1178,9 +1061,6 @@ document.getElementById("footer-nav-btn6").onclick = function () {//
 }
 /////////////////////////////////////////////////////////////////////////////////////////
 
-
-///////////////////////////////////////////////////////////////
-
 /////////////////////////////////////////////////////////////// FUNCTIONS
 
 /* collects settings from settings view and sends back new json object with these */
@@ -1316,92 +1196,6 @@ function createProjAsync(project_name = "", project_country = "", project_lang =
             }
         });
     }
-}
-
-/* NEED TO BE DEACTIVATED!!! */
-/* Handles moving source files into project folder and generating temp-files ASYNC!! (IPC to app.js) */
-function sourceFiles2ProjAsync(files) { // Last object of "files" will be name of the project where files will be added to NEEDSTOBECHANGED
-    logger.debug("sourceFiles2ProjAsync");
-    var proj_name = files[files.length - 1];
-    var docpath = remote.app.getPath('documents');
-
-    var f2p_options = {
-        name: proj_name,
-        cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\')
-    }
-    const f2p_store = new Store(f2p_options);//
-    var pre_dirfiles = f2p_store.get('source-files', []);
-    logger.debug(pre_dirfiles);
-
-    ipcRenderer.on('async-import-files-reply', (event, arg) => {
-        logger.debug("BACK FROM APP - import files into project");
-        var dirfiles = fs.readdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source\\'));
-        logger.debug(docpath);
-        logger.debug(dirfiles);
-        //console.log("RETURNED FROM APP: ");
-        //console.log(arg);
-        if (arg[0]) {
-            // do something if importing was successful
-            logger.debug("DONE IMPORTING SOURCE FILES!");
-        }
-        else {
-            logger.debug("ERROR WHILE IMPORTING!");
-            var reason1 = arg[1];
-            // SHOW REASON TO USER! 
-        }       
-        logger.debug("STORE SOURCE: "+f2p_store.get("source-files","NONE!!!!"));
-        f2p_store.set("source-files", dirfiles);
-        ipcRenderer.removeAllListeners('async-import-files-reply');
-
-        ipcRenderer.on('async-transform-files-reply', (event, arg) => {
-            logger.debug("BACK FROM APP - returned from transforming src files to temp");
-            if (arg[0]) {
-                logger.info("SRC to TEMP conversion success!");
-                // successfully ended the temp conversion
-                logger.debug("SUCCESS AND FAIL ARRAYS");
-                logger.debug(arg[1]);//success array
-                logger.debug(arg[2]);//fail array
-                // filearr 0 = fileoriginal, 1 = filetemp, 2 = filedonestatus
-
-                // fileS,"temp#"+fileS+".json",false
-                for (var a = 0; a < arg[1].length; a++) {
-                    var fileArr = [];
-                    fileArr.push(arg[1][a][0], arg[1][a][1],arg[1][a][2]); // NEEDS UPDATE!!!!!! CUSTOM INPUT
-                    addProjFile(fileArr);
-                }
-            }
-            else {
-                logger.error("SRC to TEMP conversion failed!");
-                var reason2 = arg[1];
-                // SHOW REASON TO USER!
-
-                //folders missing
-            }
-            //var testing_opt = {
-            //    name: "temp#"+arg[1][0],
-            //    cwd: path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp\\')
-            //}
-            /*
-            const testing_store = new Store(testing_opt);
-            var teststring = testing_store.get("c","AHAHAHAHAHAHAHAH");
-            //THIS IS FOR TESTING
-            $("#edita-div").addClass("is-shown");
-            $("#edit-A-edit-text").html(teststring);
-            */
-
-            //updateFileList(proj_name);
-            ipcRenderer.removeAllListeners('async-transform-files-reply');
-        });
-        ipcRenderer.send('async-transform-files', proj_name);
-    });
-    logger.debug("SENDING ASYNC TO MAIN APP!");
-    var send_arg = [];
-    send_arg.push(files);
-    send_arg.push(pre_dirfiles);
-    logger.debug("########### LISTING FILELIST GOING TO BE SENT");
-    logger.debug(files);
-    logger.debug(pre_dirfiles);
-    ipcRenderer.send('async-import-files', send_arg);
 }
 
 /* Reads through list of temp-files from proj_properties and then adds them to the EDIT-view filelist */
@@ -1545,38 +1339,6 @@ function openAndViewProject(proj_location) {
     // Adding simple details to UI:
     $("#proj-info-name").text("Project Name: \"" + proj_name + "\"");
     $("#proj-info-created").text("Created: " + new Date(json_file["created"]));//NEEDSTOBECHANGED
-
-    //var source_files = open_store.get("source-files", null);
-    //console.log(source_files);
-
-
-    //var temp_files = open_store.get("temp-files", {});
-    //console.log(temp_files);
-    /*
-    for (var k in temp_files) {
-        console.log("1: ");
-        console.log(k);
-        if (temp_files.hasOwnProperty(k)) {
-            console.log("2: ");
-            console.log(temp_files[k]);
-            console.log(temp_files[k].file);
-        }
-    }
-    */
-
-    //var kw_per_file = open_store.get("kw-per-file", null);
-    //console.log(kw_per_file);
-
-    /*
-    for (var k in kw_per_file) {
-        console.log("#1: ");
-        console.log(k);
-        if (kw_per_file.hasOwnProperty(k)) {
-            console.log("#2: ");
-            console.log(kw_per_file[k]);
-        }
-    }
-    */
 
     var proj_notes = json_file["notes"];
     //console.log("NOTES: ");
@@ -2070,82 +1832,10 @@ function saveSettings() {
 }
 
 
-
-
-/*
-function continueQueue() {
-    var files_left = window.fileQueue.length;
-    if (files_left >= 1) {
-        toggleViewMode(0);
-        clearElements();
-        readFile(window.fileQueue);
-    }
-    else if (files_left === 0) {
-
-        var options = {
-            type: 'info',
-            title: window.i18n.__('queue-empty-conf-title'),
-            message: window.i18n.__('queue-empty-conf-cont'),
-            buttons: [window.i18n.__('conf-ok')]
-        };
-
-        dialog.showMessageBox(firstWindow, options, function (index) {
-            clearElements();
-            toggleViewMode(1);
-        });
-    }
-    else {
-        logger.error("Unable to continue into the next file in queue!");
-    }
-}
-*/
-
-/*
-function updateFileQueue(files) {
-    //console.log(files);
-    var filename = null;
-    if (files.length > 0) {
-        filename = files.pop();
-        window.fileQueue = files;
-        //console.log("ASD 1");
-        $("#file-queue-counter-value").text(window.fileQueue.length);
-    }
-    else {
-        //console.log("ASD 2");
-        $("#file-queue-counter-value").text(window.fileQueue.length);
-    }
-    return filename;
-}
-*/
-
-
 /* Show file import wizard so that new files may be imported into current project */
 function addFilesPrompt() {
     logger.debug("addFilesPrompt");
-    //var project_name = window.currentProject;
-
-    //var docpath = remote.app.getPath('documents');
-    /*
-    var options = {
-        title: i18n.__('open-file-prompt-window-title'),
-        defaultPath: docpath,
-        filters: [
-            { name: 'Spreadsheet', extensions: ['csv'] }
-        ],
-        properties: ['openFile'
-        ]
-    }//, 'xls', 'xlsx', 'multiSelections'<<<<--- because we need to ask where is this file from
-    function callback(fileNames) {
-
-        if (fileNames !== undefined) {
-            fileNames.push(project_name);
-            sourceFiles2ProjAsync(fileNames);// NEEDSTOBECHANGED
-            return;
-        }
-        logger.warn("No file(s) chosen to be opened!");
-    }
-    dialog.showOpenDialog(firstWindow, options, callback);
-    */
+    
     logger.debug("create import wizard");
     logger.info("Opening import wizard -window...");
     fileWizard = new BrowserWindow({
@@ -2178,132 +1868,6 @@ function addFilesPrompt() {
         fileWizard = null;
     });
 }
-
-///NEEDS UPDATE
-/* This function parses data for textareas that are CURRENTLY USED
-        => Will be changed */
-/*
-function showQuizData(data) {
-    //console.log("INSIDE SHOW QUIZ DATA");
-    showCsecData(data); //, 4, data[0].length - 1);
-    var result = [];
-    if (data[2] === undefined) {
-        //console.log(data[2]);
-        logger.warn("Third line (keywords) is not available in current file!");
-    }
-    else {
-        result = data[2];
-    }
-
-    var data_A = data[1][2];
-    var data_B = data[1][3];
-    $("#secAcontent").text(data_A);
-    $("#secBcontent").text(data_B);
-
-    $("#aside-subID-value").text(data[1][0]);
-    $("#aside-subTIME-value").text(data[1][1]);
-
-    return result;
-}
-*/
-
-///NEEDS UPDATE
-/* This function puts C section answers into right places */
-/*
-function showCsecData(section_data) {
-    //console.log("#############");
-    var line = 1;
-    for (var i = 4; i < section_data[1].length - 1; i++) {
-        //console.log(section_data[1][i]);
-        var lineId = "#secC-Q" + line + "-cont";
-        $(lineId).text(section_data[1][i]);
-        line++;
-    }
-}
-*/
-
-///NEEDS UPDATE
-/* This function shows pre-selected words from the file */
-/*
-function loadKeyWords(keys) {
-    for (var i = 0; i < keys.length; i++) {
-        var to_appended = '<li class="list-keys-elem">' + keys[i] + '</li>';
-        $("#aside-key-list").append(to_appended);
-        paintEmAll(keys[i], 0);
-    }
-    updateKeywordsList();
-}
-*/
-
-///NEEDS UPDATE
-/*
-function updateKeywordsList() {
-    var elements = [];
-    $("#aside-key-list li").each(function (i) {
-        elements.push($(this).text());
-    });
-    elements.sort();
-    $("#aside-key-list").empty();
-
-    for (var i = 0; i < elements.length; i++) {
-        var to_appended = '<li class="list-keys-elem">' + elements[i] + '</li>';
-        $("#aside-key-list").append(to_appended);
-    }
-}
-*/
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
-
-
-///NEEDS UPDATE
-/* True if is found, false otherwise */
-/*
-function testKeywordList(word) {
-
-    var found = false;
-
-    $("#aside-key-list li").each(function (i) {
-        //var index = $(this).index();
-        var text_cont = $(this).text();
-        if (text_cont === word) {
-            found = true;
-        }
-    });
-    return found;
-}
-*/
-
-///NEEDS UPDATE
-// mode 0 = paint all words as "keys"; mode 1 = remove "keys" marks from words
-/*
-function paintEmAll(word, mode) {
-    //Section A
-    $("#secAcontent .word").each(function (i) {
-        var current_w = $(this).text();
-        if ((current_w.toLowerCase() === word.toLowerCase()) && !($(this).hasClass("censored"))) {
-            if (mode === 0) { $(this).addClass("underlined"); }
-            if (mode === 1) { $(this).removeClass("underlined"); }
-        }
-    });
-    //Section B
-    $("#secBcontent .word").each(function (i) {
-        var current_w = $(this).text();
-        if ((current_w.toLowerCase() === word.toLowerCase()) && !($(this).hasClass("censored"))) {
-            if (mode === 0) { $(this).addClass("underlined"); }
-            if (mode === 1) { $(this).removeClass("underlined"); }
-        }
-    });
-    //Section C
-
-    $("#secCtext-content .word").each(function (i) {
-        var current_w = $(this).text();
-        if ((current_w.toLowerCase() === word.toLowerCase()) && !($(this).hasClass("censored"))) {
-            if (mode === 0) { $(this).addClass("underlined"); }
-            if (mode === 1) { $(this).removeClass("underlined"); }
-        }
-    });
-
-}
-*/
 
 /* THIS IS SETTING UP UI TRANSLATION */
 function setupTranslations(applang = "en") {
