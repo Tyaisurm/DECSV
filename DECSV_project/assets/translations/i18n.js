@@ -10,8 +10,8 @@ let app = electron.app ? electron.app : electron.remote.app
 module.exports = i18n;
 
 function i18n(check = false) {
-    logger.debug("Called from main process?: " + check);
-    var locale = "en";//app.getLocale();
+    logger.info("Created 'i18' instance at app.js: " + check);
+    var locale = "en";// default value
      
      
     //const Store = require('electron-config');
@@ -21,13 +21,13 @@ function i18n(check = false) {
         cwd: app.getPath('userData')
     }
     const langstore = new Store(langstore_options);
-    var lang = langstore.get('app-lang', 'NOT_FOUND');
+    var lang = langstore.get('app-lang', null);
     
 
     //if (!!/[^a-zA-Z]/.test(locale)) {
     //    locale = locale.substring(0, 2);
     //}
-    if (lang !== 'NOT_FOUND') {
+    if (lang !== null) {
         logger.info("language aquired from configuration file: " + lang);
         locale = lang;
     }

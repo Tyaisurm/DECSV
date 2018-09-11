@@ -1,10 +1,12 @@
 ﻿const electron = require('electron');
 const remote = electron.remote;
+const fs = require('fs');
+const path = require('path');
 
 const logger = require("electron-log");
 
-function CSVtoArray(strData, strDelimiter) {
-    logger.debug("CSVtoArray");
+function CSVtoArrayBOS(strData, strDelimiter) {
+    logger.debug("CSVtoArrayBOS");
     // Check to see if the delimiter is defined. If not,
     // then default to comma.
     strDelimiter = (strDelimiter || ";");
@@ -89,14 +91,14 @@ function CSVtoArray(strData, strDelimiter) {
 
 
 /* This function takes in raw data from read .csv file and turns it into arrays (ONLY CSV FORMATS!!!) */
-function parseCSV2Array(csv) {
+function CSVtoArrayWebpro(csv, separator = ";") {
     logger.debug("parseCSV2Array");
     //logger.debug(csv);
     //console.log("RAW CSV DATA IN");
     //console.log(csv);
 
     var separators = ['\"\",\"\"', ',\"\"', '\"\"'];
-    //var separators_NEW = ['\";\"']; // the second " at the start and the end of the line need to be removed seperately (this->" something ";" something 2 "<-this)
+    //var separators = ['\";\"', '\";', ]; // the second " at the start and the end of the line need to be removed seperately (this->" something ";" something 2 "<-this)
     var newlines = ['\r\n', '\n']; //<- so that no weird stuff happens... hopefully
 
     //console.log(typeof (csv));
@@ -117,10 +119,10 @@ function parseCSV2Array(csv) {
         lines[2] = lines[2].substring(1, lines[2].length - 3);
     }
 
-    var headers = lines[0].split(new RegExp(separators_NEW.join('|'), 'g'));
-    var contents = lines[1].split(new RegExp(separators_NEW.join('|'), 'g'));
+    var headers = lines[0].split(new RegExp(separators.join('|'), 'g'));
+    var contents = lines[1].split(new RegExp(separators.join('|'), 'g'));
     if (lines[2].length !== 0) {
-        var keys = lines[2].split(new RegExp(separators_NEW.join('|'), 'g'));
+        var keys = lines[2].split(new RegExp(separators.join('|'), 'g'));
     }
     //console.log(">>>>>>>>>>>>>>>>>>>>>>>>HEADERS");
     //console.log(headers);
@@ -151,15 +153,182 @@ function parseCSV2Array(csv) {
 
     return result;
 }
-// NOT DONE
+
+/* for excel files */
+function CSVtoArrayExcel(text) {
+    logger.debug("CSVtoArray");
+    //logger.debug(text);
+    var re_valid = /^\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*(?:,\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*)*$/;
+    var re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
+    // Return NULL if input string is not well formed CSV string.
+    if (!re_valid.test(text)) {
+        return null;
+    }
+    var arr = [];                     // Initialize array to receive values.
+    text.replace(re_value, // "Walk" the string using replace with callback.
+        function (m0, m1, m2, m3) {
+            // Remove backslash from \' in single quoted values.
+            if (m1 !== undefined) arr.push(m1.replace(/\\'/g, "'"));
+            // Remove backslash from \" in double quoted values.
+            else if (m2 !== undefined) {
+                arr.push(m2.replace(/\\"/g, '"'));
+            }
+            else if (m3 !== undefined) {
+                arr.push(m3);
+            }
+            return ''; // Return empty string.
+        });
+    // Handle special case of empty last value.
+    if (/,\s*$/.test(text)) {
+        arr.push('');
+    }
+    return arr;
+}
+
+// NOT DONE NEEDSTOBECHANGED
 /* check if the csv form is valid, and call proper function based on given tool name */
-function validateAndParseCSV(csv_data, lert_tool) {
-    if (lert_tool !== undefined && csv_data) {
-        //
+function validateAndParseCSV(csv_data = null, lert_tool = null, lert_delimiter = null) {
+    logger.debug("validateAndParseCSV");
+    logger.info("Validating and parsing CSV string...");
+    // check incoming values....
+    if (csv_data === null || lert_tool === null || lert_delimiter === null) {
+        logger.error("CSV data, survey tool, or delimiter was null!");
+        return [false, 1, []];
+    } else if (typeof lert_tool != typeof 123) {
+        logger.error("Survey tool was not a numeric value!");
+        return [false, 2, []];
+    } else if (typeof lert_delimiter != typeof 123) {
+        logger.error("Delimiter was not a numeric value!");
+        return [false, 3, []];
+    } else if (typeof csv_data != typeof "asd") {
+        logger.error("CSV data was not string!");
+        return [false, 4, []];
+    }
+    logger.info("Variables ok!");
+    var delimiters = {};
+    var tempdelimiters = [];
+
+    try {
+        logger.info("Reading delimiters file...");
+        tempdelimiters = JSON.parse(fs.readFileSync(path.join(__dirname, "../select2/delimiters.json"), "utf8"));
+        if (!(tempdelimiters instanceof Array)) {
+            logger.warn("Delimiters from file not array!");
+            delimiters = {}
+        } else {
+            for (var s = 0; s < tempdelimiters.length; s++) {
+                delimiters[s] = tempdelimiters[s].name;
+            }
+        }
+    }
+    catch (err) {
+        logger.error("Error opening delimiters file: " + err.message);
+        delimiters = {}
+    }
+    if (delimiters.hasOwnProperty(lert_delimiter) && lert_delimiter !== 0) {
+        logger.info("Delimiters had searched delimiter value!");
+        lert_delimiter = delimiters[lert_delimiter];
+    } else {
+        logger.error("Chosen delimiter does not exist in file, or was default! Value: " + lert_delimiter);
+        lert_delimiter = null;
+    }
+    logger.debug("DELIMITER: " + lert_delimiter);
+
+    if (lert_delimiter === null) {// this means that we need to define this based on lert_tool... 
+        logger.info("Delimeter null! Needs to be defined by lert_tool value: " + lert_tool);
+        switch (lert_tool) {
+            case 0:
+                //BOS
+                logger.debug("case BOS");
+                lert_delimiter = ",";
+                break;
+            case 1:
+                //GF
+                logger.debug("case GF");
+                lert_delimiter = ",";
+                break;
+            case 2:
+                //Webropol
+                logger.debug("case Webropol");
+                lert_delimiter = ";";
+                break;
+            default:
+                //unknown
+                logger.debug("case unknown");
+                lert_delimiter = ",";
+        }
     }
 
-    // return [status, reason, parsed_data]
-    return [false, "THIS IS DUMMY RESPONSE"];
+    var parsed = CSVtoArrayBOS(csv_data, lert_delimiter);
+    
+    // we need to validate array here before sending it... so that we have proper amount of lines available based on lert_tool value
+    // for example, the right amount of lines for BOS result is 24
+    // these results need to be parsed into PROPER internal format before sending...
+    return [true,0,parsed];
+}
+
+/* Parses array from csv->array conversion to wanted form */
+function parseArray(tool = -1, arr = [], survey_ver = -1) {// returns [boolean, statuscode, arr]  
+    logger.debug("parseArray");
+    logger.info("Selecting and parsing based on survey tool: " + tool);
+    //logger.debug(typeof (tool));
+    logger.error("PARSEARRAY FUNCTION NOT IMPLEMENTED YET!");
+    return [false, 1, []];
+    /*
+     
+     [ "event-desc", "event-relevancy", #profession-INT, "profession-other", #age-INT, #gender-INT, #yearinprog-INT, #eventplacement-INT, 
+     eventplacement-other", [#eventrelated-INT], "eventrelated-other", #typeofevent-INT, #reportedsystem-INT, "ifnotwhy", #reportedfiles-INT, "ifnotwhy" ] 
+     
+     */
+    var completedata = [];
+    switch (tool) {
+        case -1:
+            logger.info("No tool defined!");
+            return [false, 1, []];
+            break;
+        case 0:
+            // BOS
+            logger.info("BOS");
+            return [false, 1, []];
+            break;
+        case 1:
+            // Google Forms
+            logger.info("google forms");
+            try {
+                for (var i = 0; i < arr.length; i++) {
+                    var cursurv = arr[i];
+                    //now loop single survey form
+                    completedata[i] = [];
+                    completedata[i][0] = cursurv[1];
+                    completedata[i][1] = cursurv[2];
+                    if (Number.isNaN(parsed)) {
+                        //
+                    }
+                    completedata[i][2] = Number.parseInt(cursurv[3], 10);//
+                }
+
+            } catch (e) {
+                logger.error("Unable to parse Google Forms array!");
+                logger.error(e.message);
+                return [false,3,[]];
+            }
+
+            break;
+        case 2:
+            logger.info("webropol");
+            return [false, 1, []];
+            // Webropol
+            break;
+        default:
+            //
+            logger.error("Unknown tool defined!");
+            return [false, 2, []];
+    }
+    //bceause we beed temp return value
+    //logger.info("RETURNING TEST ARRAY AS PARSED ARRAY TO BE IMPORTED!");
+    //var modarr = ["Lorem Ipsum THIS IS SECTION A", "Lorem Ipsum THIS IS SECTION B", "-1", "THIS IS OTHER PROFESSION", 1, 1, 1, -1, "THIS IS EVENT PLACEMENT OTHER", [1, 4, -1], "THIS IS OTHER RELATED", 2, 1, "TEST SYSTEM REPORT", 1, "TEST PATIENT REPORT"];
+    //return [true, 0, [modarr, modarr, modarr]];
+    //return [false, 1, []];
+    return [true, 0, completedata];
 }
 
 /* Validate file contents (proper data exits inside JSON file) */
@@ -407,23 +576,31 @@ function validateProjectJSON(json_data = {}) {// NEEDSTOBECHANGED errors give ou
 
 function validateVersion(version = "0.0.0") {
     logger.debug("validateVersion");
+    var verregex = /[\d]+/g;
     const app = electron.app ? electron.app : electron.remote.app;
-    var prog_ver_1 = version.split(".");
-    var prog_ver_2 = app.getVersion().split(".");
+    var prog_ver_1 = version.match(verregex);
+    var prog_ver_2 = app.getVersion().match(verregex);
     logger.info("Comparing versions from file...");
     logger.info("Current app version is '" + app.getVersion() + "', current file version is '" + version + "'");
 
+    if (!(prog_ver_1.length === 3)) {
+        // version number not length 3! invalid!
+        logger.error("Tested version variable doesn't have 3 values!");
+        return false;
+    }
+
     // changing version numbers into integers
     for (var pr1 = 0; pr1 < prog_ver_1.length; pr1++) {
-        prog_ver_1[pr1] = parseInt(prog_ver_1[pr1])
+        prog_ver_1[pr1] = parseInt(prog_ver_1[pr1], 10)
     }
     for (var pr2 = 0; pr2 < prog_ver_2.length; pr2++) {
-        prog_ver_2[pr2] = parseInt(prog_ver_2[pr2])
+        prog_ver_2[pr2] = parseInt(prog_ver_2[pr2], 10)
     }
 
     // testing if project version is higher (major version eg. "2.x.x") than file
     if (prog_ver_1[0] < prog_ver_2[0]) {
         // project version is lower than application version
+        logger.warn("Tested version lower than application version!");
         return false;
     }
     else {
@@ -479,13 +656,15 @@ function validateSettings(settings = {}, mode = -1) {
                     return false;
                 }
                 if (settings.hasOwnProperty("app-version")) {
-                    if (typeof(settings["app-version"]) !== "string") {
+                    if (typeof (settings["app-version"]) !== "string") {
                         //console.log("version is not a string");
                         //return [false, 35];
                         logger.debug("FAIL 5");
                         return false;
                     }
-                    var ver_test = settings["app-version"].split(".");
+                    var verregex = /[\d]+/g;
+                    var ver_test = settings["app-version"].match(verregex);
+
                     if (ver_test.length !== 3) {
                         //console.log("version number array is not length 3");
                         //return [false, 36];
@@ -603,7 +782,10 @@ function validateSettings(settings = {}, mode = -1) {
     } else if (mode === 2) {
         logger.debug("MODE 2");
         // keyword settings
-        /*"last-successful-update": null,
+        /*
+         * "last-local-update": null,
+	       "last-availability-check": null,
+
             "available-keywordlists": {
                 "en-basic": {
                     "date": "2018-06-25T13:05:48.801Z",
@@ -635,144 +817,156 @@ function validateSettings(settings = {}, mode = -1) {
         typeof(qwe["asdasd"]) === "object"
         true
          */
-        if (settings.hasOwnProperty("last-successful-update")) {
-            if (settings["last-successful-update"] === null || !Number.isNaN(Date.parse(settings["last-successful-update"]))) {
-                if (settings.hasOwnProperty("available-keywordlists")) {
-                    if (settings["available-keywordlists"].constructor === {}.constructor) {
-                        // validate all and loop
-                        var avkwo = {};
-                        for (var avkw in settings["available-keywordlists"]) {
-                            avkwo = settings["available-keywordlists"][avkw];
-                            if ((avkwo.constructor === {}.constructor) && (typeof(avkw) === "string")) {
-                                if (avkwo.hasOwnProperty("date")) {
-                                    //
-                                    if (!Number.isNaN(Date.parse(avkwo["date"]))) {
-                                        if (avkwo.hasOwnProperty("name")) {
-                                            if (typeof (avkwo["name"]) === "string") {
-                                                // everything ok. proceed...
-                                            } else {
-                                                // name not string
-                                                logger.debug("FAIL 24");
-                                                return false;
-                                            }
-                                        } else {
-                                            // no name field
-                                            logger.debug("FAIL 25");
-                                            return false;
-                                        }
-                                    } else {
-                                        // invalid date field
-                                        logger.debug("FAIL 26");
-                                        return false;
-                                    }
-                                } else {
-                                    // no date field on available kw
-                                    logger.debug("FAIL 27");
-                                    return false;
-                                }
-                            } else {
-                                // content not json object, or it's key is not string
-                                logger.debug("FAIL 28");
-                                return false;
-                            }
-                        }
-                        if (settings.hasOwnProperty("local-keywordlists")) {
-                            if (settings["local-keywordlists"].constructor === {}.constructor) {
+        if (settings.hasOwnProperty("last-local-update")) {
+            if (settings["last-local-update"] === null || !Number.isNaN(Date.parse(settings["last-local-update"]))) {
+                if (settings.hasOwnProperty("last-availability-check")) {
+                    if (settings["last-availability-check"] === null || !Number.isNaN(Date.parse(settings["last-availability-check"]))) {
+                        if (settings.hasOwnProperty("available-keywordlists")) {
+                            if (settings["available-keywordlists"].constructor === {}.constructor) {
                                 // validate all and loop
-                                var lkwo = {};
-                                for (var lkw in settings["local-keywordlists"]) {
-                                    lkwo = settings["local-keywordlists"][lkw];
-                                    if ((lkwo.constructor === {}.constructor) && (typeof (lkw) === "string")) {
-                                        if (lkwo.hasOwnProperty("date")) {
-                                            if (!Number.isNaN(Date.parse(lkwo["date"]))) {
-                                                if (lkwo.hasOwnProperty("name")) {
-                                                    if (typeof (lkwo["name"]) === "string") {
+                                var avkwo = {};
+                                for (var avkw in settings["available-keywordlists"]) {
+                                    avkwo = settings["available-keywordlists"][avkw];
+                                    if ((avkwo.constructor === {}.constructor) && (typeof (avkw) === "string")) {
+                                        if (avkwo.hasOwnProperty("date")) {
+                                            //
+                                            if (!Number.isNaN(Date.parse(avkwo["date"]))) {
+                                                if (avkwo.hasOwnProperty("name")) {
+                                                    if (typeof (avkwo["name"]) === "string") {
                                                         // everything ok. proceed...
                                                     } else {
                                                         // name not string
-                                                        logger.debug("FAIL 29");
+                                                        logger.debug("FAIL 24");
                                                         return false;
                                                     }
                                                 } else {
                                                     // no name field
-                                                    logger.debug("FAIL 30");
+                                                    logger.debug("FAIL 25");
                                                     return false;
                                                 }
                                             } else {
                                                 // invalid date field
-                                                logger.debug("FAIL 31");
+                                                logger.debug("FAIL 26");
                                                 return false;
                                             }
                                         } else {
                                             // no date field on available kw
-                                            logger.debug("FAIL 32");
+                                            logger.debug("FAIL 27");
                                             return false;
                                         }
                                     } else {
                                         // content not json object, or it's key is not string
-                                        logger.debug("FAIL 33");
+                                        logger.debug("FAIL 28");
                                         return false;
                                     }
                                 }
-                                //
-
-                                if (settings.hasOwnProperty("enabled-keywordlists")) {
-                                    if (settings["enabled-keywordlists"] instanceof Array) {
-                                        for (var enkw = 0; enkw < settings["enabled-keywordlists"].length; enkw++) {
-                                            if (typeof (settings["enabled-keywordlists"][enkw]) === "string") {
-                                                //was string, everything ok
+                                if (settings.hasOwnProperty("local-keywordlists")) {
+                                    if (settings["local-keywordlists"].constructor === {}.constructor) {
+                                        // validate all and loop
+                                        var lkwo = {};
+                                        for (var lkw in settings["local-keywordlists"]) {
+                                            lkwo = settings["local-keywordlists"][lkw];
+                                            if ((lkwo.constructor === {}.constructor) && (typeof (lkw) === "string")) {
+                                                if (lkwo.hasOwnProperty("date")) {
+                                                    if (!Number.isNaN(Date.parse(lkwo["date"]))) {
+                                                        if (lkwo.hasOwnProperty("name")) {
+                                                            if (typeof (lkwo["name"]) === "string") {
+                                                                // everything ok. proceed...
+                                                            } else {
+                                                                // name not string
+                                                                logger.debug("FAIL 29");
+                                                                return false;
+                                                            }
+                                                        } else {
+                                                            // no name field
+                                                            logger.debug("FAIL 30");
+                                                            return false;
+                                                        }
+                                                    } else {
+                                                        // invalid date field
+                                                        logger.debug("FAIL 31");
+                                                        return false;
+                                                    }
+                                                } else {
+                                                    // no date field on available kw
+                                                    logger.debug("FAIL 32");
+                                                    return false;
+                                                }
                                             } else {
-                                                //found something else than string
-                                                logger.debug("FAIL 34");
+                                                // content not json object, or it's key is not string
+                                                logger.debug("FAIL 33");
                                                 return false;
                                             }
                                         }
-                                        //nothing to be tested anymore
-                                        logger.debug("SUCCESS");
-                                        return true;
+                                        //
+
+                                        if (settings.hasOwnProperty("enabled-keywordlists")) {
+                                            if (settings["enabled-keywordlists"] instanceof Array) {
+                                                for (var enkw = 0; enkw < settings["enabled-keywordlists"].length; enkw++) {
+                                                    if (typeof (settings["enabled-keywordlists"][enkw]) === "string") {
+                                                        //was string, everything ok
+                                                    } else {
+                                                        //found something else than string
+                                                        logger.debug("FAIL 34");
+                                                        return false;
+                                                    }
+                                                }
+                                                //nothing to be tested anymore
+                                                logger.debug("SUCCESS");
+                                                return true;
+                                            } else {
+                                                //not array
+                                                logger.debug("FAIL 35");
+                                                return false;
+                                            }
+                                        } else {
+                                            // no enabled-keywordlists
+                                            logger.debug("FAIL 36");
+                                            return false;
+                                        }
                                     } else {
-                                        //not array
-                                        logger.debug("FAIL 35");
+                                        // not an json object
+                                        logger.debug("FAIL 37");
                                         return false;
                                     }
                                 } else {
-                                    // no enabled-keywordlists
-                                    logger.debug("FAIL 36");
+                                    // no local-keywordlists
+                                    logger.debug("FAIL 38");
                                     return false;
                                 }
                             } else {
                                 // not an json object
-                                logger.debug("FAIL 37");
+                                logger.debug("FAIL 39");
                                 return false;
                             }
                         } else {
-                            // no local-keywordlists
-                            logger.debug("FAIL 38");
+                            // no available-keywordlists
+                            logger.debug("FAIL 40");
                             return false;
                         }
+                        ///////
+
+                        ////////
+
+                        ////////
                     } else {
-                        // not an json object
-                        logger.debug("FAIL 39");
+                        // last-availability-check is not null or valid date
+                        logger.debug("FAIL 41");
                         return false;
                     }
                 } else {
-                    // no available-keywordlists
-                    logger.debug("FAIL 40");
+                    // no last-availability-check
+                    logger.debug("FAIL 42");
                     return false;
                 }
-                ///////
-
-                ////////
-
-                ////////
             } else {
-                // last-successful-update is not null or valid date
-                logger.debug("FAIL 41");
+                // last-local-update is not null or valid date
+                logger.debug("FAIL 43");
                 return false;
             }
         } else {
-            // no last-successfull-update
-            logger.debug("FAIL 42");
+            // no last-local-update
+            logger.debug("FAIL 44");
             return false;
         }
 
@@ -784,5 +978,6 @@ module.exports = {
     validateAndParseCSV: validateAndParseCSV,
     validateProjectJSON: validateProjectJSON,
     validateVersion: validateVersion,
-    validateSettings: validateSettings
+    validateSettings: validateSettings,
+    parseArray: parseArray
 }

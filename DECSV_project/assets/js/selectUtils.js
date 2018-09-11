@@ -303,9 +303,15 @@ function getFullLangName(lang_short) {
 function setImportSelect() {
     logger.debug("setImportSelect");
     var resultdata1 = "";
+    var resultdata2 = "";
+    var resultdata3 = "";
+    var resultdata4 = "";
     try {
-        console.log(fs.readFileSync(path.join(__dirname, "../select2/surveytools.json"), "utf8"));
+        //console.log(fs.readFileSync(path.join(__dirname, "../select2/surveytools.json"), "utf8"));
         resultdata1 = JSON.parse(fs.readFileSync(path.join(__dirname, "../select2/surveytools.json"), "utf8"));
+        resultdata2 = JSON.parse(fs.readFileSync(path.join(__dirname, "../select2/delimiters.json"), "utf8"));
+        resultdata3 = JSON.parse(fs.readFileSync(path.join(__dirname, "../select2/encodings.json"), "utf8"));
+        resultdata4 = JSON.parse(fs.readFileSync(path.join(__dirname, "../select2/survey_template_versions.json"), "utf8"));
     }
     catch (err) {
         logger.error("Error opening >Import Wizard< file: " + err.message);
@@ -316,14 +322,53 @@ function setImportSelect() {
         obj.text = obj["name"];
         return obj;
     });
+    var testdata2 = $.map(resultdata2, function (obj) {
+        obj.id = obj["id"];
+        obj.text = obj["name"];
+        return obj;
+    });
+    var testdata3 = $.map(resultdata3, function (obj) {
+        obj.id = obj["id"];
+        obj.text = obj["name"];
+        return obj;
+    });
+    var testdata4 = $.map(resultdata4, function (obj) {
+        obj.id = obj["id"];
+        obj.text = obj["name"];
+        return obj;
+    });
+
     
-    $("#file-import-tool").select2({
+    $("#import-select-tool").select2({
         placeholder: i18n.__('select2-surveytool-ph'),
         data: testdata1
     }
     );
+    $("#import-select-delimiter").select2({
+        placeholder: i18n.__('select2-delimiter-ph'),
+        data: testdata2
+    }//window.import_ready
+    );
+    $("#import-select-encoding").select2({
+        placeholder: i18n.__('select2-encoding-ph'),
+        data: testdata3
+    }
+    );
+    $("#import-select-survey-ver").select2({
+        placeholder: i18n.__('select2-survey-version-ph'),
+        data: testdata4
+    }
+    );
 
-    $("#file-import-tool").val(null).trigger("change");
+    $("#import-select-tool").val(null).trigger("change");
+    $("#import-select-delimiter").val("0").trigger("change");
+    $("#import-select-encoding").val("0").trigger("change");
+    $("#import-select-survey-ver").val(null).trigger("change");
+
+    $("#import-select-tool").on("select2:select", function (e) { window.import_ready = false;});
+    $("#import-select-delimiter").on("select2:select", function (e) { window.import_ready = false; });
+    $("#import-select-encoding").on("select2:select", function (e) { window.import_ready = false; });
+    //$("#import-select-survey-ver").on("select2:select", function (e) { window.import_ready = false; });
 
     return 0;
 }

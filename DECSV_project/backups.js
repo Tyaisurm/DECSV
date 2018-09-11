@@ -530,7 +530,7 @@ function checkTempFiles(proj_name) {
 
 /* NEED TO BE DISABLED!!!! */
 /* Imports source files into the project folders */
-function srcFiles2ProjsrcFiles2Proj(files, event, ready_src) { // NEEDSTOBECHANGED
+function srcFiles2Proj(files, event, ready_src) { // NEEDSTOBECHANGED
     logger.debug("srcFiles2Proj");
     var docpath = app.getPath('documents');
     var proj_name = files.pop();
@@ -626,4 +626,82 @@ function srcFiles2ProjsrcFiles2Proj(files, event, ready_src) { // NEEDSTOBECHANG
         event.sender.send('async-import-files-reply', result);
         // project source folder or other folders not present!
     }
+}
+
+////////////////////////////////////////////// init.js
+// NEEDS CHANGES!!!! NEEDSTOBECHANGED 
+/* Called when settings on SETTINGS-view are saved */
+function saveSettings() {
+    // okay, we need to create json here, that will be sent to main setSettings(json) function.....
+    logger.debug("saveSettings");
+    logger.info("Saving settings...");
+    var applang = $("#app-lang-selector").val();
+    var uizoom = $("#settings-zoomslider").val();
+    var apppath = remote.app.getPath('userData');
+    var enabledKW = [];
+    $("#settings-local-kw-lists .kw-list-enabled").each(function (i) {
+        var kw_list_id = $(this).attr("data-id");
+        enabledKW.push(kw_list_id);
+        logger.debug("ADDED KW LIS: " + kw_list_id);
+    });
+    var apptemplate = {
+        "app-lang": "en",
+        "first-use": false,
+        "app-version": app.getVersion(),
+        "demo-files": true,
+        "latest-update-check": null,
+        "latest-update-install": null,
+        "zoom": 100,
+        "edits": [
+            false,
+            null
+        ]
+    };
+    // need to validate that we actually have these before saving....
+    var kwtemplate = {
+        "last-successful-update": null,
+        "available-keywordlists": {
+            "en-basic": {
+                "date": "2018-06-25T13:05:48.801Z",
+                "name": "English - Basic"
+            },
+            "fi-basic": {
+                "date": "2018-06-25T13:05:48.801Z",
+                "name": "Suomi - Perus"
+            }
+        },
+        "local-keywordlists": {
+            "en-basic": {
+                "date": "2018-06-25T13:05:48.801Z",
+                "name": "English - Basic"
+            },
+            "fi-basic": {
+                "date": "2018-06-25T13:05:48.801Z",
+                "name": "Suomi - Perus"
+            }
+        },
+        "enabled-keywordlists": [
+            "en-basic"
+        ]
+    };
+    //var options1 = {
+    //    name: "app-configuration",
+    //    cwd: apppath
+    //}
+    //const store1 = new Store(options1);
+    if (applang !== "") {
+        //store1.set("app-lang", applang);
+    }
+    else {
+        logger.info("No language chosen in settings...");
+    }
+
+    //var options2 = {
+    //    name: "keyword-config",
+    //    cwd: path.join(apppath, 'keywordlists')
+    //}
+    //const store2 = new Store(options2);
+    //store2.set("enabled-keywordlists", enabledKW);
+
+    intUtils.selectUtils.setupEditKW();
 }

@@ -23,6 +23,8 @@ process.on('uncaughtException', (err) => {
         if (index === 1) {
             //open wiki
             shell.openExternal("https://github.com/Tyaisurm/DECSV/wiki");
+            logger.error("Closing application because of error....");
+            app.exit();
         } else {
             // close, do nothing
             logger.error("Closing application because of error....");
@@ -62,7 +64,51 @@ ipcRenderer.on("force-open-project", function (event, filepath) {
     // 
     logger.info("Called open project from main process!");
     logger.info("PATH: " + filepath);
-    openAndViewProject(filepath);
+    var forceprojres = openAndViewProject(filepath);
+    if (forceprojres[0]) {
+        logger.info("New project (PATH)'" + filepath + "' opened successfully!");
+    }
+    else {
+        logger.error("Failed to open new project (PATH)'" + filepath + "'! Reason: " + forceprojres[1]);
+        $("#proj-open-error").text(forceprojres[1]);
+
+        $("#proj-open-error").before($("#proj-open-error").clone(true));
+        $("[id='proj-open-error']" + ":last").remove();
+    }
+});
+
+/*
+  
+ {
+ "event_0": {
+			"src-file": "lahdedata_1",
+			"src-data":[],
+			"a": "HTML GOES HERE",
+			"b": "HTML GOES HERE",
+			"c": "HTML GOES HERE",
+			"country": "FI",
+			"lang": "fi",
+			"kw": [
+				"basic-2",
+				"basic-39"
+			],
+			"done": false
+		}
+ }
+ 
+ */
+ipcRenderer.on("import-wiz-import-result", function (event, args = {}) {
+    logger.debug("import-wiz-import-result");
+    var status = [];
+    if (!(args instanceof Array)) {//{"0":["asd","asd",...], "1":["asd", "asd",...],...}
+        logger.error("File import args result NOT instanceof Array!");
+        status.push(false, 1);
+    }
+
+    console.log("############### RETURNED FROM IMPORT WINDOW #######################");
+    console.log(args);
+    // JUST FOR TESTING!!!!
+   
 });
 
 /* Getting global functions.... */
@@ -125,7 +171,7 @@ document.getElementById("win-close-icon").onclick = function () {
     else {
         logger.info("No open project while closing main window! Window.currentProject undefined!");
     }
-    //ipcRenderer.send('set-project-status', null);
+    //ipcRenderer.send('set-project-status', null); 
     firstWindow.close();
 }
 document.getElementById('win-about-icon').onclick = function () {
@@ -231,6 +277,13 @@ document.getElementById("proj-note-input-field").onkeypress = function (e) {
 /* Follows if note is removed */
 $("#proj-notes-ul").on("deleted", function () {
     intUtils.markPendingChanges(true, window.currentFile);
+    var notes = [];
+    $("#proj-notes-ul li").each(function (i) {
+        var text = $(this).ignore("span").text();
+        notes.push(text);
+    });
+    // saving, because user deleted a note....
+    saveProject(0, "", "", "", [], notes);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
 });
 
 /* Follows input into new project name field */
@@ -303,7 +356,7 @@ document.getElementById("check-app-updates-button").onclick = function () { //NE
         else if (arg[0] === 4) {
             // downloading...
             var progressObj = arg[1];
-            var download_data = "Downloading " + (Math.round((progressObj.transferred / 1000000) * 100) / 100) + "MB/" + (Math.round((progressObj.total / 1000000) * 100) / 100) + "MB at " + (Math.round((progressObj.bytesPerSecond / 1000) * 100) / 100) + " kBps";
+            var download_data = "Downloading " + (Math.round((progressObj.transferred / 1000000) * 100) / 100) + "MB/" + (Math.round((progressObj.total / 1000000) * 100) / 100) + "MB @ " + (Math.round((progressObj.bytesPerSecond / 1000) * 100) / 100) + " kBps";
             var download_percent = progressObj.percent;
 
             if (arg[1] = 100) {
@@ -316,7 +369,7 @@ document.getElementById("check-app-updates-button").onclick = function () { //NE
             // mark download progress as 100%
             //var download_percent = 100;
             $("#check-app-updates-button").removeClass("element-disabled");
-            var download_data = "Finished downloading!";
+            var download_data = "Update downloaded!";
             $("#update-download-progress").css("width", "100%");
             $("#settings-update-text").text(download_data);
             $("#update-download-progress").removeClass("w3-red");
@@ -616,8 +669,8 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
                     var options = {
                         type: 'info',
                         title: i18n.__("conf-title"),
-                        message: "There are pending changes!",
-                        detail: "Do you wish to save these changes?",
+                        message: i18n.__('conf-unsaved-title'),
+                        detail: i18n.__('conf-unsaved-desc'),
                         buttons: [i18n.__('conf-yes'), i18n.__('conf-no')]
                     };
 
@@ -776,7 +829,6 @@ document.getElementById("open-proj-button").onclick = function () {
             ]
         }// This need verifications!!!
         function callback(pname) {
-
             if (pname !== undefined) {
                 var opened_res = openAndViewProject(pname[0]);
                 var file_ext = pname[0].split('.').pop();
@@ -787,11 +839,15 @@ document.getElementById("open-proj-button").onclick = function () {
                 logger.debug("PROJECT NAME: " + projname);
                 //readFile(fileNames);
                 if (opened_res[0]) {
-                    logger.info("Successfully opened project '"+projname+"'!");
+                    logger.info("Successfully opened project '" + projname + "'!");
+                    $("#proj-open-error").text(" ");
                 }
                 else {
                     logger.error("Failed to open existing project! Reason: "+opened_res[1]);
                     $("#proj-open-error").text(opened_res[1]);
+
+                    $("#proj-open-error").before($("#proj-open-error").clone(true));
+                    $("[id='proj-open-error']" + ":last").remove();
                 }
                 return;
             }
@@ -801,6 +857,9 @@ document.getElementById("open-proj-button").onclick = function () {
     }
     else {
         $("#proj-open-error").text("Projects folder doesn't exists! Create new project or restart application.");
+
+        $("#proj-open-error").before($("#proj-open-error").clone(true));
+        $("[id='proj-open-error']" + ":last").remove();
     }
     //open dialog here to choose directory, or create directory if nothing is present. then recall function
 }
@@ -1135,17 +1194,28 @@ function collectSettings() {
 
 /* Creates new project ASYNC!! (IPC to app.js) */
 function createProjAsync(project_name = "", project_country = "", project_lang = "") {
+
+
     if ($("#new-proj-create-input").val().trim().length < 1) {
         //do nothing
         $("#create-proj-error").text("Name should not be empty!");
+        
+        $("#create-proj-error").before($("#create-proj-error").clone(true));
+        $("[id='create-proj-error']" + ":last").remove();
         return;
     }
     else if (project_country === null || project_country.length !== 2) {
         $("#create-proj-error").text("Select a country!");
+
+        $("#create-proj-error").before($("#create-proj-error").clone(true));
+        $("[id='create-proj-error']" + ":last").remove();
         return;
     }
     else if (project_lang === null || project_lang.length !== 2) {
         $("#create-proj-error").text("Select a language!");
+
+        $("#create-proj-error").before($("#create-proj-error").clone(true));
+        $("[id='create-proj-error']" + ":last").remove();
         return;
     }
     else {
@@ -1179,6 +1249,9 @@ function createProjAsync(project_name = "", project_country = "", project_lang =
                             //logger.debug("REASON: " + opened_res[1]);
                             logger.error("Failed to open new project '" + project_name + "'! Reason: " + opened_res[1]);
                             $("#create-proj-error").text(opened_res[1]);
+
+                            $("#create-proj-error").before($("#create-proj-error").clone(true));
+                            $("[id='create-proj-error']" + ":last").remove();
                         }
                     }
                     else {
@@ -1186,6 +1259,9 @@ function createProjAsync(project_name = "", project_country = "", project_lang =
                         var reason = i18n.__('create-proj-fail-'+reason_id);
                         logger.error("Unable to create new project '" + project_name + "'! Reason: " + reason);
                         $("#create-proj-error").text(reason);
+
+                        $("#create-proj-error").before($("#create-proj-error").clone(true));
+                        $("[id='create-proj-error']" + ":last").remove();
                     }
                     ipcRenderer.removeAllListeners('async-create-project-reply');
                 })
@@ -1232,7 +1308,7 @@ function updateFileList() {
 }
 
 /* Called when project is opened */
-function openAndViewProject(proj_location) {
+function openAndViewProject(proj_location, backup_proj = false) {
     logger.debug("openAndViewProject");
     var file_ext = proj_location.split('.').pop();
     var proj_name = proj_location.split('\\').pop();
@@ -1283,8 +1359,7 @@ function openAndViewProject(proj_location) {
         reason.push(false, 'Project file contents invalid!');
         return reason;
     }
-
-    $("#titlebar-appname").text("SLIPPS Teacher Tool" + " - " + proj_name); // ONLY AFTER EVERYTHING HAS BEEN CHECKED!!!!!
+    
     var validateJSONresult = parseUtils.validateProjectJSON(json_file);
     if (!validateJSONresult[0]) {
         // was NOT valid project file!
@@ -1327,7 +1402,7 @@ function openAndViewProject(proj_location) {
             }
         }
     }
-
+    /*// THIS IS NOT NEEDED, BECAUSE WE DON'T YET HAVE ANY EDITS!
     var backup_opt = {
         name: proj_name,
         cwd: path.join(apppath, 'backup_files')
@@ -1335,8 +1410,11 @@ function openAndViewProject(proj_location) {
     logger.info("Saving backup copy: "+path.join(apppath, proj_name+".json"));
     const backup_store = new Store(backup_opt);
     backup_store.store = json_file;
+    */
 
     // Adding simple details to UI:
+    $("#titlebar-appname").text("SLIPPS Teacher Tool" + " - " + proj_name); // ONLY AFTER EVERYTHING HAS BEEN CHECKED!!!!!
+
     $("#proj-info-name").text("Project Name: \"" + proj_name + "\"");
     $("#proj-info-created").text("Created: " + new Date(json_file["created"]));//NEEDSTOBECHANGED
 
@@ -1586,7 +1664,12 @@ function saveProject(mode = 0, dataA = "", dataB = "", dataC = "", kw = [], note
             window_json["project-files"][current_event]["country"] = country;
             window_json["project-files"][current_event]["lang"] = lang;
             window_json["project-files"][current_event]["kw"] = kw;
+        } else {
+            //
+            logger.error("Window.currentFileContent variable doesn't have 'current_event' property! Unable to save!");
         }
+    } else {
+        logger.warn("Current_event undefined! No event currently open!");
     }
 
     //intUtils.sectionUtils.clearCsectionUI(); // is this needed?
@@ -1754,84 +1837,6 @@ function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
 }
 
 
-// NEEDS CHANGES!!!! NEEDSTOBECHANGED 
-/* Called when settings on SETTINGS-view are saved */
-function saveSettings() {
-    // okay, we need to create json here, that will be sent to main setSettings(json) function.....
-    logger.debug("saveSettings");
-    logger.info("Saving settings...");
-    var applang = $("#app-lang-selector").val();
-    var uizoom = $("#settings-zoomslider").val();
-    var apppath = remote.app.getPath('userData');
-    var enabledKW = [];
-    $("#settings-local-kw-lists .kw-list-enabled").each(function (i) {
-        var kw_list_id = $(this).attr("data-id");
-        enabledKW.push(kw_list_id);
-        logger.debug("ADDED KW LIS: " + kw_list_id);
-    });
-    var apptemplate = {
-            "app-lang": "en",
-            "first-use": false,
-            "app-version": app.getVersion(),
-            "demo-files": true,
-            "latest-update-check": null,
-            "latest-update-install": null,
-            "zoom": 100,
-            "edits": [
-                false,
-                null
-            ]
-    };
-    // need to validate that we actually have these before saving....
-    var kwtemplate = {
-        "last-successful-update": null,
-        "available-keywordlists": {
-            "en-basic": {
-                "date": "2018-06-25T13:05:48.801Z",
-                "name": "English - Basic"
-            },
-            "fi-basic": {
-                "date": "2018-06-25T13:05:48.801Z",
-                "name": "Suomi - Perus"
-            }
-        },
-        "local-keywordlists": {
-            "en-basic": {
-                "date": "2018-06-25T13:05:48.801Z",
-                "name": "English - Basic"
-            },
-            "fi-basic": {
-                "date": "2018-06-25T13:05:48.801Z",
-                "name": "Suomi - Perus"
-            }
-        },
-        "enabled-keywordlists": [
-            "en-basic"
-        ]
-    };
-    //var options1 = {
-    //    name: "app-configuration",
-    //    cwd: apppath
-    //}
-    //const store1 = new Store(options1);
-    if (applang !== "") {
-        //store1.set("app-lang", applang);
-    }
-    else {
-        logger.info("No language chosen in settings...");
-    }
-
-    //var options2 = {
-    //    name: "keyword-config",
-    //    cwd: path.join(apppath, 'keywordlists')
-    //}
-    //const store2 = new Store(options2);
-    //store2.set("enabled-keywordlists", enabledKW);
-
-    intUtils.selectUtils.setupEditKW();
-}
-
-
 /* Show file import wizard so that new files may be imported into current project */
 function addFilesPrompt() {
     logger.debug("addFilesPrompt");
@@ -1839,11 +1844,11 @@ function addFilesPrompt() {
     logger.debug("create import wizard");
     logger.info("Opening import wizard -window...");
     fileWizard = new BrowserWindow({
-        width: 640,
-        height: 600,
-        resizable: false,
-        minWidth: 640,
-        minHeight: 600,
+        width: 850,
+        height: 710,
+        resizable: true,
+        minWidth: 850,
+        minHeight: 710,
         devTools: true,
         frame: false,
         backgroundColor: '#dadada',
@@ -1876,7 +1881,7 @@ function setupTranslations(applang = "en") {
 
     // Set text to window here...
 
-    $("#titlebar-appname").text("SLIPPS Teacher Tool");// {Alpha version " + remote.app.getVersion() + "}");
+    $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2'));
 }
 
 electron.ipcRenderer.on('force-interface-update', (event, settings) => {
@@ -1925,8 +1930,16 @@ function jquerySetup() {
 }
 interfaceUpdate();
 
+/* If there was a backupfile mentioned in app properties */
+if (window.allsettings.app.edits[0] === true || window.allsettings.app.edits[1] != null) {
+    // there is unsaved backupfile available!
+    logger.info("Unsaved backup mentioned in app properties! Asking if users wishes to open and edit it (App itself just launched)");
+    //openAndViewProject(window.allsettings.app.edits[1], true, ___LOCATION_HERE______);
+    //                     original_file_location
+    // NEED TO TEST IF BACKUPFILE EXISTS, and send ITS LOCATION IN TOO
+}
 /* This is used to check if a file was opened with the application (to start it) */
-if (ipcRenderer.sendSync("get-ext-file-data","asd") !== null) {
+else if (ipcRenderer.sendSync("get-ext-file-data","asd") !== null) {
     // there is something to be opened....
     logger.info("There is project that needs to be opened! (App itself just launched)");
     openAndViewProject(ipcRenderer.sendSync("get-ext-file-data", "asd"));

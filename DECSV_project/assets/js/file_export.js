@@ -21,6 +21,8 @@ process.on('uncaughtException', function (err) {
         if (index === 1) {
             //open wiki
             shell.openExternal("https://github.com/Tyaisurm/DECSV/wiki");
+            logger.error("Closing application because of error....");
+            app.exit();
         } else {
             // close, do nothing
             logger.error("Closing application because of error....");

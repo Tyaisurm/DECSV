@@ -568,41 +568,51 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
         var li_string = document.createTextNode(list_name);
         var li_node = document.createElement("li");
         var span_node = document.createElement("span");
+        var div1 = document.createElement('div');
+        var div2 = document.createElement('div');
 
-        li_node.appendChild(li_string);
         logger.debug("is the local KW list within the 'enabled' list?");
         logger.debug(enabled_kw_list);
         logger.debug(list_id);
+
         if (enabled_kw_list.indexOf(list_id) > -1) {
             logger.debug("yes");
             span_node.innerHTML = '&radic;';
             $(span_node).attr({
-                onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
-                onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-                class: "mark_enabled w3-green w3-button w3-display-right",
-                onclick: "$(this.parentElement).toggleClass('kw-list-enabled'); $(this).toggleClass('w3-red'); $(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { this.innerHTML = '&radic;'; } else { this.innerHTML = '&times;'; }; "
+                onmouseover: "$(this.parentElement.parentElement).addClass('w3-hover-blue');",
+                onmouseout: "$(this.parentElement.parentElement).removeClass('w3-hover-blue');",
+                class: "mark_enabled w3-green w3-button w3-display-left",
+                onclick: "$(this.parentElement.parentElement).toggleClass('kw-list-enabled'); $(this.parentElement.parentElement).toggleClass('importable-1'); $(this.parentElement.parentElement).toggleClass('importable-2'); $(this).toggleClass('w3-red'); $(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { this.innerHTML = '&radic;'; } else { this.innerHTML = '&times;'; }; "
             });
             $(li_node).attr({
                 "data-id": list_id,
-                class: "w3-display-container kw-list-enabled"
+                class: "w3-display-container kw-list-enabled importable-2"
+            });
+            $(div2).attr({
+                style: "text-align: left; margin-left: 40px; white-space: nowrap; text-overflow: ellipsis; overflow-x: hidden;"
             });
         }
         else {
             logger.debug("no");
             span_node.innerHTML = '&times;';
             $(span_node).attr({
-                onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
-                onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-                class: "w3-red w3-button w3-display-right",
-                onclick: "$(this.parentElement).toggleClass('kw-list-enabled'); $(this).toggleClass('w3-red'); $(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { this.innerHTML = '&radic;'; } else { this.innerHTML = '&times;'; }; "
+                onmouseover: "$(this.parentElement.parentElement).addClass('w3-hover-blue');",
+                onmouseout: "$(this.parentElement.parentElement).removeClass('w3-hover-blue');",
+                class: "w3-red w3-button w3-display-left",
+                onclick: "$(this.parentElement.parentElement).toggleClass('kw-list-enabled'); $(this.parentElement.parentElement).toggleClass('importable-1'); $(this.parentElement.parentElement).toggleClass('importable-2'); $(this).toggleClass('w3-red'); $(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { this.innerHTML = '&radic;'; } else { this.innerHTML = '&times;'; }; "
             });
             $(li_node).attr({
                 "data-id": list_id,
-                class: "w3-display-container"
+                class: "w3-display-container importable-1"
+            });
+            $(div2).attr({
+                style: "text-align: left; margin-left: 40px; white-space: nowrap; text-overflow: ellipsis; overflow-x: hidden;"
             });
         }
-
-        li_node.appendChild(span_node);
+        div2.appendChild(li_string);
+        div1.appendChild(span_node);
+        li_node.appendChild(div1);
+        li_node.appendChild(div2);
 
         logger.debug("settings local list element into list....");
         $('#settings-local-kw-lists').append(li_node);
@@ -677,7 +687,7 @@ function markPendingChanges(value = false, file_source) {
         name: "app-configuration",
         cwd: remote.app.getPath('userData')
     }
-    var config_store = new Store(config_opt);//NEEDSTOBECHANGED
+    var config_store = new Store(config_opt);//NEEDSTOBECHANGED 
     if (value) {
         config_store.set("edits", [true, file_source])
         $("#save-cur-edits-btn").removeClass("w3-disabled");
@@ -693,6 +703,111 @@ function markPendingChanges(value = false, file_source) {
     }
 }
 
+function setImportPreview(arr = null) {
+    logger.debug("setImportPreview");
+
+    $('#import-preview-list').empty();
+
+    var li_string = null;
+    var li_node = null;
+    var span_node = null;
+    var div1 = null;
+    var div2 = null;
+    var arrText = "";
+    var check = false;
+
+    if (arr === null) {
+        check = false;
+        logger.info("Import preview array was null! Using temp array...");
+        arr = [[window.i18n.__('import-file-cont-nothing')]];
+    } else {
+        check = true;
+        //verify array
+        if (arr instanceof Array) {
+            // is array
+            if (arr.length >= 1) {
+                // array has minimum of 1 element
+                for (var atest = 0; atest < arr.length; atest++) {
+                    if (arr[atest] instanceof Array) {
+                        // was array
+                    } else {
+                        logger.info("Import preview array element was not array! Using temp array...");
+                        arr = [[window.i18n.__('import-file-cont-nothing')]];
+                        break;
+                    }
+                }
+            } else {
+                logger.info("Import preview array didn't have anything! Using temp array...");
+                arr = [[window.i18n.__('import-file-cont-nothing')]];
+            }
+        } else {
+            //not array
+            logger.info("Import preview array was not array! Using temp array...");
+            arr = [[window.i18n.__('import-file-cont-nothing')]];
+        }
+    }
+    //
+    if (check) {
+        for (var k = 0; k < arr.length; k++) {
+            arrText = JSON.stringify(arr[k]);
+
+
+            li_string = document.createTextNode(arrText);
+            li_node = document.createElement("li");
+            span_node = document.createElement("span");
+            div1 = document.createElement("div");
+            div2 = document.createElement("div");
+
+            span_node.innerHTML = '&times;';
+            $(span_node).attr({
+                onmouseover: "$(this.parentElement.parentElement).addClass('w3-hover-blue');",
+                onmouseout: "$(this.parentElement.parentElement).removeClass('w3-hover-blue');",
+                class: "w3-red w3-button w3-display-left",
+                onclick: "$(this.parentElement.parentElement).toggleClass('importable-1'); $(this.parentElement.parentElement).toggleClass('importable-2'); $(this).toggleClass('w3-red'); $(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { this.innerHTML = '&radic;'; } else { this.innerHTML = '&times;'; }; "
+            });
+            $(li_node).attr({
+                "data-id": k,
+                "data-real": arrText,
+                class: "w3-display-container importable-1"
+            });
+            $(div2).attr({
+                style: "text-align: left; margin-left: 40px; white-space: nowrap; text-overflow: ellipsis; overflow-x: hidden;"
+            });
+
+            div2.appendChild(li_string);
+            div1.appendChild(span_node);
+            li_node.appendChild(div1);
+            li_node.appendChild(div2);
+
+            $('#import-preview-list').append(li_node);
+        }
+    } else {
+        li_string = document.createTextNode(window.i18n.__('import-file-cont-nothing'));
+        li_node = document.createElement("li");
+        span_node = document.createElement("span");
+        div1 = document.createElement("div");
+        div2 = document.createElement("div");
+
+        span_node.innerHTML = '&times;';
+        $(span_node).attr({
+            class: "w3-blue w3-button w3-display-left"
+        });
+        $(li_node).attr({
+            class: "w3-display-container importable-0"
+        });
+        $(div2).attr({
+            style: "text-align: left; margin-left: 40px; white-space: nowrap; text-overflow: ellipsis; overflow-x: hidden;"
+        });
+
+        div2.appendChild(li_string);
+        div1.appendChild(span_node);
+        li_node.appendChild(div1);
+        li_node.appendChild(div2);
+
+        $('#import-preview-list').append(li_node);
+    }
+}
+
 /* ONLY IN CHROME 61+!!!!!! JS modules do not work!
 export default {
     toggleViewMode: toggleViewMode
@@ -705,5 +820,6 @@ module.exports = {
     updateSettingsUI: updateSettingsUI,
     selectUtils: selectUtils,
     sectionUtils: sectionUtils,
-    markPendingChanges: markPendingChanges
+    markPendingChanges: markPendingChanges,
+    setImportPreview: setImportPreview
 }

@@ -32,6 +32,8 @@ process.on('uncaughtException', function (err) {
         if (index === 1) {
             //open wiki
             shell.openExternal("https://github.com/Tyaisurm/DECSV/wiki");
+            logger.error("Closing application because of error....");
+            app.exit();
         } else {
             // close, do nothing
             logger.error("Closing application because of error....");
@@ -41,7 +43,13 @@ process.on('uncaughtException', function (err) {
 });
 ////////////////////////////////////
 
+let openWindow = null;
+let mainWindow = null;
+let aboutWindow = null;
+let i18n_app = null;
+
 const electron = require('electron');
+const ipcMain = electron.ipcMain;
 const app = electron.app;
 const logger = require('electron-log');
 const BrowserWindow = electron.BrowserWindow; 
@@ -54,12 +62,9 @@ const windowStateKeeper = require('electron-window-state');
 //const Store = require('electron-config');
 const Store = require("electron-store");
 const XLSX = require('xlsx');
-const charDetector = require('charset-detector');
-const iconv = require('iconv-lite');
-let openWindow = null;
-let mainWindow = null;
-let aboutWindow = null;
-let i18n_app = null;
+const charDetector = require('chardet');
+const charDetector123 = require('charset-detector');
+const Iconv = require('iconv').Iconv;
 
 var demostatus = false;
 var current_project = null;
@@ -80,18 +85,23 @@ autoUpdater.logger = logger;
 
 const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
     // Someone tried to run a second instance, we should focus our window
+    logger.info("Testing for second instance...");
+    //logger.debug(ipcMain.send("asdasd",""));
     if (mainWindow !== null) {
+        logger.info("Main maindow was not null! Restoring and focusing...");
         if (mainWindow.isMinimized()) {
             mainWindow.restore();
         }
         mainWindow.focus();
+        
         // here take [1] command line arg (calling location / opened file) and try to open
         // HOWEVER, if there is a file open atm, show notification that current needs to be closed...
         // if nothing is wrong, let's try 1) switch to "open project"-view, 2) try to open arg[1] file, 3) notify if worked or not
-        // THIS ABOVE NEEDS TO BE IN >win32<
+        // THIS ABOVE NEEDS TO BE IN >win32< 
         //
         // otherwise, you need to listen event in MacOS 'open-file' with event.preventDefault()
         // in windows parse process.argv
+        logger.info("Testing if we need to open a new project...");
         if (process.platform == 'win32' && process.argv.length >= 2) {
             var openFilePath = process.argv[1];
             if (current_project !== null) {
@@ -117,16 +127,26 @@ const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) 
                 });
             } else {
                 //no project exist... need to force opening
-                ipcMain.send("force-open-project", openFilePath);
+                logger.info("No project exists! Need to force open new project at mainWindow...");
+                mainWindow.webContents.send("force-open-project", openFilePath);
             }
-
+                
         } else {
             // do nothing
+            logger.warn("Platform is not win32, or argv.length is not >=2!");
         }
     } else {
         // no mainwindow! if we are opening project, we are settings this variable just in case
+        logger.info("No main window exists! Setting variable just in case...");
         if (process.platform == 'win32' && process.argv.length >= 2) {
             pre_project = process.argv[1];
+            logger.info("Settings main process pre_project variable(win32): " + pre_project);
+        } else {
+            logger.warn("Platform is not win32, or argv.length is not >=2!");
+        }
+        if (process.platform == 'darwin') {
+            logger.info("Platform was 'darwin'! Opening new mainWindow...");
+            createMainWindow();
         }
     }
 });
@@ -143,7 +163,8 @@ app.on('will-finish-launching', function () {
     app.on('open-file', function (ev, path) { // this works when called on MacOS
         event.preventDefault();
         if (process.platform == 'darwin') {
-            var fileLocation = path;
+            pre_project = path;
+            logger.info("Settings main process pre_project variable(darwin): " + pre_project);
 
         } else {
             // nothing
@@ -205,11 +226,12 @@ global.getSettings = function () {
         //returnable.push(json1);
     } else {
         // settings invalid; need to give out defaults
+        logger.warn("GetSettings() app settings invalid!");
         json1 = {
             "app-lang": "en",
             "first-use": false,
             "app-version": app.getVersion(),
-            "demo-files": true,
+            "demo-files": false,
             "latest-update-check": null,
             "latest-update-install": null,
             "zoom": 100,
@@ -226,33 +248,16 @@ global.getSettings = function () {
         //returnable.push(json2);
     } else {
         // settings invalid; need to give out defaults 
+        logger.warn("GetSettings() keyword settings invalid!");
         json2 = {
             
             "last-local-update": null,
             "last-availability-check": null,
                 "available-keywordlists": {
-                "en-basic": {
-                    "date": "2018-06-25T13:05:48.801Z",
-                        "name": "English - Basic"
-                },
-                "fi-basic": {
-                    "date": "2018-06-25T13:05:48.801Z",
-                        "name": "Suomi - Perus"
-                }
             },
             "local-keywordlists": {
-                "en-basic": {
-                    "date": "2018-06-25T13:05:48.801Z",
-                        "name": "English - Basic"
-                },
-                "fi-basic": {
-                    "date": "2018-06-25T13:05:48.801Z",
-                        "name": "Suomi - Perus"
-                }
             },
-            "enabled-keywordlists": [
-                "en-basic"
-            ]
+            "enabled-keywordlists": []
         }
         //returnable.push(JSONjson2);
     }
@@ -290,11 +295,12 @@ global.setSettings = function (settings = {}) {
         // settings valid - now we can save them
     } else {
         // settings invalid; saving default settings
+        logger.warn("SetSettings() app settings invalid!");
         json1 = {
             "app-lang": "en",
             "first-use": false,
             "app-version": app.getVersion(),
-            "demo-files": true,
+            "demo-files": false,
             "latest-update-check": null,
             "latest-update-install": null,
             "zoom": 100,
@@ -308,33 +314,16 @@ global.setSettings = function (settings = {}) {
         // settings valid; giving them out
     } else {
         // settings invalid; need to give out defaults
+        logger.warn("SetSettings() keyword settings invalid!");
         json2 = {
 
             "last-local-update": null,
             "last-availability-check": null,
             "available-keywordlists": {
-                "en-basic": {
-                    "date": "2018-06-25T13:05:48.801Z",
-                    "name": "English - Basic"
-                },
-                "fi-basic": {
-                    "date": "2018-06-25T13:05:48.801Z",
-                    "name": "Suomi - Perus"
-                }
             },
             "local-keywordlists": {
-                "en-basic": {
-                    "date": "2018-06-25T13:05:48.801Z",
-                    "name": "English - Basic"
-                },
-                "fi-basic": {
-                    "date": "2018-06-25T13:05:48.801Z",
-                    "name": "Suomi - Perus"
-                }
             },
-            "enabled-keywordlists": [
-                "en-basic"
-            ]
+            "enabled-keywordlists": []
         };
     }
     var apppath = app.getPath('userData');
@@ -400,11 +389,56 @@ createAppStructure();
 /////////////////////
 
 //////////////////////////////////////////////////////////// IPC MAIN LISTENERS
-const { ipcMain } = require('electron')
-
 
 ipcMain.on('import-wiz-return', function (event, arg) {
-    //
+    logger.debug("import-wiz-return");
+    var mode = arg[1];
+    arg = arg[0];
+    if (mode === 0) {
+        // received importable file!
+        if (!(arg instanceof Array)) {// not array
+            logger.error("Main process file import array not instanceof Array!");
+            arg = [null, null, null, null]
+        }
+        if (arg.length !== 4) {// array not length of 3
+            logger.error("Main process file import array not length of 3");
+            arg = [null, null, null, null]
+        }
+        //logger.debug(arg[0] + " - "+typeof(arg[0]));
+        //logger.debug(arg[1] + " - " + typeof (arg[1]));
+
+        //                                      [tool, delimiter, encoding, filepath]
+        var processeddata = readSourceFile(arg[0], arg[1], arg[2], arg[3]); // will be [false/true, status_code, result_array]
+
+        if (mainWindow !== null) {
+            //
+            logger.info("Sending file import raw array to import wizard...");
+            event.sender.send("import-wiz-reply", processeddata);
+        } else {
+            logger.error("MainWindow not open, but we tried to import file!");
+            event.sender.send("import-wiz-reply", [null, null, null]);
+            //do nothing
+        }
+    } else if (mode === 1) {
+        //received selected lines to be imported.... parsing to proper form...
+        var completearr = parseUtils.parseArray(arg[0], arg[1], arg[3]);// [tool, arr, survey_version] // returns [boolean, statuscode, arr] CURRENTLY USING PLACEHOLDERS!
+        if (completearr[0]) {
+            try {
+                var htmljson = readAndParseSource(completearr[2],arg[2]);
+                var htmlstring = JSON.stringify(htmljson);
+                event.sender.send("import-wiz-result", [true, 0, htmlstring]);
+            } catch (err) {
+                logger.error(err);
+                logger.error("Failed to parse import event JSON into string at import-wiz-return!");
+                event.sender.send("import-wiz-result", [false, -1, "{}"]);
+            }
+        } else {
+            logger.error("Unable to parse import! Reason: " + completearr[1]);
+            event.sender.send("import-wiz-result", [false, completearr[1], "{}"]);
+        }
+    } else {
+        logger.error("Invalid mode '"+mode+"' in ipcMain import-wiz-return");
+    }
 });
 
 /* This is called to get the file that was tried to use with the application NEEDSTOBECHANGED */
@@ -421,6 +455,11 @@ ipcMain.on('async-create-project', (event, project_name, project_country, projec
     logger.debug("async-create-project (at app.js)");
     var results = createNewProject(project_name, project_country, project_lang);
     event.sender.send('async-create-project-reply', results);
+});
+
+/* create main window (called from openWindow) */
+ipcMain.on('async-creat-mainwindow', (event, arg) => {
+    setTimeout(function () { createMainWindow(); }, 2000);
 });
 
 ////////////////////////////////////////////////////////////
@@ -480,7 +519,7 @@ function createAppStructure() { //NEEDSTOBECHANGED
 
         if (demostatus) {
             // is true, meaning that demofiles have been created before
-            logger.info("Demofiles created before!");
+            logger.info("Demofiles created before! Not remaking them again...");
         } else {
             CA1_store.set("demo-files", true)
             logger.info("Demofiles not created before! Creating now...");
@@ -529,17 +568,16 @@ function createAppStructure() { //NEEDSTOBECHANGED
         demostatus = appdemos;
         if (demostatus) {
             // is true, meaning that demofiles have been created befor
-            logger.info("Demofiles created before!");
+            logger.info("Demofiles created before! 'Demostatus' variable is true!");
         } else {
             CA1_store.set("demo-files", true)
-            logger.info("Demofiles not created before! Need to create now...");
+            logger.info("Demofiles not created before! 'Demostatus' variable is false! Need to create now...");
             // is false, no demofiles have been done yet
         }
 
         // check if consistent with this version, if not, remove and rebuild
     }
     var keyword_file_check = true;
-    logger.debug(keyword_file_check);
     // checking if keyword-config file exists, and if it is file or directory
     if (fs.existsSync(path.join(apppath, 'keywordlists\\keyword-config.json'))) {
         if (fs.statSync(path.join(apppath, 'keywordlists\\keyword-config.json')).isDirectory()) {
@@ -549,20 +587,24 @@ function createAppStructure() { //NEEDSTOBECHANGED
     else {
         keyword_file_check = false;
     }
-    logger.debug(keyword_file_check);
-    if (!keyword_file_check || !demostatus) {
-        logger.info("No keyword configuration file found! Creating one with defaults...");
-        try {
-            if (!fs.existsSync(path.join(apppath, 'keywordlists'))) {
-                fs.mkdirSync(path.join(apppath, 'keywordlists'));
-            }
-            else if (!fs.statSync(path.join(apppath, 'keywordlists')).isDirectory()) {
-                fs.mkdirSync(path.join(apppath, 'keywordlists'));
-            }
-        } catch (err) {
-            logger.error("Unable to create keywordlist directory! Reason: " + err.message);
+    logger.info("Keywordlist config file exists: " + keyword_file_check);
+    try {
+        if (!fs.existsSync(path.join(apppath, 'keywordlists'))) {
+            fs.mkdirSync(path.join(apppath, 'keywordlists'));
+            logger.info("Keywordlist directory created!");
         }
-        logger.info("Creating demo keyword files...");
+        else if (!fs.statSync(path.join(apppath, 'keywordlists')).isDirectory()) {
+            fs.mkdirSync(path.join(apppath, 'keywordlists'));
+            logger.info("Keywordlist directory created!");
+        } else {
+            logger.info("Keywordlist directory exists already!");
+        }
+    } catch (err) {
+        logger.error("Unable to create keywordlist directory! Reason: " + err.message);
+    }
+    if (!keyword_file_check || !demostatus) {
+        logger.info("No keyword configuration file found, or 'demostatus' variable was false! Creating keyword files with defaults...");
+        
         // #################################################################
         //      SETTING DEMO FILES - BELOW IS ORIGINAL, FURTHER BELOW CURRENT.....
         /*
@@ -577,53 +619,146 @@ function createAppStructure() { //NEEDSTOBECHANGED
             cwd: path.join(apppath, 'keywordlists')
         }
         */
-        try {
-            var CA2_options = {
+        if (!demostatus) {
+            logger.info("Since 'demostatus' was false, creating demo keyword files, and proper settings for them...");
+            if (!keyword_file_check) {
+                logger.info("Generating kw demofiles, while 'keyword_file_check' was false!");
+                try {
+                    var CA2_options = {
+                        defaults: {
+                            "last-local-update": new Date().toISOString(),
+                            "last-availability-check": null,
+                            "available-keywordlists": {
+                                "en-basic": {
+                                    "date": new Date().toISOString(),
+                                    "name": "English - Basic"
+                                },
+                                "fi-basic": {
+                                    "date": new Date().toISOString(),
+                                    "name": "Suomi - Perus"
+                                }
+                            },
+                            "local-keywordlists": {
+                                "en-basic": {
+                                    "date": new Date().toISOString(),
+                                    "name": "English - Basic"
+                                },
+                                "fi-basic": {
+                                    "date": new Date().toISOString(),
+                                    "name": "Suomi - Perus"
+                                }
+                            },
+                            "enabled-keywordlists": ["en-basic"]
+                        },
+                        name: "keyword-config",
+                        cwd: path.join(apppath, 'keywordlists')
+                    }
+                    const CA2_store = new Store(CA2_options);
+
+                    var source_demo_1 = path.join(__dirname, './demo_files/en-basic.json');
+                    var source_demo_2 = path.join(__dirname, './demo_files/fi-basic.json');
+                    var destination_demo_1 = path.join(apppath, 'keywordlists/en-basic.json')
+                    var destination_demo_2 = path.join(apppath, 'keywordlists/fi-basic.json')
+                    var content_1 = fs.readFileSync(source_demo_1, 'utf8');
+                    var content_2 = fs.readFileSync(source_demo_2, 'utf8');
+                    fs.writeFileSync(destination_demo_1, content_1, 'utf8');
+                    fs.writeFileSync(destination_demo_2, content_2, 'utf8');
+                }
+                catch (err) {
+                    logger.error("Failed to copy demo files! Reason: " + err.message);
+                }
+            } else {
+                logger.info("Generating kw demofiles, while 'keyword_file_check' was true!");
+                try {
+                    var CA5_options = {
+                        defaults: {
+                            "last-local-update": new Date().toISOString(),
+                            "last-availability-check": null,
+                            "available-keywordlists": {
+                                "en-basic": {
+                                    "date": new Date().toISOString(),
+                                    "name": "English - Basic"
+                                },
+                                "fi-basic": {
+                                    "date": new Date().toISOString(),
+                                    "name": "Suomi - Perus"
+                                }
+                            },
+                            "local-keywordlists": {
+                                "en-basic": {
+                                    "date": new Date().toISOString(),
+                                    "name": "English - Basic"
+                                },
+                                "fi-basic": {
+                                    "date": new Date().toISOString(),
+                                    "name": "Suomi - Perus"
+                                }
+                            },
+                            "enabled-keywordlists": ["en-basic"]
+                        },
+                        name: "keyword-config",
+                        cwd: path.join(apppath, 'keywordlists')
+                    }
+                    const CA5_store = new Store(CA5_options);
+                    var ca5avkw = CA5_store.get("available-keywordlists", {});
+                    ca5avkw["en-basic"] = {
+                        "date": new Date().toISOString(),
+                        "name": "English - Basic"
+                    };
+                    ca5avkw["fi-basic"] = {
+                        "date": new Date().toISOString(),
+                        "name": "Suomi - Perus"
+                    };
+                    var ca5lokw = CA5_store.get("local-keywordlists", {});
+                    ca5lokw["en-basic"] = {
+                        "date": new Date().toISOString(),
+                        "name": "English - Basic"
+                    };
+                    ca5lokw["fi-basic"] = {
+                        "date": new Date().toISOString(),
+                        "name": "Suomi - Perus"
+                    };
+                    var ca5ekw = CA5_store.get("enabled-keywordlists", []);
+                    if (!ca5ekw.includes("en-basic")) {
+                        ca5ekw.push("en-basic")
+                    }
+                    CA5_store.set("available-keywordlists", ca5avkw);
+                    CA5_store.set("local-keywordlists", ca5lokw);
+                    CA5_store.set("enabled-keywordlists", ca5ekw);
+
+
+                    var source_demo_1 = path.join(__dirname, './demo_files/en-basic.json');
+                    var source_demo_2 = path.join(__dirname, './demo_files/fi-basic.json');
+                    var destination_demo_1 = path.join(apppath, 'keywordlists/en-basic.json')
+                    var destination_demo_2 = path.join(apppath, 'keywordlists/fi-basic.json')
+                    var content_1 = fs.readFileSync(source_demo_1, 'utf8');
+                    var content_2 = fs.readFileSync(source_demo_2, 'utf8');
+                    fs.writeFileSync(destination_demo_1, content_1, 'utf8');
+                    fs.writeFileSync(destination_demo_2, content_2, 'utf8');
+                }
+                catch (err) {
+                    logger.error("Failed to copy demo files! Reason: " + err.message);
+                }
+            }
+        } else if (!keyword_file_check) {
+            logger.info("Since 'keyword_file_check' was false (and 'demofiles' true), creating blank keyword settings...");
+            var CA4_options = {
                 defaults: {
                     "last-local-update": null,
                     "last-availability-check": null,
                     "available-keywordlists": {
-                        "en-basic": {
-                            "date": new Date().toISOString(),
-                            "name": "English - Basic"
-                        },
-                        "fi-basic": {
-                            "date": new Date().toISOString(),
-                            "name": "Suomi - Perus"
-                        }
                     },
                     "local-keywordlists": {
-                        "en-basic": {
-                            "date": new Date().toISOString(),
-                            "name": "English - Basic"
-                        },
-                        "fi-basic": {
-                            "date": new Date().toISOString(),
-                            "name": "Suomi - Perus"
-                        }
                     },
-                    "enabled-keywordlists": ["en-basic"]
+                    "enabled-keywordlists": []
                 },
                 name: "keyword-config",
                 cwd: path.join(apppath, 'keywordlists')
             }
-            const CA2_store = new Store(CA2_options);
-            //
-
-            var source_demo_1 = path.join(__dirname, './demo_files/en-basic.json');
-            var source_demo_2 = path.join(__dirname, './demo_files/fi-basic.json');
-            var destination_demo_1 = path.join(apppath, 'keywordlists/en-basic.json')
-            var destination_demo_2 = path.join(apppath, 'keywordlists/fi-basic.json')
-            var content_1 = fs.readFileSync(source_demo_1, 'utf8');
-            var content_2 = fs.readFileSync(source_demo_2, 'utf8');
-            fs.writeFileSync(destination_demo_1, content_1, 'utf8');
-            fs.writeFileSync(destination_demo_2, content_2, 'utf8');
-        }
-        catch (err) {
-            logger.error("Failed to copy demo files! Reason: " + err.message);
-        }
+            const CA4_store = new Store(CA4_options);
+        } else { }
     } else {
-        logger.info("Demofiles have been made before (we think), and keyword settings file is present (unsure about contents)");
+        logger.info("Keyword configuration file found, and 'demostatus' variable was true! Assuming everything is ok!");
     }
 }
 
@@ -762,12 +897,12 @@ function handleclosing(callback = function (i) { return i;}) {
         var dial_options = {
             type: 'info',
             title: i18n_app.__('conf-title', true),
-            message: "There are unsaved changes!",
-            detail: "Do you wish to save these changes?",
+            message: i18n_app.__('conf-unsaved-title', true),
+            detail: i18n_app.__('conf-unsaved-desc', true),
             buttons: [i18n_app.__('conf-yes', true), i18n_app.__('conf-no', true)]
         };
 
-        dialog.showMessageBox(dial_options, function (index) {
+        dialog.showMessageBox(mainWindow, dial_options, function (index) {
             if (index === 0) {
                 logger.info("User decided to save backup! Saving to file '" + edit_check[1] + "'");
                 var backup_options = {
@@ -785,6 +920,7 @@ function handleclosing(callback = function (i) { return i;}) {
                 } catch (err) {
                     logger.error("Error while writing '" + edit_check[1] + "' or removing backup for it! Reason: " + err.message);
                 }
+                //logger.info("callback_1")
                 callback(0);
             } else {
                 //
@@ -796,6 +932,7 @@ function handleclosing(callback = function (i) { return i;}) {
                 } catch (err) {
                     logger.error("Unable to unlink backup file for '" + edit_check[1] + "'!");
                 }
+                //logger.info("callback_2")
                 callback(0);
             }
         });
@@ -808,30 +945,50 @@ function handleclosing(callback = function (i) { return i;}) {
         } catch (err) {
             logger.error("Unable to unlink backup file for '" + edit_check[1] + "'!");
         }
+        //logger.info("callback_3")
         callback(0);
     } else { callback(1);}
 }
 
 /* Creates opening window (with logo) and main window */
-function createWin() {// NEEDSTOBECHANGED
+function createWin() {
     setTimeout(function () {
-    logger.debug("createWin");
-    openWindow = new BrowserWindow({
-        width: 300,
-        height: 300,
-        resizable: false,
-        devTools: true,
-        frame: false,
-        backgroundColor: '#dadada',
-    });
+        logger.debug("createWin");
+        openWindow = new BrowserWindow({
+            width: 320,
+            height: 320,
+            resizable: false,
+            devTools: true,
+            frame: false,
+            backgroundColor: '#dadada',
+            show: false
+        });
 
-    let win1_url = url.format({
-        protocol: 'file',
-        slashes: true,
-        pathname: path.join(__dirname, './assets/html/opening.html')
-    });
-    openWindow.loadURL(win1_url);
+        let win1_url = url.format({
+            protocol: 'file',
+            slashes: true,
+            pathname: path.join(__dirname, './assets/html/opening.html')
+        });
+        openWindow.loadURL(win1_url);
 
+        openWindow.on('ready-to-show', function () {
+            //
+            openWindow.show();
+            openWindow.webContents.send("open-update-setup");
+        });
+
+        openWindow.on('closed', function () {
+            if (mainWindow !== null) {
+                mainWindow.show();
+            }
+            openWindow = null;
+        });
+    }, 0)
+}
+
+function createMainWindow() {
+    logger.debug("createMainWindow");
+    logger.info("Creating main window...");
     let mainWindowState = windowStateKeeper({
         defaultWidth: 1200,
         defaultHeight: 840
@@ -862,7 +1019,7 @@ function createWin() {// NEEDSTOBECHANGED
         //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
         mainWindowState.manage(mainWindow);
         // because testing
-        mainWindow.show();
+        //mainWindow.show();
         logger.debug("Hiding and closing start window");
         openWindow.hide();
         openWindow.close();
@@ -887,8 +1044,8 @@ function createWin() {// NEEDSTOBECHANGED
                 if (index === 0) {
                     handleclosing(function (i) {
                         showExitPrompt = false;//
-                        logger.debug("from handleclosing: '"+i+"'");
-                        logger.debug("calling quit inside callback");
+                        logger.debug("from handleclosing: '" + i + "'");
+                        logger.info("Inside handleclosing callback! Returnvalue: "+i);
                         if (aboutWindow !== null) {
                             logger.info("Re-closing main window....");
                             aboutWindow.close();// closing about-window, if it is open
@@ -896,7 +1053,7 @@ function createWin() {// NEEDSTOBECHANGED
                             logger.warn("Tried to re-close main window, but it was NULL!");
                         }
 
-                        app.quit();// should we? need to think about darwin options....
+                        app.quit();// should we? need to think about darwin/macos options....
 
                     });
                     logger.debug("after handleclosing");
@@ -907,14 +1064,35 @@ function createWin() {// NEEDSTOBECHANGED
 
     mainWindow.on('closed', function () {
         mainWindow = null;
+        current_project = null;
     });
-    mainWindow.on('unresponsive', function () { });
-    mainWindow.on('responsive', function () { });
-    openWindow.on('closed', function () {
-        //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        openWindow = null;
+    mainWindow.on('unresponsive', function () {
+        logger.error("MainWindow unresponsive!");
+        // create dialog and show that app jammed! clicking ok reloads the page
+        var options = {
+            type: 'error',
+            title: "Status",
+            message: "Application unresponsive!",
+            detail: "Application stopped responding! Would you like to reload app, or wait for it to become responsive again?",
+            buttons: ["Reload", "Wait"],
+            BrowserWindow: mainWindow
+        }
+        dialog.showMessageBox(options, function (index) {
+            //
+            if (index === 0) {
+                //open wiki
+                logger.warn("Reloading app...");
+                mainWindow.reload();
+            } else {
+                // close, do nothing
+                logger.warn("User wanted to >wait< for app to become responsive again!");
+            }
+        });
     });
-    }, 0)
+    mainWindow.on('responsive', function () {
+        // nothing...
+        logger.info("MainWindow responsive!");
+    });
 }
 
 /* Called when all windows are closed */
@@ -1038,8 +1216,8 @@ autoUpdater.on('checking-for-update', function () {
     */
 });
     autoUpdater.on('error', function (err) {
-        logger.error("Failed to get updates! Full error message logged before!");
-        logger.error(err.message);
+        logger.error("Failed to get updates!");
+        //logger.error(err.message);
     var arr = [];
     arr.push(3);
     event.sender.send("check-updates-reply", arr);
@@ -1094,24 +1272,28 @@ autoUpdater.on('update-not-available', function (info) {
         arr.push(5, ver, relDat, relNote);
         event.sender.send("check-updates-reply", arr);
         clearUpdaterListeners();
-        var options = {
-            type: 'info',
-            title: "Update downloaded",
-            message: "New version " + ver + " is ready to be installed",
-            detail: "Would you like to close the application and update now? By default, update will be done when the application gets closed.\r\n\r\nVersion: " + ver,
-            buttons: [i18n_app.__('conf-yes', true), i18n_app.__('conf-no', true)]
-        }; // DATE NEED TO BE REFORMATTED, AND RELNOTE SHOULD BE PARSED (CONTAINS HTML)
-        // + "\r\nRelease date: " + new Date(relDat) +"\r\n"+relNote,
+        if (mainWindow !== null) {
+            var options = {
+                type: 'info',
+                title: "Update downloaded",
+                message: "New version " + ver + " is ready to be installed",
+                detail: "Would you like to close the application and update now? By default, update will be done when the application gets closed.\r\n\r\nVersion: " + ver,
+                buttons: [i18n_app.__('conf-yes', true), i18n_app.__('conf-no', true)]
+            }; // DATE NEED TO BE REFORMATTED, AND RELNOTE SHOULD BE PARSED (CONTAINS HTML)
+            // + "\r\nRelease date: " + new Date(relDat) +"\r\n"+relNote,
 
-        dialog.showMessageBox(mainWindow, options, function (index) {
-            if (index === 0) {
-                showExitPrompt = false;
-                autoUpdater.quitAndInstall();
-            }
-            else {
-                //nothing
-            }
-        });
+            dialog.showMessageBox(mainWindow, options, function (index) {
+                if (index === 0) {
+                    showExitPrompt = false;
+                    autoUpdater.quitAndInstall();
+                }
+                else {
+                    //nothing
+                }
+            });
+        } else {
+            setTimeout(function () { showExitPrompt = false; autoUpdater.quitAndInstall(); }, 2000);
+        }
     });
 
 autoUpdater.on('download-progress', function (progressObj) {
@@ -1176,9 +1358,9 @@ global.createAboutWin = function () {
 global.createDummyDialog = function (callingWindow) {
     var options = {
         type: 'info',
-        title: "Not Implemented",
-        message: "This functionality is not yet implemented!",
-        detail: "Click 'ok' to close this notification.",
+        title: i18n_app.__('dummy-dia-1', true),
+        message: i18n_app.__('dummy-dia-2', true),
+        detail: i18n_app.__('dummy-dia-3', true),
         buttons: [i18n_app.__('conf-ok', true)]
     };
 
@@ -1187,331 +1369,222 @@ global.createDummyDialog = function (callingWindow) {
     });
 }
 
-// NEEDS TO BE REWORKED TO CHANGE READ DATA INTO JSON FORMAT (to be saved into new .decsv file!!)
-//
+/* 
+ "event_0": {
+			"src-file": "lahdedata_1",
+			"src-data":[],
+			"a": "HTML GOES HERE",
+			"b": "HTML GOES HERE",
+			"c": "HTML GOES HERE",
+			"country": "FI",
+			"lang": "fi",
+			"kw": [
+				"basic-2",
+				"basic-39"
+			],
+			"done": false
+		},
+ */
 /* Creates temp-files from source files within the project's folders */
-function readAndParseSource(proj_name, event, ) { // CUSTOM INPUTNEEDSTOBECHANGED
-    logger.debug("transformSrc2Temp");
-    var docpath = app.getPath('documents');
-    var src_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\source\\');
-    var temp_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\temp\\');
-    var proj_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\');
-    var proj_prop = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '\\' + proj_name + '.json');
-    if (fs.existsSync(src_base)) {
-        if (fs.existsSync(temp_base)) {
-            if (fs.existsSync(proj_prop)) {
-                // do shitz
-                var s2t_options = {
-                    name: proj_name,
-                    cwd: proj_base
-                }
-                //logger.debug("proj_name and proj_base: "+proj_name+" & "+proj_base);
-                const s2t_store = new Store(s2t_options);//
-
-                var sourceF = s2t_store.get('source-files', []);
-                var tempF = s2t_store.get('temp-files', {});
-                var tempLang = s2t_store.get('lang',null);
-                var tempCountry = s2t_store.get('country',null);
-                var newtempF = tempF;
-                var test_name_base = "event_";
-                var testvalue = false;
-                var testvalue_nro = 0;
-                //logger.debug("SOURCEF AND TEMPF");
-                //logger.debug(sourceF);
-                //logger.debug(tempF);
-                var fileT = "";
-                var fileS = "";
-                var secChtml = "";
-                var failArray = [];
-                var successArray = [];
-                var proj_options = {
-                    name: proj_name,
-                    cwd: proj_base
-                }
-                const proj_store = new Store(proj_options);//
-                while (!testvalue) {
-                    if (proj_store.has(test_name_base + testvalue_nro.toString())) {
-                        // do nothing
-                        testvalue_nro++;
-                    }
-                    else {
-                        testvalue = true;
-                    }
-                }
-                for (var i = 0; i < sourceF.length; i++){// looping array of project's source file array
-                    //logger.debug("sourceF length: " + sourceF.length);
-                    //logger.debug("loop nro: "+i);
-                    fileS = sourceF[i];
-                    //logger.debug("FILES ORIG: " + fileS);
-
-                    //////////////////////////////////////////////////////////////////////////////////////   USELESS   ////////////////////////
-                    for (var k in tempF) {// looping through project's temp file json object
-                        //console.log("1: ");
-                        //console.log(k); // source file name
-                        //logger.debug("FILET SOURCE: " + k);
-                        if (tempF.hasOwnProperty(k)) { //checking if has subvalues
-                            //logger.debug("TEMPF had own property!");
-                            //console.log(tempF[k].file); // temp file name
-                            fileT = tempF[k].file;
-                            //logger.debug("FILET TEMP: "+fileT);
-                        }
-                        if (fileT.toString() === fileS.toString()) { //if current source filename is same as existing tempfile source
-                            //logger.debug("FILE EXISTS!!!");
-                            //logger.debug(fileT.toString() + " and " + fileS.toString());
-                            break;
-                        }
-                    }
-                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-                    if (fileT.toString() === fileS.toString()) { // if any existing temp-file has this source-file as "source"
-                        failArray.push(fileS);
-                        logger.debug(">>>>>>>>>>>>>>>>>>continue_1");
-                        continue;
-                    }
-                    else {
-
-                        if (fs.existsSync(path.join(src_base, fileS))) {// testing if source file exists at project's source folder
-
-                            //logger.debug("before reading");
-                            var returnArr = readSourceFile(path.join(src_base, fileS)); // CUSTOM INPUT NEEDSTOBECHANGED
-                            logger.debug("AFTER reading");
-
-                            mainWindow.webContents.send("output-to-chrome-console", returnArr);
-
-                            var dataArray = returnArr[1];
-                            if (returnArr[0]) {
-                                //
-                            }
-                            else { //there was error with reading the source file
-                                failArray.push(fileS);
-                                logger.debug(">>>>>>>>>>>>>>>>>>continue_2");
-                                continue;
-                            }
-                        }
-                        else { // source-file not present at the current project's source folder
-                            failArray.push(fileS);
-                            logger.debug(">>>>>>>>>>>>>>>>>>continue_3");
-                            continue;
-                        }
-                        logger.debug("EVERYTHING OK. creating file...");
-                        // source file at project's source folder! looping through answers within.....
-
-                        var temporaryArr = [];
-                        var temporary_counter = 0;
-                        function testfunction(currentValue) { return currentValue === undefined }
+function readAndParseSource(sourcearr = [], path = "") { //receives array of arrays that have raw import data... NEEDSTOBECHANGED
+    logger.debug("readAndParseSource");
+    logger.debug(path);
+    logger.debug(sourcearr);
+    if (!(sourcearr instanceof Array)) {
+        logger.error("ReadAndParseSource file was not instanceof Array!");
+        sourcearr = [];
+    } else if (sourcearr.length === 0) {
+        logger.error("Can't parse source array with length of 0!");
+        throw "Source array length 0!";
+    }
+    //var processeddata = readSourceFile(arg[0], arg[1], arg[2]); // will be [false/true, status_code, result_array]
+    //mainWindow.webContents.send("output-to-chrome-console", processeddata)
+    //return {};//processeddata;
+    ///////// testreturn
 
 
-                        for (var p = 1; p < dataArray.length; p++) {
-                            if (dataArray[p].every(testfunction)) {
-                                temporary_counter++;
-                            }
-                            else if (temporary_counter < 2) {
-                                temporaryArr.push(dataArray[p]);
-                            }
-                        }
-                        mainWindow.webContents.send("output-to-chrome-console", temporaryArr);//testing the array. works now (gives proper answers)
+    //var temporaryArr = [];// not used
+
+    //mainWindow.webContents.send("output-to-chrome-console", temporaryArr);//testing the array
+
+    /*
+     
+     [ "event-desc", "event-relevancy", #profession-INT, "profession-other", #age-INT, #gender-INT, #yearinprog-INT, #eventplacement-INT, 
+     eventplacement-other", [#eventrelated-INT], "eventrelated-other", #typeofevent-INT, #reportedsystem-INT, "ifnotwhy", #reportedfiles-INT, "ifnotwhy" ]
+     
+     */
+
+    // ##############################################################################################################
+    // ############################################################################################################## LOOP TO CREATE MULTIPLE FILES from source array   
+    for (var q = 0; q < sourcearr.length; q++) {// loop specific events
+        
+        var currentArr = sourcearr[q];
+
+        if (currentArr.length != 16) {
+            logger.error("Can't parse source array for import! Length not 16!");
+        }
+
+        //var tempNameBase = "event_";
+        var event_base = {
+            "src-file": path,
+            "src-data": currentArr,
+            "a": "",
+            "b": "",
+            "c": "",
+            "country": null,
+            "lang": null,
+            "kw": [],
+            "done": false
+        }
+        //temp_store.set("subID", dataArray[1][0]); // Setting identifier
+        //temp_store.set("subDATE", dataArray[1][1]); // Setting create date
+        
+        var secChtml = '<div class="secC-Q-allA">';
+        var elemtextA = '<p class="w3-blue w3-container secA-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
+        elemtextA = elemtextA + '<p class="secA-Q-allA">';
+        var elemtextB = '<p class="w3-blue w3-container secB-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
+        elemtextB = elemtextB + '<p class="secB-Q-allA">';
 
 
-                        // ##############################################################################################################
-                        // ############################################################################################################## LOOP TO CREATE MULTIPLE FILES from source array
-                        for (var q = 0; q < temporaryArr.length; q++) {
-                            /*
-                                NEEDS A LOT OF WORK!
-                             */
-                            var currentDataArr = temporaryArr[q];
-                            //var tempNameBase = "event_";
-                            var temp_finalname = test_name_base + testvalue_nro.toString();
-                            var temp_options = {
-                                defaults: {
-                                    "src": fileS.toString(),
-                                    "src-data": [],
-                                    "subID": 0,
-                                    "subDATE": new Date().toISOString(),
-                                    "a": "",
-                                    "b": "",
-                                    "c": "",
-                                    "kw": [],
-                                    "done": false,
-                                    "lang": tempLang,
-                                    "country": tempCountry,
-                                    "version": app.getVersion()
-                                },
-                                name: "temp#" + temp_finalname,
-                                cwd: temp_base
-                            }
-                            logger.debug("CREATING TEMP FILE: " + "temp#" + temp_finalname);
-                            const temp_store = new Store(temp_options);//
-
-                            //temp_store.set("subID", dataArray[1][0]); // Setting identifier
-                            //temp_store.set("subDATE", dataArray[1][1]); // Setting create date
-
-                            secChtml = '<div class="secC-Q-allA">';
-                            var elemtextA = '<p class="w3-blue w3-container secA-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
-                            elemtextA = elemtextA + '<p class="secA-Q-allA">';
-                            var elemtextB = '<p class="w3-blue w3-container secB-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
-                            elemtextB = elemtextB + '<p class="secB-Q-allA">';
-
-                            
-                            elemtextA = elemtextA + currentDataArr[1]/*.replace(/&/g, "&amp;")
+        elemtextA = elemtextA + currentArr[0]/*.replace(/&/g, "&amp;")
                                 .replace(/"/g, "&quot;")
                                 .replace(/'/g, "&#039;")*/
-                                .replace(/</g, "&lt;")
-                                .replace(/>/g, "&gt;")
-                                .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>');///\b(\w+?)\b/g
-                            elemtextB = elemtextB + currentDataArr[2]/*.replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>') + '</p>';///\b(\w+?)\b/g
+        elemtextB = elemtextB + currentArr[1]/*.replace(/&/g, "&amp;")
                                 .replace(/"/g, "&quot;")
                                 .replace(/'/g, "&#039;")*/
-                                .replace(/</g, "&lt;")
-                                .replace(/>/g, "&gt;")
-                                .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>');
-                            
-                            //var elemA = "<p>" + elemtextA + "</p>";
-                            //var elemB = "<p>" + elemtextB + "</p>";
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>') + '</p>';
 
-                            ////////////////////////////////////////////////////////////////////////////////////////////
-                            // Creating C section from here on....
-                            var j = 1;
-                            var temp_c_list = [];
-                            for (var line = 3; line < currentDataArr.length; line++) {
-                                
-                                var questID = "secC-Q-" + j;
-                                var elemCQ = '<p class="w3-blue w3-container ' + questID + '" style="width:100%;"></p>'; // no text here, because it will be placed in UI, not in file
-                                var ansID = "secC-Q-" + j + "-cont";
-                                var ansText = "";
-                                var elemCA = '';
+        //var elemA = "<p>" + elemtextA + "</p>";
+        //var elemB = "<p>" + elemtextB + "</p>";
 
-                                if (line === 3 || line === 5 || line === 6 || line === 7 || line === 8 || line === 29 || line === 30 || line === 32) {// integer answers. 30 & 32 ARE OPTIONAL!!!!
-                                    // add data
-                                    var datareal = "";
-                                    if (currentDataArr[line] !== undefined) {
-                                        datareal = currentDataArr[line].toString();
-                                    }
-                                    //mainWindow.webContents.send("output-to-chrome-console", "line at integer: "+line);
-                                    //mainWindow.webContents.send("output-to-chrome-console", currentDataArr[line]);
-                                    elemCA = '<p class="w3-light-blue ' + ansID + '" data-real="' + datareal + '" style="display:inline;padding:3px;">' + ansText + '</p>';
-                                    secChtml = secChtml + elemCQ + elemCA;
-                                    j++;
-                                }
-                                else if (line === 4 || line === 9 || line === 28 || line === 31 || line === 33) {// open string answers
-                                    if (currentDataArr[line] !== undefined) {
-                                        
-                                        ansText = currentDataArr[line]/*.replace(/&/g, "&amp;")
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Creating C section from here on....
+        var j = 1;
+        var temp_c_list = [];
+        for (var line = 2; line < currentArr.length; line++) {
+
+            /*
+     
+     [ "event-desc"1, "event-relevancy"2, #profession-INT3, "profession-other"4, #age-INT5, #gender-INT6, #yearinprog-INT7, #eventplacement-INT8, 
+     eventplacement-other"9, [#eventrelated-INT]10, "eventrelated-other"11, #typeofevent-INT12, #reportedsystem-INT13, "ifnotwhy"14, #reportedfiles-INT15, "ifnotwhy"16 ]
+     
+     */
+
+            var questID = "secC-Q-" + j;
+            var elemCQ = '<p class="w3-blue w3-container ' + questID + '" style="width:100%;"></p>'; // no text here, because it will be placed in UI, not in file
+            var ansID = "secC-Q-" + j + "-cont";
+            var ansText = "";
+            var elemCA = '';
+
+            if (line === 3 || line === 5 || line === 6 || line === 7 || line === 8 || line === 29 || line === 30 || line === 32) {// integer answers
+                // add data
+                var datareal = "";
+                if (currentDataArr[line] !== undefined) {
+                    datareal = currentDataArr[line].toString();
+                }
+                //mainWindow.webContents.send("output-to-chrome-console", "line at integer: "+line);
+                //mainWindow.webContents.send("output-to-chrome-console", currentDataArr[line]);
+                elemCA = '<p class="w3-light-blue ' + ansID + '" data-real="' + datareal + '" style="display:inline;padding:3px;">' + ansText + '</p>';
+                secChtml = secChtml + elemCQ + elemCA;
+                j++;
+            }
+            else if (line === 4 || line === 9 || line === 28 || line === 31 || line === 33) {// open string answers
+                if (currentDataArr[line] !== undefined) {
+
+                    ansText = currentDataArr[line]/*.replace(/&/g, "&amp;")
                                             .replace(/"/g, "&quot;")
                                             .replace(/'/g, "&#039;")*/
-                                            .replace(/</g, "&lt;")
-                                            .replace(/>/g, "&gt;")
-                                            .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>');
-                                        
-                                    }
-                                    else {
-                                        ansText = "";
-                                    }
-                                    elemCA = '<p class="' + ansID + '">' + ansText + '</p>';
-                                    secChtml = secChtml + elemCQ + elemCA;
-                                    j++;
-                                }
-                                else if (line >= 10 && line <= 27) {
-                                    if (currentDataArr[line] !== undefined) {
-                                        temp_c_list.push(parseInt(currentDataArr[line]));
-                                    }
-                                    else {
-                                        //do nothing
-                                    }
-                                    if (line !== 27) {
-                                        continue;
-                                    }
-                                    elemCA = "<p class='w3-light-blue " + ansID + "' data-real='" + JSON.stringify(temp_c_list) + "' style='display:inline;padding:3px;'>" + ansText + "</p>";
-                                    secChtml = secChtml + elemCQ + elemCA;
-                                    j++;
-                                }
-                            }
-                            ////////////////////////////////////////////////////////////////////////////////////////////
-                            secChtml = secChtml + '</div>';
-                            logger.debug("created question lines for C section");
-                            //console.log(secChtml);
-                            // REMEMBER TO TURN \" and \' into regular " and ' when showing the data!!!!!!
-                            temp_store.set("a", elemtextA);
-                            temp_store.set("b", elemtextB);
-                            temp_store.set("c", secChtml);
-                            temp_store.set("src-data", currentDataArr); // just putting in all instead of [1]
-                            //logger.debug("DATAAAAAAAAAAAAAAAAAAAAAAAAAAA:");
-                            //logger.debug(dataArray);
-                            //logger.debug(temp_store.get("c","WAS EMPTY"));
-                            logger.debug("file section setted for A, B and C");
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>');
 
-                            /*
-                            ////////////////////////////////////////////////////////// THIS IS USELESS
-                            if (dataArray[2] === undefined) {
-                                logger.warn("Third line (keywords) is not available in convertable source file '" + fileS + "'!");
-                            }
-                            else {
-                                logger.debug("KEYWORDS WITHIN THE SOURCE FILE: '" + fileS + "'!");
-                                logger.debug(dataArray[2]);
-                                //check if keywords in proper format, else, don't add anything... NOT USED ATM!!!
-                            }
-                            //////////////////////////////////////////////////////////
-                            */
-
-                            logger.debug("done! continuing to next");
-                            var currentprojkw = proj_store.get("kw-per-file", {});
-                            currentprojkw["temp#" + temp_finalname + ".json"] = [];
-                            proj_store.set('kw-per-file', currentprojkw);//currently and empty array. would be [ [listID, term], [listID_2, term2], [listID_3, term3],... ]
-                            newtempF["temp#" + temp_finalname + ".json"] = {};
-                            newtempF["temp#" + temp_finalname + ".json"]["file"] = fileS;
-                            newtempF["temp#" + temp_finalname + ".json"]["done"] = false;
-                            //logger.debug("TESTING TYPEOF: " + typeof (newtempF["temp#" + fileS + ".json"]["done"]))
-                            proj_store.set('temp-files', newtempF);
-                            //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]);
-                            //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]);
-                            //logger.debug(typeof(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]));
-                            var successFile = [];
-                            successFile.push(fileS, "temp#" + temp_finalname + ".json", false);
-                            successArray.push(successFile);
-                            testvalue_nro++;
-                        }
-                        // ##############################################################################################################
-       // ##############################################################################################################
-                    }
                 }
-               
-                logger.debug(">>>>>>>DONE WITH LOOP");
-                //logger.debug(i);
-                var sendArray = [];
-                sendArray.push(true);
-                sendArray.push(successArray);
-                sendArray.push(failArray);
-                event.sender.send('async-transform-files-reply', sendArray);
+                else {
+                    ansText = "";
+                }
+                elemCA = '<p class="' + ansID + '">' + ansText + '</p>';
+                secChtml = secChtml + elemCQ + elemCA;
+                j++;
             }
-            else {
-                logger.error("No project properties file while converting to temp files!");
-                var sendArray = [];
-                sendArray.push(false);
-                event.sender.send('async-transform-files-reply', sendArray);
-                // no properties file
+            else if (line >= 10 && line <= 27) {
+                if (currentDataArr[line] !== undefined) {
+                    temp_c_list.push(parseInt(currentDataArr[line]));
+                }
+                else {
+                    //do nothing
+                }
+                if (line !== 27) {
+                    continue;
+                }
+                elemCA = "<p class='w3-light-blue " + ansID + "' data-real='" + JSON.stringify(temp_c_list) + "' style='display:inline;padding:3px;'>" + ansText + "</p>";
+                secChtml = secChtml + elemCQ + elemCA;
+                j++;
             }
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        secChtml = secChtml + '</div>';
+        logger.debug("created question lines for C section");
+        //console.log(secChtml);
+        // REMEMBER TO TURN \" and \' into regular " and ' when showing the data!!!!!!
+        temp_store.set("a", elemtextA);
+        temp_store.set("b", elemtextB);
+        temp_store.set("c", secChtml);
+        temp_store.set("src-data", currentDataArr); // just putting in all instead of [1]
+        //logger.debug("DATAAAAAAAAAAAAAAAAAAAAAAAAAAA:");
+        //logger.debug(dataArray);
+        //logger.debug(temp_store.get("c","WAS EMPTY"));
+        logger.debug("file section setted for A, B and C");
+
+        /*
+        ////////////////////////////////////////////////////////// THIS IS USELESS
+        if (dataArray[2] === undefined) {
+            logger.warn("Third line (keywords) is not available in convertable source file '" + fileS + "'!");
         }
         else {
-            logger.error("No temp folder found while converting to temp files!");
-            var sendArray = [];
-            sendArray.push(false);
-            event.sender.send('async-transform-files-reply', sendArray);
-            // no temp folder
+            logger.debug("KEYWORDS WITHIN THE SOURCE FILE: '" + fileS + "'!");
+            logger.debug(dataArray[2]);
+            //check if keywords in proper format, else, don't add anything... NOT USED ATM!!!
         }
+        //////////////////////////////////////////////////////////
+        */
+
+        logger.debug("done! continuing to next");
+        var currentprojkw = proj_store.get("kw-per-file", {});
+        currentprojkw["temp#" + temp_finalname + ".json"] = [];
+        proj_store.set('kw-per-file', currentprojkw);//currently and empty array. would be [ [listID, term], [listID_2, term2], [listID_3, term3],... ]
+        newtempF["temp#" + temp_finalname + ".json"] = {};
+        newtempF["temp#" + temp_finalname + ".json"]["file"] = fileS;
+        newtempF["temp#" + temp_finalname + ".json"]["done"] = false;
+        //logger.debug("TESTING TYPEOF: " + typeof (newtempF["temp#" + fileS + ".json"]["done"]))
+        proj_store.set('temp-files', newtempF);
+        //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]);
+        //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]);
+        //logger.debug(typeof(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]));
+        var successFile = [];
+        successFile.push(fileS, "temp#" + temp_finalname + ".json", false);
+        successArray.push(successFile);
+        testvalue_nro++;
     }
-    else {
-        logger.error("No source folder found while converting to temp files!");
-        // no source folder
-    }
+    // ##############################################################################################################
+    // ##############################################################################################################
+
+
+    return {};
+
 }
 
 // NEEDS const XLSX = require('xlsx');
 /* Reads source file, CSV or XLS or XLSX format into array */
-function readSourceFile(file, lert_tool) {//NEEDSTOBECHANGED
+function readSourceFile(lert_tool = null, lert_delimiter = null, lert_encoding = null, file = null) {//[tool, delimiter, encoding, filepath] NEEDSTOBECHANGED
     logger.debug("readFile");
-    logger.debug(file);
+
     /* check file-extension and name */
     var result = [];
-    logger.debug(result);
     var output_data = [];
     var file_ext = file.split('.').pop();
     var file_name = file.split('\\').pop();
@@ -1524,9 +1597,7 @@ function readSourceFile(file, lert_tool) {//NEEDSTOBECHANGED
 
     /* file has .xlsx or .xls extension */
     if (file_ext === 'xlsx' || file_ext === 'xls') {
-        logger.debug("file was EXCEL FORMAT");
-        logger.debug("Ignoring....");
-        /*
+        logger.info("Parsing XLSX or XLS file...");
 
         // xlsx-js 
         try {
@@ -1535,102 +1606,161 @@ function readSourceFile(file, lert_tool) {//NEEDSTOBECHANGED
         catch (err) {
             logger.error("Error opening .xlsx or .xls file: " + err.message);
             result.push(false);
+            result.push(1); //xlsx opening failed!
+            result.push([]);
             return result;
         }
         var first_sheet_name = workbook.SheetNames[0];
         var worksheet = workbook.Sheets[first_sheet_name];
 
         var csv_sheet = XLSX.utils.sheet_to_csv(worksheet);
-        //console.log("EXCEL TO CSV");
-        //console.log(JSON.stringify(csv_sheet));
 
-        // xlsx-js continue... 
-        var newlines = ['\r\n', '\n'];
-        var lines = csv_sheet.split(new RegExp(newlines.join('|'), 'g'));
-
-        var headers = CSVtoArray(lines[0]);
-        var contents = CSVtoArray(lines[1]);
-
-        var keys = null;
-
-        output_data[0] = headers;
-        output_data[1] = contents;
-
-        if (lines[2].length !== 0) {
-            keys = CSVtoArray(lines[2]);
-            output_data[2] = keys;
+        var parseResult = parseUtils.validateAndParseCSV(csv_sheet, lert_tool, lert_delimiter);
+        logger.info("Parse & validate result: ["+parseResult[0]+", "+parseResult[1]+", *PARSED DATA*]");
+        if (parseResult[0]) {
+            result.push(true);
+            result.push(0); //xlsx parsin ok
+            result.push(parseResult[2]);
+            return result;
+        } else {
+            result.push(false);
+            result.push(2); // parsing failed
+            result.push([]);
+            return result;
         }
-        result.push(true);
-        result.push(output_data);
-        return result;
-        //console.log(headers);
-        //console.log(contents);
-
-        //console.log("setting data");
-        //window.currentFileContent = output_data;
-
-        //keys = showQuizData(output_data); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        //setupKeywordSelect(output_data[1].length, keys);// ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        */
-    }
-
-    /* file has .csv extension */
-    if (file_ext === 'csv') {
-        logger.debug("file was CSV FORMAT");
+    } else if (file_ext === 'csv') {
+        logger.info("Parsing CSV file...");
         /*Node.js fs*/
-        logger.debug("starting reading...");
         var data = "";
         try {
-            data = fs.readFileSync(file, 'utf8');//, 'utf8'
+            mainWindow.webContents.send("output-to-chrome-console", "PARSING DATAAAAAAAAAAAAAAAAAAAAAAAA  ORIGINAL     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+            data = fs.readFileSync(file, null);
         }
         catch (err) {
             logger.error("Error opening file '"+file_name+"': " + err.message);
             result.push(false);
-            result.push("Couldn't open .csv file!");
+            result.push(1);// couldn't open csv file!
+            result.push([]);
             return result;
         }
-        //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        //logger.debug(charDetector(data));//iconv-lite, iconv
-        //mainWindow.webContents.send("output-to-chrome-console", charDetector(data));
-        //logger.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        var detectRes = charDetector(data);
-        if (detectRes.length > 0) {
-            logger.info("Encoding found");
-            if (iconv.encodingExists(detectRes[0].charsetName)) {
-                logger.info("encoding EXISTS: " + detectRes[0].charsetName);
-                data = iconv.decode(data, detectRes[0].charsetName);
+        //////////////
+
+        //var chardet1 = charDetector.detectAll(data);
+        //var chardet2 = charDetector123(data);
+
+        //////////////////////////////////////////
+        var detectRes = charDetector.detectAll(data);
+
+        var encodings = {};
+        var tempencodings = [];
+        try {
+            tempencodings = JSON.parse(fs.readFileSync(path.join(__dirname, "./assets/select2/encodings.json"), "utf8"));
+            if (!(tempencodings instanceof Array)) {
+                logger.warn("Encodings from file not array!");
+                encodings = {}
+            } else {
+                for (var sew = 0; sew < tempencodings.length; sew++) {
+                    encodings[sew] = tempencodings[sew].name;
+                }
             }
-            else {
-                logger.warn("Encoding does not exist! Defaulting to UTF-8...");
-                data = data.toString('utf8'); 
+        }
+        catch (err) {
+            logger.error("Error opening encodings file: " + err.message);
+            encodings = {}
+        }
+        if (encodings.hasOwnProperty(lert_encoding) && lert_encoding !== 0) {
+            lert_encoding = encodings[lert_encoding];
+        } else {
+            logger.error("Chosen encoding does not exist in file, or encoding was default! Value: " + lert_encoding);
+            lert_encoding = null;
+        }
+
+
+
+        /////////////////////////////////////////////////////////////////////
+        var data_rdy = "";
+        if (detectRes.length > 0) {
+            var encresstr = "";
+            try {
+                encresstr = JSON.stringify(detectRes[0]);
+                //logger.debug(encresstr);
+            } catch (err) {
+                logger.error("Error while encoding check stringify!");
+                logger.error(err.message);
+                encresstr = detectRes[0];
+            }
+
+            logger.info("Encoding found: " + encresstr);
+            logger.info("Trying to convert to UTF-8...");
+
+            //logger.debug(JSON.parse(detectRes));
+            var iconv_csv = null;
+            //mainWindow.webContents.send("output-to-chrome-console", data);
+            try {
+                logger.debug("Source encoding: " + detectRes[0].name);
+                if (lert_encoding === null) {
+                    logger.info("Lert_encoding was null! Using default...");
+                    iconv_csv = new Iconv(detectRes[0].name, 'UTF-8//TRANSLIT');
+                } else {
+                    logger.info("Lert_encoding defined! Using it...");
+                    iconv_csv = new Iconv(lert_encoding, 'UTF-8//TRANSLIT');
+                }
+                data_rdy = iconv_csv.convert(data).toString();           
+            } catch (err) {
+                logger.error(err)
+                logger.error("Encoding failed! Failed to set source encoding: " + detectRes[0].name);
+                logger.info("Trying second encoding option...");
+                try {
+                    logger.debug("Source encoding: " + detectRes[2].name);
+                    if (lert_encoding === null) {
+                        logger.info("Lert_encoding was null! Using default...");
+                        iconv_csv = new Iconv(detectRes[1].name, 'UTF-8//TRANSLIT');
+                    } else {
+                        logger.info("Lert_encoding defined! Using it...");
+                        iconv_csv = new Iconv(detectRes[0].name, 'UTF-8//TRANSLIT');
+                    }
+                    data_rdy = iconv_csv.convert(data).toString();
+                } catch (err) {
+                    logger.error(err)
+                    logger.error("Encoding failed! Failed to set source encoding: " + detectRes[0].name);
+                    logger.info("Trying final encoding option...");
+                    try {
+                        if (lert_encoding === null) {
+                            logger.info("Lert_encoding was null! Not retrying...");
+                            throw "Last file import data encoding attempt failed!";
+                        } else {
+                            logger.info("Lert_encoding defined! Using it...");
+                            iconv_csv = new Iconv(detectRes[1].name, 'UTF-8//TRANSLIT');
+                        }
+                        data_rdy = iconv_csv.convert(data).toString();
+                    } catch (err) {
+                        logger.error(err)
+                        logger.error("Encoding failed! Failed to set source encoding: " + detectRes[0].name);
+                        logger.warn("Defaulting toString() UTF-8...");
+                        data_rdy = data.toString('utf8');
+                    }
+                }
             }
         }
         else {
-            logger.warn("No hits for encoding found! Defaulting to UTF-8...");
-            data = data.toString('utf8'); 
+            logger.warn("No hits for encoding found!");
+            logger.warn("Defaulting toString() UTF-8...");
+            data_rdy = data.toString('utf8'); 
         }
-            //console.log("DATA FROM READFILE");
-            //console.log(JSON.stringify(data));
-            //console.log(data);
+        ////////////////////////////////////////////
+        var parseResult = parseUtils.validateAndParseCSV(data_rdy, lert_tool, lert_delimiter);
+        
 
-
-            //console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>OMAN TULOSTUS");
-        logger.debug("############ PARSE FILES NOW (in readFile).....");
-
-        var parseResult = parseUtils.validateAndParseCSV(data, lert_tool);// NEEDSTOBECHANGED
-        //logger.debug("outputdata>>>>>>>>");
-        //logger.debug(output_data);
-            //console.log("setting data");
-            //window.currentFileContent = output_data;
         if (!parseResult[0]) {
             result.push(false);
-            result.push(parseResult[1]); // reason for failure
+            result.push(2); // parsing failed!
+            result.push([]);
             return result;
         }
         result.push(true);
-        result.push(parseResult);
-        logger.debug("readFile RETURNING VALUES");
-        logger.info("File '"+file_name+"' content successfully loaded and parsed!");
+        result.push(0); // parsing successful
+        result.push(parseResult[2]);
+        logger.info("File '" + file_name + "' content successfully loaded and parsed!");
         return result;
             //var keys = null;
             //keys = showQuizData(output_data); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1638,41 +1768,10 @@ function readSourceFile(file, lert_tool) {//NEEDSTOBECHANGED
     }
     else {
         //what lies beyond this land... prob not right file for some reason :D
+        logger.warn("Tried to open invalid file! Wrong extension: " + file_ext);
         result.push(false);
-        result.push("File invalid! Need to be .csv!");
+        result.push(3);// File invalid
+        result.push([]);
         return result;
     }
 }
-
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-// Return array of string values, or NULL if CSV string not well formed. Checks valid form (ONLY WITH EXCEL-FORMATS!!!!!)
-/*
-function CSVtoArray(text) {
-    logger.debug("CSVtoArray");
-    //logger.debug(text);
-    var re_valid = /^\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*(?:,\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*)*$/;
-    var re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
-    // Return NULL if input string is not well formed CSV string.
-    if (!re_valid.test(text)) {
-        return null;
-    }
-    var arr = [];                     // Initialize array to receive values.
-    text.replace(re_value, // "Walk" the string using replace with callback.
-        function (m0, m1, m2, m3) {
-            // Remove backslash from \' in single quoted values.
-            if (m1 !== undefined) arr.push(m1.replace(/\\'/g, "'"));
-            // Remove backslash from \" in double quoted values.
-            else if (m2 !== undefined) {
-                arr.push(m2.replace(/\\"/g, '"'));
-            }
-            else if (m3 !== undefined) {
-                arr.push(m3);
-            }
-            return ''; // Return empty string.
-        });
-    // Handle special case of empty last value.
-    if (/,\s*$/.test(text)) {
-        arr.push('');
-    }
-    return arr;
-}*/

@@ -66,14 +66,17 @@ document.getElementById("logs-button").onclick = function () {
     // update text!
     var desktop = remote.app.getPath('desktop');
     try {
-        if (!fs.existsSync(path.join(desktop, 'logs'))) {
+        if (!fs.existsSync(path.join(desktop, 'Logs'))) {
             logger.debug("not exists");
-            fs.mkdirSync(path.join(desktop, 'logs'));
-        } else if (!fs.statSync(path.join(desktop, 'logs')).isDirectory()) {
+            fs.mkdirSync(path.join(desktop, 'Logs'));
+            logger.info("Logs directory created to user's desktop!");
+        } else if (!fs.statSync(path.join(desktop, 'Logs')).isDirectory()) {
             logger.debug("not directory");
-            fs.mkdirSync(path.join(desktop, 'logs'));
+            fs.mkdirSync(path.join(desktop, 'Logs'));
+            fs.mkdirSync(path.join(desktop, 'Logs'));
+            logger.info("Logs directory created to user's desktop!");
         }
-        var logname = "logs\\log_" + new Date().toDateString()+".log";
+        var logname = "Logs\\log_" + new Date().toDateString()+".log";
         var data = "";
         var appdata = remote.app.getPath("userData");
         //logger.debug(path.join(appdata, "log.log"));
@@ -117,7 +120,7 @@ function setupTranslations(applang = "en") {
     logger.debug("setupTranslations (about)");
     logger.info("Loading translations into UI (about)");
     // Set window texts here
-    $("#about-version").text("Version: Alpha " + remote.app.getVersion());
+    $("#about-version").text("Version: " + remote.app.getVersion());
 }
 
 electron.ipcRenderer.on('force-interface-update', (event, settings) => {

@@ -25,46 +25,97 @@
     <link rel="stylesheet" href="../css/w3.css">
     <link rel="stylesheet" href="../css/custom.css">
 </head>
-<body style="overflow:hidden">
+<body style="pointer-events:all;overflow:hidden;">
 
     <div id="top-titlebar" class="drag disable-select"></div>
 
-    <header style="min-height:32px;max-height:32px;" class="w3-display-container w3-blue disable-select">
+    <header id="top-header" style="min-height:32px;max-height:32px;opacity:1;" class="w3-display-container w3-blue disable-select">
 
         <div id="titlebar-left-corner" class="w3-display-topleft w3-bar">
-            <img draggable="false" id="slipps-title-icon" class="w3-bar-item" src="../ui_icons/SLIPPS.logo-76.png" />
-            <p id="titlebar-appname" class="w3-bar-item">Import Wizard</p>
+            <img draggable="false" id="slipps-title-icon" class="w3-bar-item" src="../ui_icons/SLIPPS.logo-76.png">
+            <p id="titlebar-appname" class="w3-bar-item"></p>
         </div>
+
         <div id="titlebar-window-controls" style="width:58px;" class="w3-bar w3-display-topright no-drag">
-            <img draggable="false" id="win-close-icon" class="w3-bar-item w3-button corner-buttons w3-hover-red" style="padding: 3px 16px;" src="../ui_icons/appbar.close.png" />
+            <img draggable="false" id="win-close-icon" class="w3-bar-item w3-button corner-buttons w3-hover-red" style="padding: 3px 16px;" src="../ui_icons/appbar.close.png">
         </div>
     </header>
 
-    <div class="w3-container" style="text-align: center;display: flex;flex-direction: column;">
-        <div class="" style="">
-            <p>#1 Select used survey tool from the list:</p>
-            <select id="file-import-tool"></select>
+    <div id="main-div" class="w3-container" style="flex:1;flex-direction: column;visibility:visible;display: flex;opacity:1;">
+
+        <h4 style="text-align: center;" id="import-tip-1"></h4>
+
+        <div style="width: 100%;height: 100px;" class="w3-bar w3-panel">
+            <div class="w3-bar-item">
+                <p id="import-tool-text"></p>
+                <select style="width:230px;" id="import-select-tool"></select>
+            </div>
+            <div class="w3-bar-item">
+                <p id="import-delimiter-text"></p>
+                <select style="width:120px;" id="import-select-delimiter"></select>
+            </div>
+            <div class="w3-bar-item">
+                <p id="import-encoding-text"></p>
+                <select style="width:120px;" id="import-select-encoding"></select>
+            </div>
+            <div id="import-add-file-btn" class="w3-bar-item w3-button">
+                <img draggable="false" id="import-add-file-icon" class="" src="../ui_icons/appbar.folder.open.png">
+                <p id="import-add-file-text" class="navbar-text"></p>
+            </div>
+            <div id="import-reload-file-btn" class="w3-bar-item w3-button">
+                <img draggable="false" id="import-reload-file-icon" class="" src="../ui_icons/appbar.reset.png">
+                <p id="import-reload-file-text" class="navbar-text"></p>
+            </div>
         </div>
-        <div>
-            <p>#2 Select file:</p>
-            <div class="">
-                <div id="import-wiz-file-btn" class="w3-button w3-padding">
-                    <img draggable="false" id="import-wiz-file-icon" class="" src="../ui_icons/appbar.folder.open.png" />
-                    <p id="import-wiz-file-btn-text" class="" style="margin:0;">Select File</p>
+
+        <div style="width: 100%;min-height: 40px;background-color: blanchedalmond;">
+            <p id="import-file-name" data-file="" style="padding: 8px 8px;word-break: break-all;" class=""></p>
+        </div>
+
+        <div style="width: 100%;flex: 1;display: flex;flex-direction: column;">
+            <h4 style="text-align: center;" id="import-tip-2"></h4>
+
+            <div style="flex-grow: 1;display: flex;flex-direction: column;">
+
+                <div style="height:58px;flex:none;" class="w3-bar">
+                    <button id="import-select-all-btn" class="w3-button disable-select w3-green w3-bar-item" style="margin: 10px;">
+                    </button>
+                    <button id="import-select-none-btn" class="w3-button disable-select w3-red w3-bar-item" style="margin: 10px;">
+                    </button>
                 </div>
-                <p id="import-wiz-file-name" data-file="" class="w3-gray w3-padding">Nothing selected</p>
+
+                <div style="height: 10%;flex-grow: 1;flex:1;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
+                    <ul id="import-preview-list" class="w3-ul"></ul>
+                </div>
+
             </div>
         </div>
-        <div class="" style="">
-            <p>#3 Click 'Import File' to import selected file:</p>
-            <div id="import-wiz-import-btn" class="w3-button">
-                <img draggable="false" id="import-wiz-import-icon" class="" src="../ui_icons/appbar.add.png" />
-                <p id="import-wiz-import-btn-text" class="" style="margin:0;">Import File</p>
+
+        <h4 style="text-align: center;" id="import-tip-3"></h4>
+
+        <div style="height: 120px;width: 100%;">
+
+            <div style="width: 100%;display: flex;">
+                <div style="margin: auto;display: inline-flex;">
+                    <div style="margin-right: 20px;">
+                        <p id="import-survey-ver-text" style="margin: 0;"></p>
+                        <select style="width:230px;" id="import-select-survey-ver"></select>
+                    </div>
+                    <button id="import-confirm-btn" class="w3-button disable-select w3-round-large w3-blue" style="margin-left: 20px;margin-bottom: 10px;margin-top: 10px;"></button>
+                </div>
             </div>
-            <p id="import-wiz-err-text" class="" style="color:red;"></p>
+
+            <p id="import-error-text" style="text-align:center;color:red;" class="w3-animate-right"></p>
         </div>
+
     </div>
 
     <script>require('../js/importwizard.js');</script>
+
+    <div id="import-busy-notif" style="z-index: 99999;position:absolute;width:100%;height:100%;display: none;" class="">
+        <div style="margin: auto;padding: 0;">
+            <img draggable="false" id="import-busy-icon" class="w3-spin" src="../ui_icons/appbar.transform.rotate.clockwise.png" style="height: 120px;">
+        </div>
+    </div>
 </body>
 </html>

@@ -193,3 +193,15 @@ li {
     cursor: pointer;
     border-radius: 5px;
 }
+
+.importable-0 {
+    background-color: rgba(33, 150, 243, 0.36);
+}
+
+.importable-1 {
+    background-color: rgba(244, 67, 54, 0.36);
+}
+
+.importable-2 {
+    background-color: rgba(76, 175, 80, 0.36);
+}
