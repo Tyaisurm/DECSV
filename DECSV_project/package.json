@@ -46,9 +46,9 @@
     },
     "fileAssociations": {
       "ext": "decsv",
-      "name": "DECSV Project File",
+      "name": "DECSV",
       "role": "Editor",
-      "description": "File containing project data for SLIPPS Teacher Tool"
+      "description": "SLIPPS Teacher Tool Project File"
     }
   },
   "homepage": "https://github.com/Tyaisurm/DECSV",

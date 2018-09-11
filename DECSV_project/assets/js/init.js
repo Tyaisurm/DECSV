@@ -1942,5 +1942,16 @@ if (window.allsettings.app.edits[0] === true || window.allsettings.app.edits[1] 
 else if (ipcRenderer.sendSync("get-ext-file-data","asd") !== null) {
     // there is something to be opened....
     logger.info("There is project that needs to be opened! (App itself just launched)");
-    openAndViewProject(ipcRenderer.sendSync("get-ext-file-data", "asd"));
+    
+    var forceprojres = openAndViewProject(ipcRenderer.sendSync("get-ext-file-data", "asd"));
+    if (forceprojres[0]) {
+        logger.info("New project (PATH)'" + filepath + "' opened successfully!");
+    }
+    else {
+        logger.error("Failed to open new project (PATH)'" + filepath + "'! Reason: " + forceprojres[1]);
+        $("#proj-open-error").text(forceprojres[1]);
+
+        $("#proj-open-error").before($("#proj-open-error").clone(true));
+        $("[id='proj-open-error']" + ":last").remove();
+    }
 }
