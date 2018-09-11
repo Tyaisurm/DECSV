@@ -82,10 +82,16 @@ logger.transports.console.level = "silly";
 ///////////////////////////////
 autoUpdater.logger = logger;
 
-
+//logger.warn("AAAAAAAAAAAAAAAAAAAAAAAAAA   FIRST WARN    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa");
 const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
     // Someone tried to run a second instance, we should focus our window
     logger.info("Testing for second instance...");
+    /*
+    logger.info("################## SECOND INSTANCE DATA ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤");
+    logger.info("process.platform = " + process.platform);
+    logger.info("process.argv = " + process.argv);
+    logger.info("commandLine = " + commandLine);
+    */
     //logger.debug(ipcMain.send("asdasd",""));
     if (mainWindow !== null) {
         logger.info("Main maindow was not null! Restoring and focusing...");
@@ -101,13 +107,14 @@ const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) 
         //
         // otherwise, you need to listen event in MacOS 'open-file' with event.preventDefault()
         // in windows parse process.argv
+        //logger.error("AAAAAAAAAAAAAAAAAAAAAAAAAAA  THIRD ERROR  AAAAAAAAAAAAAAAAAAAAAAAAAAa");
         logger.info("Testing if we need to open a new project...");
-        if (process.platform == 'win32' && process.argv.length >= 2) {
-            var openFilePath = process.argv[1];
+        if (process.platform == 'win32' && commandLine.length >= 2) {
+            var openFilePath = commandLine[1];
             if (current_project !== null) {
                 // there is a project open
                 logger.warn("Tried to open new project, while old one still exits!");
-                logger.info("# Old: " + current_projet);
+                logger.info("# Old: " + current_project);
                 logger.info("# New: " + openFilePath);
                 // create dialog and notify to exit current project before opening new projects...
                 var options = {
@@ -117,7 +124,7 @@ const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) 
                     detail: "Please close the current project, and try opening again.",
                     buttons: [i18n_app.__('conf-ok', true)]
                 };
-                dialog.showMessageBox(options, function (index) {
+                dialog.showMessageBox(mainWindow, options, function (index) {
                     // no need to deal with anything.... just notifying user
                     if (index === 1) {
                         //
@@ -136,26 +143,40 @@ const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) 
             logger.warn("Platform is not win32, or argv.length is not >=2!");
         }
     } else {
+        //logger.error("AAAAAAAAAAAAAAAAAAAAAAAAAAA  FOURTH ERROR  AAAAAAAAAAAAAAAAAAAAAAAAAAa");
         // no mainwindow! if we are opening project, we are settings this variable just in case
         logger.info("No main window exists! Setting variable just in case...");
-        if (process.platform == 'win32' && process.argv.length >= 2) {
-            pre_project = process.argv[1];
-            logger.info("Settings main process pre_project variable(win32): " + pre_project);
+        if (process.platform == 'win32' && commandLine.length >= 2) {
+            pre_project = commandLine[1];
+            logger.info("[SECOND INSTANCE] Settings main process pre_project variable(win32): " + pre_project);
         } else {
-            logger.warn("Platform is not win32, or argv.length is not >=2!");
+            logger.warn("[SECOND INSTANCE] Platform is not win32, or argv.length is not >=2!");
         }
+        /*
         if (process.platform == 'darwin') {
             logger.info("Platform was 'darwin'! Opening new mainWindow...");
             createMainWindow();
         }
+        */
     }
 });
 
 if (isSecondInstance) {
-    logger.debug("Tried to create second instance!");
+    logger.info("Tried to create second instance!");
     app.quit()
 } else {
-    logger.debug("This instance is first one!");
+    logger.info("This instance is first one!");
+    /*
+    logger.info("###################### FIRST INSTANCE DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+    logger.info("process.platform = " + process.platform);
+    logger.info("process.argv = " + process.argv);
+    */
+    if (process.platform == 'win32' && process.argv.length >= 2) {
+        pre_project = process.argv[1];
+        logger.info("[FIRST INSTANCE] Settings main process pre_project variable(win32): " + pre_project);
+    } else {
+        logger.warn("[FIRST INSTANCE] Platform is not win32, or argv.length is not >=2!");
+    }
 }
 
 /* Handle opening files in program (while not open before; that is above in the makeSingleInstance callback) */

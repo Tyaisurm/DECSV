@@ -79,7 +79,7 @@
   },
   "devDependencies": {
     "ajv": "6.5.0",
-    "electron": "2.0.2",
+    "electron": "^2.0.9",
     "electron-builder": "^20.28.4",
     "electron-rebuild": "^1.8.2"
   }
