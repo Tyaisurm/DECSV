@@ -66,12 +66,15 @@ const charDetector = require('chardet');
 const charDetector123 = require('charset-detector');
 const Iconv = require('iconv').Iconv;
 
-var demostatus = false;
 var current_project = null;
 var pre_project = null;
 var showExitPrompt = true;
 
 const parseUtils = require("./assets/js/parseUtils.js");
+
+///////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////
 
 if (require('electron-squirrel-startup')) { app.quit(); }
 
@@ -252,7 +255,7 @@ global.getSettings = function () {
             "app-lang": "en",
             "first-use": false,
             "app-version": app.getVersion(),
-            "demo-files": false,
+            "demo-files": true,
             "latest-update-check": null,
             "latest-update-install": null,
             "zoom": 100,
@@ -321,7 +324,7 @@ global.setSettings = function (settings = {}) {
             "app-lang": "en",
             "first-use": false,
             "app-version": app.getVersion(),
-            "demo-files": false,
+            "demo-files": true,
             "latest-update-check": null,
             "latest-update-install": null,
             "zoom": 100,
@@ -410,6 +413,9 @@ createAppStructure();
 /////////////////////
 
 //////////////////////////////////////////////////////////// IPC MAIN LISTENERS
+ipcMain.on('regenerate-demo-keywords', function (event, arg) {
+    createAppStructure(1);
+});
 
 ipcMain.on('import-wiz-return', function (event, arg) {
     logger.debug("import-wiz-return");
@@ -444,8 +450,13 @@ ipcMain.on('import-wiz-return', function (event, arg) {
         //received selected lines to be imported.... parsing to proper form...
         var completearr = parseUtils.parseArray(arg[0], arg[1], arg[3]);// [tool, arr, survey_version] // returns [boolean, statuscode, arr] CURRENTLY USING PLACEHOLDERS!
         if (completearr[0]) {
+            //mainWindow.webContents.send("output-to-chrome-console", completearr[2]);
+            // logger.error("DENIED! UNABLE TO USE BECAUSE NOT IMPLEMENTED!");
+            //event.sender.send("import-wiz-result", [false, completearr[1], "{}"]);
+            //return;
+
             try {
-                var htmljson = readAndParseSource(completearr[2],arg[2]);
+                var htmljson = parseUtils.readAndParseSource(completearr[2],arg[2]);
                 var htmlstring = JSON.stringify(htmljson);
                 event.sender.send("import-wiz-result", [true, 0, htmlstring]);
             } catch (err) {
@@ -508,8 +519,10 @@ function createDocStructure() {
 }
 
 /* Creates application's folders and settings-files into user's AppData-folder */
-function createAppStructure() { //NEEDSTOBECHANGED
+function createAppStructure(mode = 0) {
     logger.debug("createAppStructure");
+    
+    var demostatus = false;
     var apppath = app.getPath('userData');
     var appconfigcheck = false;
     if (fs.existsSync(path.join(apppath, 'app-configuration.json'))) {
@@ -530,14 +543,19 @@ function createAppStructure() { //NEEDSTOBECHANGED
                 "latest-update-install": null,
                 "zoom":100,
                 "app-version": app.getVersion(),
-                "demo-files": demostatus,
+                "demo-files": false,
                 "edits": [false,null]
             },
             name: "app-configuration",
             cwd: apppath
         }
+        /*
+        var settings_app_base = {
+            "app": {}, "kw": {}
+        }
+        setSettings(settings_app_base);*/
         const CA1_store = new Store(CA1_options);
-
+        /*
         if (demostatus) {
             // is true, meaning that demofiles have been created before
             logger.info("Demofiles created before! Not remaking them again...");
@@ -546,6 +564,7 @@ function createAppStructure() { //NEEDSTOBECHANGED
             logger.info("Demofiles not created before! Creating now...");
             // is false, no demofiles have been done yet
         }
+        */
     }
     else {
         logger.info("App configuration file found! Checking version...");
@@ -562,13 +581,13 @@ function createAppStructure() { //NEEDSTOBECHANGED
         var appzoom = CA1_store.get("zoom", 100);
 
         var appfirst = CA1_store.get("first-use", true);
-        var appdemos = CA1_store.get("demo-files", false);
+        demostatus = CA1_store.get("demo-files", false);
         var appedits = CA1_store.get("edits", [false,null]);
 
         //logger.info("Current ver.: " + app.getVersion() + " Ver. in file: " + appver);
         var appvercheck = parseUtils.validateVersion(appver);
         if (!appvercheck) {
-            logger.info("Config major version not same as application major version! Overwriting...");
+            logger.info("Config major version not same as application major version! updating...");
             CA1_store.clear();
             CA1_store.set("app-lang", applang);
 
@@ -578,21 +597,24 @@ function createAppStructure() { //NEEDSTOBECHANGED
 
             CA1_store.set("first-use", appfirst);
             CA1_store.set("app-version", app.getVersion());
-            CA1_store.set("demo-files", appdemos)
+            CA1_store.set("demo-files", demostatus)
             CA1_store.set("edits", appedits)
         } else {
-            logger.info("Application config major version same or newer as application version!");
+            logger.info("Application config major version same or newer as application version! Not updating...");
         }
-        if (typeof(appdemos) !== typeof(true)) {
-            appdemos = false;
+        if (typeof (demostatus) !== typeof(true)) {
+            demostatus = false;
         }
-        demostatus = appdemos;
+        if (mode === 1) {
+            logger.info("Settings demostatus to 'false' to re-generate demokeywords...");
+            demostatus = false;
+        }
         if (demostatus) {
             // is true, meaning that demofiles have been created befor
-            logger.info("Demofiles created before! 'Demostatus' variable is true!");
+            logger.info("Assume demofiles created before! 'Demostatus' variable true!");
         } else {
             CA1_store.set("demo-files", true)
-            logger.info("Demofiles not created before! 'Demostatus' variable is false! Need to create now...");
+            logger.info("Assume no demofiles created! 'Demostatus' variable is false!");
             // is false, no demofiles have been done yet
         }
 
@@ -624,7 +646,7 @@ function createAppStructure() { //NEEDSTOBECHANGED
         logger.error("Unable to create keywordlist directory! Reason: " + err.message);
     }
     if (!keyword_file_check || !demostatus) {
-        logger.info("No keyword configuration file found, or 'demostatus' variable was false! Creating keyword files with defaults...");
+        logger.info("Keyword_file_check '" + keyword_file_check + "', demostatus '"+demostatus+"'... Creating keyword files with defaults...");
         
         // #################################################################
         //      SETTING DEMO FILES - BELOW IS ORIGINAL, FURTHER BELOW CURRENT.....
@@ -641,10 +663,10 @@ function createAppStructure() { //NEEDSTOBECHANGED
         }
         */
         if (!demostatus) {
-            logger.info("Since 'demostatus' was false, creating demo keyword files, and proper settings for them...");
+            logger.info("Since 'demostatus' was false, creating demo keyword files, and proper settings for them...(copy and overwrite...)");
             if (!keyword_file_check) {
                 logger.info("Generating kw demofiles, while 'keyword_file_check' was false!");
-                try {
+                try {/*
                     var CA2_options = {
                         defaults: {
                             "last-local-update": new Date().toISOString(),
@@ -674,23 +696,37 @@ function createAppStructure() { //NEEDSTOBECHANGED
                         name: "keyword-config",
                         cwd: path.join(apppath, 'keywordlists')
                     }
-                    const CA2_store = new Store(CA2_options);
+                    const CA2_store = new Store(CA2_options);*/
 
                     var source_demo_1 = path.join(__dirname, './demo_files/en-basic.json');
-                    var source_demo_2 = path.join(__dirname, './demo_files/fi-basic.json');
-                    var destination_demo_1 = path.join(apppath, 'keywordlists/en-basic.json')
-                    var destination_demo_2 = path.join(apppath, 'keywordlists/fi-basic.json')
+                    var source_demo_2 = path.join(__dirname, './demo_files/en-people_roles.json');
+                    var source_demo_3 = path.join(__dirname, './demo_files/en-settings_specialities.json');
+                    var source_demo_4 = path.join(__dirname, './demo_files/en-topics.json');
+                    var source_demo_5 = path.join(__dirname, './demo_files/keyword-config.json');
+                    var destination_demo_1 = path.join(apppath, 'keywordlists/en-basic.json');
+                    var destination_demo_2 = path.join(apppath, 'keywordlists/en-people_roles.json');
+                    var destination_demo_3 = path.join(apppath, 'keywordlists/en-settings_specialities.json');
+                    var destination_demo_4 = path.join(apppath, 'keywordlists/en-topics.json');
+                    var destination_demo_5 = path.join(apppath, 'keywordlists/keyword-config.json');
                     var content_1 = fs.readFileSync(source_demo_1, 'utf8');
                     var content_2 = fs.readFileSync(source_demo_2, 'utf8');
+                    var content_3 = fs.readFileSync(source_demo_3, 'utf8');
+                    var content_4 = fs.readFileSync(source_demo_4, 'utf8');
+                    var content_5 = fs.readFileSync(source_demo_5, 'utf8');
                     fs.writeFileSync(destination_demo_1, content_1, 'utf8');
                     fs.writeFileSync(destination_demo_2, content_2, 'utf8');
+                    fs.writeFileSync(destination_demo_3, content_3, 'utf8');
+                    fs.writeFileSync(destination_demo_4, content_4, 'utf8');
+                    fs.writeFileSync(destination_demo_5, content_5, 'utf8');
                 }
                 catch (err) {
                     logger.error("Failed to copy demo files! Reason: " + err.message);
                 }
             } else {
                 logger.info("Generating kw demofiles, while 'keyword_file_check' was true!");
+
                 try {
+                    /*
                     var CA5_options = {
                         defaults: {
                             "last-local-update": new Date().toISOString(),
@@ -746,23 +782,35 @@ function createAppStructure() { //NEEDSTOBECHANGED
                     CA5_store.set("available-keywordlists", ca5avkw);
                     CA5_store.set("local-keywordlists", ca5lokw);
                     CA5_store.set("enabled-keywordlists", ca5ekw);
-
+                    */
 
                     var source_demo_1 = path.join(__dirname, './demo_files/en-basic.json');
-                    var source_demo_2 = path.join(__dirname, './demo_files/fi-basic.json');
-                    var destination_demo_1 = path.join(apppath, 'keywordlists/en-basic.json')
-                    var destination_demo_2 = path.join(apppath, 'keywordlists/fi-basic.json')
+                    var source_demo_2 = path.join(__dirname, './demo_files/en-people_roles.json');
+                    var source_demo_3 = path.join(__dirname, './demo_files/en-settings_specialities.json');
+                    var source_demo_4 = path.join(__dirname, './demo_files/en-topics.json');
+                    var source_demo_5 = path.join(__dirname, './demo_files/keyword-config.json');
+                    var destination_demo_1 = path.join(apppath, 'keywordlists/en-basic.json');
+                    var destination_demo_2 = path.join(apppath, 'keywordlists/en-people_roles.json');
+                    var destination_demo_3 = path.join(apppath, 'keywordlists/en-settings_specialities.json');
+                    var destination_demo_4 = path.join(apppath, 'keywordlists/en-topics.json');
+                    var destination_demo_5 = path.join(apppath, 'keywordlists/keyword-config.json');
                     var content_1 = fs.readFileSync(source_demo_1, 'utf8');
                     var content_2 = fs.readFileSync(source_demo_2, 'utf8');
+                    var content_3 = fs.readFileSync(source_demo_3, 'utf8');
+                    var content_4 = fs.readFileSync(source_demo_4, 'utf8');
+                    var content_5 = fs.readFileSync(source_demo_5, 'utf8');
                     fs.writeFileSync(destination_demo_1, content_1, 'utf8');
                     fs.writeFileSync(destination_demo_2, content_2, 'utf8');
+                    fs.writeFileSync(destination_demo_3, content_3, 'utf8');
+                    fs.writeFileSync(destination_demo_4, content_4, 'utf8');
+                    fs.writeFileSync(destination_demo_5, content_5, 'utf8');
                 }
                 catch (err) {
                     logger.error("Failed to copy demo files! Reason: " + err.message);
                 }
             }
         } else if (!keyword_file_check) {
-            logger.info("Since 'keyword_file_check' was false (and 'demofiles' true), creating blank keyword settings...");
+            logger.info("Since 'keyword_file_check' was false (and 'demostatus' true), creating blank keyword settings...");
             var CA4_options = {
                 defaults: {
                     "last-local-update": null,
@@ -777,7 +825,9 @@ function createAppStructure() { //NEEDSTOBECHANGED
                 cwd: path.join(apppath, 'keywordlists')
             }
             const CA4_store = new Store(CA4_options);
-        } else { }
+        } else {
+            logger.warn("Hmm... You shouldn't be here D: Demostatus true, keyword_file_check true!");
+        }
     } else {
         logger.info("Keyword configuration file found, and 'demostatus' variable was true! Assuming everything is ok!");
     }
@@ -1388,215 +1438,6 @@ global.createDummyDialog = function (callingWindow) {
     dialog.showMessageBox(callingWindow, options, function (index) {
         // no need to deal with anything.... just notifying user
     });
-}
-
-/* 
- "event_0": {
-			"src-file": "lahdedata_1",
-			"src-data":[],
-			"a": "HTML GOES HERE",
-			"b": "HTML GOES HERE",
-			"c": "HTML GOES HERE",
-			"country": "FI",
-			"lang": "fi",
-			"kw": [
-				"basic-2",
-				"basic-39"
-			],
-			"done": false
-		},
- */
-/* Creates temp-files from source files within the project's folders */
-function readAndParseSource(sourcearr = [], path = "") { //receives array of arrays that have raw import data... NEEDSTOBECHANGED
-    logger.debug("readAndParseSource");
-    logger.debug(path);
-    logger.debug(sourcearr);
-    if (!(sourcearr instanceof Array)) {
-        logger.error("ReadAndParseSource file was not instanceof Array!");
-        sourcearr = [];
-    } else if (sourcearr.length === 0) {
-        logger.error("Can't parse source array with length of 0!");
-        throw "Source array length 0!";
-    }
-    //var processeddata = readSourceFile(arg[0], arg[1], arg[2]); // will be [false/true, status_code, result_array]
-    //mainWindow.webContents.send("output-to-chrome-console", processeddata)
-    //return {};//processeddata;
-    ///////// testreturn
-
-
-    //var temporaryArr = [];// not used
-
-    //mainWindow.webContents.send("output-to-chrome-console", temporaryArr);//testing the array
-
-    /*
-     
-     [ "event-desc", "event-relevancy", #profession-INT, "profession-other", #age-INT, #gender-INT, #yearinprog-INT, #eventplacement-INT, 
-     eventplacement-other", [#eventrelated-INT], "eventrelated-other", #typeofevent-INT, #reportedsystem-INT, "ifnotwhy", #reportedfiles-INT, "ifnotwhy" ]
-     
-     */
-
-    // ##############################################################################################################
-    // ############################################################################################################## LOOP TO CREATE MULTIPLE FILES from source array   
-    for (var q = 0; q < sourcearr.length; q++) {// loop specific events
-        
-        var currentArr = sourcearr[q];
-
-        if (currentArr.length != 16) {
-            logger.error("Can't parse source array for import! Length not 16!");
-        }
-
-        //var tempNameBase = "event_";
-        var event_base = {
-            "src-file": path,
-            "src-data": currentArr,
-            "a": "",
-            "b": "",
-            "c": "",
-            "country": null,
-            "lang": null,
-            "kw": [],
-            "done": false
-        }
-        //temp_store.set("subID", dataArray[1][0]); // Setting identifier
-        //temp_store.set("subDATE", dataArray[1][1]); // Setting create date
-        
-        var secChtml = '<div class="secC-Q-allA">';
-        var elemtextA = '<p class="w3-blue w3-container secA-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
-        elemtextA = elemtextA + '<p class="secA-Q-allA">';
-        var elemtextB = '<p class="w3-blue w3-container secB-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
-        elemtextB = elemtextB + '<p class="secB-Q-allA">';
-
-
-        elemtextA = elemtextA + currentArr[0]/*.replace(/&/g, "&amp;")
-                                .replace(/"/g, "&quot;")
-                                .replace(/'/g, "&#039;")*/
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>') + '</p>';///\b(\w+?)\b/g
-        elemtextB = elemtextB + currentArr[1]/*.replace(/&/g, "&amp;")
-                                .replace(/"/g, "&quot;")
-                                .replace(/'/g, "&#039;")*/
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>') + '</p>';
-
-        //var elemA = "<p>" + elemtextA + "</p>";
-        //var elemB = "<p>" + elemtextB + "</p>";
-
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        // Creating C section from here on....
-        var j = 1;
-        var temp_c_list = [];
-        for (var line = 2; line < currentArr.length; line++) {
-
-            /*
-     
-     [ "event-desc"1, "event-relevancy"2, #profession-INT3, "profession-other"4, #age-INT5, #gender-INT6, #yearinprog-INT7, #eventplacement-INT8, 
-     eventplacement-other"9, [#eventrelated-INT]10, "eventrelated-other"11, #typeofevent-INT12, #reportedsystem-INT13, "ifnotwhy"14, #reportedfiles-INT15, "ifnotwhy"16 ]
-     
-     */
-
-            var questID = "secC-Q-" + j;
-            var elemCQ = '<p class="w3-blue w3-container ' + questID + '" style="width:100%;"></p>'; // no text here, because it will be placed in UI, not in file
-            var ansID = "secC-Q-" + j + "-cont";
-            var ansText = "";
-            var elemCA = '';
-
-            if (line === 3 || line === 5 || line === 6 || line === 7 || line === 8 || line === 29 || line === 30 || line === 32) {// integer answers
-                // add data
-                var datareal = "";
-                if (currentDataArr[line] !== undefined) {
-                    datareal = currentDataArr[line].toString();
-                }
-                //mainWindow.webContents.send("output-to-chrome-console", "line at integer: "+line);
-                //mainWindow.webContents.send("output-to-chrome-console", currentDataArr[line]);
-                elemCA = '<p class="w3-light-blue ' + ansID + '" data-real="' + datareal + '" style="display:inline;padding:3px;">' + ansText + '</p>';
-                secChtml = secChtml + elemCQ + elemCA;
-                j++;
-            }
-            else if (line === 4 || line === 9 || line === 28 || line === 31 || line === 33) {// open string answers
-                if (currentDataArr[line] !== undefined) {
-
-                    ansText = currentDataArr[line]/*.replace(/&/g, "&amp;")
-                                            .replace(/"/g, "&quot;")
-                                            .replace(/'/g, "&#039;")*/
-                        .replace(/</g, "&lt;")
-                        .replace(/>/g, "&gt;")
-                        .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>');
-
-                }
-                else {
-                    ansText = "";
-                }
-                elemCA = '<p class="' + ansID + '">' + ansText + '</p>';
-                secChtml = secChtml + elemCQ + elemCA;
-                j++;
-            }
-            else if (line >= 10 && line <= 27) {
-                if (currentDataArr[line] !== undefined) {
-                    temp_c_list.push(parseInt(currentDataArr[line]));
-                }
-                else {
-                    //do nothing
-                }
-                if (line !== 27) {
-                    continue;
-                }
-                elemCA = "<p class='w3-light-blue " + ansID + "' data-real='" + JSON.stringify(temp_c_list) + "' style='display:inline;padding:3px;'>" + ansText + "</p>";
-                secChtml = secChtml + elemCQ + elemCA;
-                j++;
-            }
-        }
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        secChtml = secChtml + '</div>';
-        logger.debug("created question lines for C section");
-        //console.log(secChtml);
-        // REMEMBER TO TURN \" and \' into regular " and ' when showing the data!!!!!!
-        temp_store.set("a", elemtextA);
-        temp_store.set("b", elemtextB);
-        temp_store.set("c", secChtml);
-        temp_store.set("src-data", currentDataArr); // just putting in all instead of [1]
-        //logger.debug("DATAAAAAAAAAAAAAAAAAAAAAAAAAAA:");
-        //logger.debug(dataArray);
-        //logger.debug(temp_store.get("c","WAS EMPTY"));
-        logger.debug("file section setted for A, B and C");
-
-        /*
-        ////////////////////////////////////////////////////////// THIS IS USELESS
-        if (dataArray[2] === undefined) {
-            logger.warn("Third line (keywords) is not available in convertable source file '" + fileS + "'!");
-        }
-        else {
-            logger.debug("KEYWORDS WITHIN THE SOURCE FILE: '" + fileS + "'!");
-            logger.debug(dataArray[2]);
-            //check if keywords in proper format, else, don't add anything... NOT USED ATM!!!
-        }
-        //////////////////////////////////////////////////////////
-        */
-
-        logger.debug("done! continuing to next");
-        var currentprojkw = proj_store.get("kw-per-file", {});
-        currentprojkw["temp#" + temp_finalname + ".json"] = [];
-        proj_store.set('kw-per-file', currentprojkw);//currently and empty array. would be [ [listID, term], [listID_2, term2], [listID_3, term3],... ]
-        newtempF["temp#" + temp_finalname + ".json"] = {};
-        newtempF["temp#" + temp_finalname + ".json"]["file"] = fileS;
-        newtempF["temp#" + temp_finalname + ".json"]["done"] = false;
-        //logger.debug("TESTING TYPEOF: " + typeof (newtempF["temp#" + fileS + ".json"]["done"]))
-        proj_store.set('temp-files', newtempF);
-        //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]);
-        //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]);
-        //logger.debug(typeof(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]));
-        var successFile = [];
-        successFile.push(fileS, "temp#" + temp_finalname + ".json", false);
-        successArray.push(successFile);
-        testvalue_nro++;
-    }
-    // ##############################################################################################################
-    // ##############################################################################################################
-
-
-    return {};
-
 }
 
 // NEEDS const XLSX = require('xlsx');

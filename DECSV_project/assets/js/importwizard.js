@@ -45,6 +45,16 @@ const ipcRenderer = electron.ipcRenderer;
 var operating = false;
 window.import_ready = false;
 
+const { Menu, MenuItem } = remote;
+
+const menu = new Menu()
+menu.append(new MenuItem({ label: 'Developer Tools', click() { thiswindow.toggleDevTools() } }))
+
+window.addEventListener('contextmenu', (e) => {
+    e.preventDefault()
+    menu.popup({ window: thiswindow })
+}, false);
+
 ///////////////////////////////////////////////////////////////////////////////// SCREEN LISTENERS
 thiswindow.on('focus', function () { $("html").css("opacity", "1"); });
 thiswindow.on('blur', function () { $("html").css("opacity", "0.5"); });
@@ -259,16 +269,16 @@ ipcRenderer.on("import-wiz-reply", function (event, arg) {// should be [boolean,
 ipcRenderer.on("import-wiz-result", function (event, arg) {
     // [true, 0, jsonobjstring]
     logger.debug("import-wiz-result (import wizard)");
-    logger.debug(arg);
+    //logger.debug(arg);
     if (arg[0]) {
         logger.info("Exporting successful! Closing import wizard...");
         try {
             var htmljson = JSON.parse(arg[2]);
-            thisWindow.getParentWindow().webContents.send("import-wiz-import-result", htmljson);
+            thiswindow.getParentWindow().webContents.send("import-wiz-import-result", htmljson);
             thiswindow.close();
         } catch (err) {
             logger.error(err.message);
-            logger.error("Exporting failed beacause of JSON parsing!");
+            logger.error("Exporting failed because of JSON parsing!");
             //$("#import-wiz-err-text").text(i18n.__('import-import-fail-'+arg[1]));
             $("#import-error-text").text(i18n.__('import-error-parse-1'));
             $("#import-error-text").before($("#import-error-text").clone(true));

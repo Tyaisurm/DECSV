@@ -23,7 +23,8 @@
     <script>window.$ = require('jquery'); var select2_base = require('select2'); select2_base();</script>
 
     <script>
-        window.i18n = new (require('../translations/i18n'));
+        var path = require('path');
+        window.i18n = new (require(path.join(__dirname,'../translations/i18n')));
     </script>
     <link rel="stylesheet" href="../css/w3.css">
     <link rel="stylesheet" href="../css/custom.css">
@@ -99,7 +100,7 @@
             <p style="font-size:11px;">Project Contents</p>
         </div>
         <div style="width:240px;border-left:2px solid #dadada" class="w3-col w3-gray w3-container w3-right w3-border-white w3-center">
-            <p style="font-size:11px;">File Contents</p>
+            <p style="font-size:11px;">Event Contents</p>
         </div>
         <div class="w3-rest w3-gray w3-container">
             <p id="preview-cur-edits-title" style="overflow-x:hidden;text-overflow:ellipsis;white-space:nowrap; font-size:11px;background-color:lightgreen;margin: 5px;display:inline-flex;padding:6px;">No pending changes!</p>
@@ -113,7 +114,7 @@
 
             <div class="section-half">
                 <div style="height:38.28px;" class="w3-bar">
-                    <p style="margin-top:0;" class="w3-bar-item w3-left">Files in Project:</p>
+                    <p style="margin-top:0;" class="w3-bar-item w3-left">Events in Project:</p>
                 </div>
                 <div style="flex:1;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
                     <ul id="proj-files-ul" class="w3-ul">
@@ -260,7 +261,6 @@
 
     </footer>
 
-    <script>require('../js/importing');</script>
-    <script>require('../js/init');</script>
+    <script>var path = require('path'); require(path.join(__dirname,'../js/importing')); require(path.join(__dirname, '../js/init'));</script>
 </body>
 </html>

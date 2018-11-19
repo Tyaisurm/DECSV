@@ -10,7 +10,7 @@ let app = electron.app ? electron.app : electron.remote.app
 module.exports = i18n;
 
 function i18n(check = false) {
-    logger.info("Created 'i18' instance at app.js: " + check);
+    logger.info("Created 'i18n' instance at app.js: " + check);
     var locale = "en";// default value
      
      

@@ -557,15 +557,17 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
         let list_id = "";
         let list_name = "";
         let lang = "";
+        let version = "";
         if (kw_local_list.hasOwnProperty(k)) {
             list_id = k;// list's filename/identification
             list_name = kw_local_list[k]["name"];// list's name from row 0 (within the file. actual, showable name)
+            version = kw_local_list[k]["version"];
             lang = list_name.split(' - ')[0];
             localsArr.push(k);
             //list_date = new Date(kw_local_list[k]["date"]); // list's update date
         }
 
-        var li_string = document.createTextNode(list_name);
+        var li_string = document.createTextNode(list_name + "(v." + version + ")");
         var li_node = document.createElement("li");
         var span_node = document.createElement("span");
         var div1 = document.createElement('div');

@@ -220,5 +220,8 @@
 
   "report-document-0": "Yes",
   "report-document-1": "No",
-  "report-document-2": "I don't know"
+  "report-document-2": "I don't know",
+
+  "allow-with-slipps-0 (unused)": "Allowed to be used in SLIPPS",
+  "allow-with-slipps-1 (unused)": "NOT allowed to be used in SLIPPS"
 }

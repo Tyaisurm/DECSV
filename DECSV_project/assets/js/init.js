@@ -46,6 +46,16 @@ const autoUpdater = remote.autoUpdater;
 const path = require('path');
 const url = require('url');
 
+const { Menu, MenuItem } = remote;
+
+const menu = new Menu()
+menu.append(new MenuItem({ label: 'Developer Tools', click() { firstWindow.toggleDevTools()} }))
+
+window.addEventListener('contextmenu', (e) => {
+    e.preventDefault()
+    menu.popup({ window: firstWindow })
+}, false);
+
 //const Store = require('electron-config');
 const Store = require("electron-store");
 
@@ -99,16 +109,84 @@ ipcRenderer.on("force-open-project", function (event, filepath) {
  */
 ipcRenderer.on("import-wiz-import-result", function (event, args = {}) {
     logger.debug("import-wiz-import-result");
-    var status = [];
-    if (!(args instanceof Array)) {//{"0":["asd","asd",...], "1":["asd", "asd",...],...}
-        logger.error("File import args result NOT instanceof Array!");
-        status.push(false, 1);
+    console.log("############### RETURNED FROM IMPORT WINDOW #######################");
+    console.log(args);// for testing to see how works
+
+    // add new content into window variable, save temp file
+    var window_json = window.currentFileContent;
+    var sourcef = window_json["src-files"];
+    var projectf = window_json["project-files"];
+
+    var eventname = "event_";
+    var test = true;
+    var nro = 0;
+    var tempename = "";
+    while (test) {
+        tempename = eventname + nro;
+        if (!projectf.hasOwnProperty(tempename)) { test = false; logger.debug("Name '" + tempename + "' first available!"); break;}
+        nro++;
+    }
+    var sourcename = "";
+    var elang = window_json["lang-preset"];
+    var ecountry = window_json["country-preset"];
+    for (var id in args) {
+        var event = args[id];
+        event["lang"] = elang;
+        event["country"] = ecountry;
+        sourcename = event["src-file"]
+        tempename = eventname + nro;
+        projectf[tempename] = {};
+        projectf[tempename] = event;
+        logger.debug("Added tempename: '"+tempename+"' to projectf");
+        nro++;
+    }
+    sourcef.push(sourcename);
+    window_json["project-files"] = projectf;
+    window_json["src-files"] = sourcef;
+    window.currentFileContent = window_json;
+
+    if (window.currentEvent === undefined) {
+        logger.info("No event open while importing! Saving only notes..");
+        var notes = [];
+        $("#proj-notes-ul li").each(function (i) {
+            var text = $(this).ignore("span").text();
+            notes.push(text);
+        });
+        saveProject(0, "", "", "", [], notes, "", "", "");//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+    } else {
+        logger.info("Event open while importing! Saving all to window and backup...");
+        var country = "";
+        var lang = "";
+        var done = false;
+        $('#proj-files-ul li.w3-yellow').each(function (i) {
+            done = ($(this).attr('data-done') === "true");
+            country = $(this).attr('data-country');
+            lang = $(this).attr('data-lang');
+        });
+
+
+        var dataA = $("#edit-A-orig-text").html();
+        var dataB = $("#edit-B-orig-text").html();
+        intUtils.sectionUtils.clearCsectionUI();
+        var dataC = $("#edit-C-orig-text").html();
+        var dataKW = [];
+
+        $("#file-chosen-kw-ul li").each(function (i) {
+            var value = $(this).attr("data-value").substring(3, test.length - 1);
+            $(this).find('span').remove();
+            dataKW.push(value);
+        });
+
+        var notes = [];
+        $("#proj-notes-ul li").each(function (i) {
+            var text = $(this).ignore("span").text();
+            notes.push(text);
+        });
+        saveProject(0, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
     }
 
-    console.log("############### RETURNED FROM IMPORT WINDOW #######################");
-    console.log(args);
-    // JUST FOR TESTING!!!!
-   
+    // refresh filelist from window variable
+    updateFileList();
 });
 
 /* Getting global functions.... */
@@ -384,6 +462,11 @@ document.getElementById("check-app-updates-button").onclick = function () { //NE
         }
     });
     ipcRenderer.send("check-updates", "");
+}
+document.getElementById("regeneratedemokw").onclick = function () {
+    //
+    logger.debug("regeneratedemokw button");
+    ipcRenderer.send("regenerate-demo-keywords",null);
 }
 
 document.getElementById("downloadandupdatekeywords").onclick = function () {//NEEDSTOBECHANGED
@@ -700,7 +783,7 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
                         // Clearing section items and setting footer button mode. Also toggling proper view
                         intUtils.setFooterBtnMode("project-closed");
                         intUtils.sectionUtils.clearElements();
-                        $("#titlebar-appname").text("SLIPPS Teacher Tool");// {Alpha version " + remote.app.getVersion() + "}")
+                        $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2'));// {Alpha version " + remote.app.getVersion() + "}")
                         //$("#preview-cur-file-name").text("Current file: NONE");
                         //$("#preview-subid").text("Submission ID:");
                         //$("#preview-subdate").text("Submission Date:");
@@ -727,7 +810,7 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
                     // Clearing section items and setting footer button mode. Also toggling proper view
                     intUtils.setFooterBtnMode("project-closed");
                     intUtils.sectionUtils.clearElements();
-                    $("#titlebar-appname").text("SLIPPS Teacher Tool");// {Alpha version " + remote.app.getVersion() + "}")
+                    $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2'));// {Alpha version " + remote.app.getVersion() + "}")
                     //$("#preview-cur-file-name").text("Current file: NONE");
                     //$("#preview-subid").text("Submission ID:");
                     //$("#preview-subdate").text("Submission Date:");
@@ -753,7 +836,7 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
                 // Clearing section items and setting footer button mode. Also toggling proper view
                 intUtils.setFooterBtnMode("project-closed");
                 intUtils.sectionUtils.clearElements();
-                $("#titlebar-appname").text("SLIPPS Teacher Tool");// {Alpha version " + remote.app.getVersion() + "}")
+                $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2'));// {Alpha version " + remote.app.getVersion() + "}")
                 //$("#preview-cur-file-name").text("Current file: NONE");
                 //$("#preview-subid").text("Submission ID:");
                 //$("#preview-subdate").text("Submission Date:");
@@ -1297,12 +1380,15 @@ function updateFileList() {
             var filedone = tempfiles[k]["done"];
             var filelang = tempfiles[k]["lang"];
             var filecountry = tempfiles[k]["country"];
+            var filepermission = tempfiles[k]["permission"];
             //logger.debug("FROM TEMP FILE IN UPDATEFILELIST");
             //logger.debug(filedone);
             //logger.debug(typeof(filedone));
             var fileArr = [];
-            fileArr.push(fileorig, filetemp, filedone, filelang, filecountry);// NEEDSTOBECHANGED
+            fileArr.push(filetemp, filedone, filelang, filecountry, filepermission);// NEEDSTOBECHANGED
             addProjFile(fileArr);
+        } else {
+            logger.error("UpdateFileList tempfiles.hasOwnProperty(k) FALSE! Shouldn't happen...");
         }
     }
 }
@@ -1413,7 +1499,8 @@ function openAndViewProject(proj_location, backup_proj = false) {
     */
 
     // Adding simple details to UI:
-    $("#titlebar-appname").text("SLIPPS Teacher Tool" + " - " + proj_name); // ONLY AFTER EVERYTHING HAS BEEN CHECKED!!!!!
+    //$("#titlebar-appname").text("SLIPPS Teacher Tool" + " - " + proj_name); // ONLY AFTER EVERYTHING HAS BEEN CHECKED!!!!!
+    $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2') + " - " + proj_name)
 
     $("#proj-info-name").text("Project Name: \"" + proj_name + "\"");
     $("#proj-info-created").text("Created: " + new Date(json_file["created"]));//NEEDSTOBECHANGED
@@ -1471,8 +1558,8 @@ function addProjNote(note) {
 }
 
 /* Add given filename + details into EDIT-view filelist ul-element */
-//fileArr.push(fileorig, filetemp, filedone, filelang, filecountry);
-function addProjFile(fileArr) {
+//fileArr.push(filetemp, filedone, filelang, filecountry, filepermission);
+function addProjFile(fileArr) {// NEEDSTOBECHANGED
     logger.debug("addProjFile");
     //logger.debug(fileArr);
     /*
@@ -1486,8 +1573,9 @@ function addProjFile(fileArr) {
         <li class="w3-hover-blue w3-display-container">File8.csv</li>
         <li class="w3-hover-blue w3-display-container">File9.csv</li>
     */
+    //fileArr.push(filetemp, filedone, filelang, filecountry, filepermission);
     // filearr 0 = fileoriginal, 1 = filetemp / name, 2 = filedonestatus, 3 = filelanguage, 4 = filecountry
-    var li_string = document.createTextNode(fileArr[1]);
+    var li_string = document.createTextNode(fileArr[0]);
     //console.log("####################################################");
     //console.log(li_string);
     var li_node = document.createElement("li");
@@ -1498,7 +1586,7 @@ function addProjFile(fileArr) {
     //logger.debug("BEFORE USAGE AT ADDPROJFILE");
     //logger.debug(fileArr[2]);
     //logger.debug(typeof (fileArr[2]));
-    if (fileArr[2]) {
+    if (fileArr[1]) {
         classes = classes + " w3-green";
     }
     $(li_node).attr({
@@ -1506,11 +1594,11 @@ function addProjFile(fileArr) {
         class: classes,
         onmouseover: "$(this).addClass('w3-hover-blue');",
         onmouseout: "$(this).removeClass('w3-hover-blue');",
-        "data-orig": fileArr[0],
-        "data-temp": fileArr[1],
-        "data-done": fileArr[2],
-        "data-lang": fileArr[3],
-        "data-country": fileArr[4]
+        "data-permission": fileArr[4],
+        "data-temp": fileArr[0],
+        "data-done": fileArr[1],
+        "data-lang": fileArr[2],
+        "data-country": fileArr[3]
     });
     $('#proj-files-ul').append(li_node);
     $('#proj-files-ul li').off('click');
@@ -1556,7 +1644,7 @@ function addProjFile(fileArr) {
                     notes.push(text);
                 });
                 // triggering save project, because we are switching to different event
-                saveProject(dataA, dataB, dataC, dataKW, notes, done);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+                saveProject(0,dataA, dataB, dataC, dataKW, notes, done);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
             });
             $(this).addClass('w3-yellow');
             $(this).removeClass('w3-green');
@@ -1570,7 +1658,8 @@ function addProjFile(fileArr) {
             $("#KW-selector").select2({
                 placeholder: i18n.__('select2-kw-add-ph')
             });
-            openAndShowFile(this);
+            //openAndShowFile(this);
+            createDummyDialog(firstWindow);
         }
     });
 }
@@ -1880,8 +1969,11 @@ function setupTranslations(applang = "en") {
     logger.info("Loading translations into UI (init)");
 
     // Set text to window here...
-
-    $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2'));
+    if (window.currentProject !== undefined) {
+        $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2'));
+    } else {
+        $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2') + " - " + window.currentProject);
+    }
 }
 
 electron.ipcRenderer.on('force-interface-update', (event, settings) => {
@@ -1942,13 +2034,13 @@ if (window.allsettings.app.edits[0] === true || window.allsettings.app.edits[1] 
 else if (ipcRenderer.sendSync("get-ext-file-data","asd") !== null) {
     // there is something to be opened....
     logger.info("There is project that needs to be opened! (App itself just launched)");
-    
-    var forceprojres = openAndViewProject(ipcRenderer.sendSync("get-ext-file-data", "asd"));
+    var ext_file_data = ipcRenderer.sendSync("get-ext-file-data", "asd");
+    var forceprojres = openAndViewProject(ext_file_data);
     if (forceprojres[0]) {
-        logger.info("New project (PATH)'" + filepath + "' opened successfully!");
+        logger.info("New project (PATH)'" + ext_file_data + "' opened successfully!");
     }
     else {
-        logger.error("Failed to open new project (PATH)'" + filepath + "'! Reason: " + forceprojres[1]);
+        logger.error("Failed to open new project (PATH)'" + ext_file_data + "'! Reason: " + forceprojres[1]);
         $("#proj-open-error").text(forceprojres[1]);
 
         $("#proj-open-error").before($("#proj-open-error").clone(true));

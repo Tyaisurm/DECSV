@@ -6,6 +6,7 @@ const path = require('path');
 /* Setting up language selector for app language (select2) */
 function setAppLang() {
     logger.debug("setAppLang");
+    $("#app-lang-selector").empty();
     fs.readdirSync(path.join(__dirname, "..\\translations")).forEach(file => {
         if (file.split('.').pop() === "js") { return; }
         var lang = getFullLangName(file.split('.')[0]);
@@ -156,6 +157,9 @@ function setupEditKW() {
                             //logger.debug(kw_itself);
                             kw_current_group = kw_itself;//.substring(kw_itself.split(' - ')[0].length + 3, kw_itself.length);
                             //logger.debug("First line! taking name...: " + kw_current_group);
+                            continue;
+                        } else if (Object.keys(loadedlist).indexOf(k) === 1) {
+                            //version number here...
                             continue;
                         }
                         if (kw_groups.indexOf(kw_current_group) > -1) {

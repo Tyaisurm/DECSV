@@ -34,7 +34,7 @@
             <p class="w3-border-bottom w3-border-black">Keywords</p>
             <div class="w3-bar" style="flex-grow:1;display:flex;flex-grow:1;">
                 <div class="w3-bar-item" style="width: 50%;display:flex;flex-direction:column;">
-                    <p>Local (already downloaded) lists:</p>
+                    <p>Local lists:</p>
                     <div style="flex-grow:1;width: 100%;max-width: 600px;overflow-wrap:normal;overflow-x:auto;overflow-y:scroll;" class="w3-border w3-border-black w3-white">
                         <ul id="settings-local-kw-lists" class="w3-ul">
                             
@@ -42,13 +42,24 @@
                     </div>
                 </div>
                 <div class="w3-bar-item" style="width: 50%;display: flex;flex-direction: column;">
-                    <p class="">Select keyword lists you would like to download (already downloaded won't be shown)):</p>
+                    <p class="">Select keyword lists you would like to download (local won't be shown):</p>
                     <select style="width:100%;min-width:300px;max-width:100%;" id="kw-list-available-choose" multiple="multiple">
                         
                     </select>
-                    <div id="downloadandupdatekeywords" class="w3-button" style="width:200px;margin-top:50px;margin-left:auto;margin-right:auto;">
-                        <img draggable="false" id="danduKW-file-icon" class="navbar-image" src="../ui_icons/appbar.download.png" />
-                        <p class="navbar-text">Download & update keyword lists</p>
+                    <div>
+                        <div style="
+    margin-left: auto;
+    margin-right: auto;
+    width: 400px;
+">
+                            <div id="downloadandupdatekeywords" class="w3-button" style="width:200px;/* margin-top:50px; *//* margin-left:auto; *//* margin-right:auto; */">
+                                <img draggable="false" id="danduKW-file-icon" class="navbar-image" src="../ui_icons/appbar.download.png">
+                                <p class="navbar-text">Download &amp; update</p>
+                            </div><div id="regeneratedemokw" class="w3-button" style="width:200px;/* margin-top:50px; *//* margin-left:auto; *//* margin-right:auto; */">
+                                <img draggable="false" id="danduKW-file-icon" class="navbar-image" src="../ui_icons/appbar.reset.png">
+                                <p class="navbar-text">Re-generate demo keywords</p>
+                            </div>
+                        </div>
                     </div>
                     <p id="settings-kw-update-date" style="text-align:center;">Latest successfull update: ----</p>
                 </div>

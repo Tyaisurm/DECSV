@@ -107,6 +107,9 @@
     <Content Include="assets\html\sections\start.html">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="assets\js\parsing\parsetemplate_1.json">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="assets\select2\css\select2.css" />
     <Content Include="assets\select2\css\select2.min.css" />
     <Content Include="assets\select2\data_countries.json" />
@@ -122,6 +125,9 @@
     <Content Include="build\decsv.icns" />
     <Content Include="build\decsv.ico" />
     <Content Include="build\icon.png" />
+    <Content Include="demo_files\en-topics.json" />
+    <Content Include="demo_files\en-people_roles.json" />
+    <Content Include="demo_files\en-settings_specialities.json" />
     <Content Include="en - Copy.json" />
     <Content Include="assets\translations\fi.json" />
     <Content Include="assets\translations\en.json">
@@ -168,7 +174,7 @@
     </Content>
     <Content Include="build\install-spinner.gif" />
     <Content Include="demo_files\en-basic.json" />
-    <Content Include="demo_files\fi-basic.json" />
+    <Content Include="old_demos\fi-basic.json" />
     <Content Include="demo_files\keyword-config.json" />
     <Content Include="LICENSE" />
     <Content Include="tsconfig.json">
@@ -200,6 +206,7 @@
     <Folder Include="assets\html\old\" />
     <Folder Include="assets\html\sections\" />
     <Folder Include="assets\images\" />
+    <Folder Include="assets\js\parsing\" />
     <Folder Include="assets\js\old\" />
     <Folder Include="assets\select2\" />
     <Folder Include="assets\select2\css\" />
@@ -209,6 +216,7 @@
     <Folder Include="assets\translations\" />
     <Folder Include="build\" />
     <Folder Include="demo_files\" />
+    <Folder Include="old_demos\" />
     <Folder Include="__licenses\" />
     <Folder Include="Scripts\" />
     <Folder Include="Scripts\typings\" />
@@ -240,6 +248,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\js\parseUtils.js">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="assets\js\parsing\1.0.0.js" />
+    <Compile Include="assets\js\parsing\0.5.0.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="assets\js\sectionUtils.js">

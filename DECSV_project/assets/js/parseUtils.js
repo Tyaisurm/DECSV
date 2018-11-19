@@ -2,6 +2,8 @@
 const remote = electron.remote;
 const fs = require('fs');
 const path = require('path');
+const pars050 = require(path.join(__dirname, './parsing/0.5.0.js'));
+const pars100 = require(path.join(__dirname, './parsing/1.0.0.js'));
 
 const logger = require("electron-log");
 
@@ -259,7 +261,7 @@ function validateAndParseCSV(csv_data = null, lert_tool = null, lert_delimiter =
     }
 
     var parsed = CSVtoArrayBOS(csv_data, lert_delimiter);
-    
+    //parsed[3][10] = CSVtoArrayBOS(parsed[3][10], ";");
     // we need to validate array here before sending it... so that we have proper amount of lines available based on lert_tool value
     // for example, the right amount of lines for BOS result is 24
     // these results need to be parsed into PROPER internal format before sending...
@@ -271,64 +273,31 @@ function parseArray(tool = -1, arr = [], survey_ver = -1) {// returns [boolean, 
     logger.debug("parseArray");
     logger.info("Selecting and parsing based on survey tool: " + tool);
     //logger.debug(typeof (tool));
-    logger.error("PARSEARRAY FUNCTION NOT IMPLEMENTED YET!");
-    return [false, 1, []];
-    /*
-     
-     [ "event-desc", "event-relevancy", #profession-INT, "profession-other", #age-INT, #gender-INT, #yearinprog-INT, #eventplacement-INT, 
-     eventplacement-other", [#eventrelated-INT], "eventrelated-other", #typeofevent-INT, #reportedsystem-INT, "ifnotwhy", #reportedfiles-INT, "ifnotwhy" ] 
-     
-     */
-    var completedata = [];
-    switch (tool) {
+    //logger.error("PARSEARRAY FUNCTION NOT IMPLEMENTED YET!");
+    //return [false, 1, []];
+    
+    switch (survey_ver) {
         case -1:
-            logger.info("No tool defined!");
+            logger.info("No survey_ver defined!");
             return [false, 1, []];
             break;
         case 0:
-            // BOS
-            logger.info("BOS");
-            return [false, 1, []];
+            // 0.5.0
+            logger.info("Survey version 0.5.0");
+            var arr050 = pars050.parseHandler(arr, tool);
+            return arr050;
             break;
         case 1:
-            // Google Forms
-            logger.info("google forms");
-            try {
-                for (var i = 0; i < arr.length; i++) {
-                    var cursurv = arr[i];
-                    //now loop single survey form
-                    completedata[i] = [];
-                    completedata[i][0] = cursurv[1];
-                    completedata[i][1] = cursurv[2];
-                    if (Number.isNaN(parsed)) {
-                        //
-                    }
-                    completedata[i][2] = Number.parseInt(cursurv[3], 10);//
-                }
-
-            } catch (e) {
-                logger.error("Unable to parse Google Forms array!");
-                logger.error(e.message);
-                return [false,3,[]];
-            }
-
-            break;
-        case 2:
-            logger.info("webropol");
-            return [false, 1, []];
-            // Webropol
+            // 1.0.0
+            logger.info("Survey version 1.0.0");
+            var arr100 = pars100.parseHandler(arr, tool, CSVtoArrayBOS, validateParsedArray);//pars100
+            return arr100;
             break;
         default:
             //
-            logger.error("Unknown tool defined!");
+            logger.error("Unknown survey_ver defined!");
             return [false, 2, []];
     }
-    //bceause we beed temp return value
-    //logger.info("RETURNING TEST ARRAY AS PARSED ARRAY TO BE IMPORTED!");
-    //var modarr = ["Lorem Ipsum THIS IS SECTION A", "Lorem Ipsum THIS IS SECTION B", "-1", "THIS IS OTHER PROFESSION", 1, 1, 1, -1, "THIS IS EVENT PLACEMENT OTHER", [1, 4, -1], "THIS IS OTHER RELATED", 2, 1, "TEST SYSTEM REPORT", 1, "TEST PATIENT REPORT"];
-    //return [true, 0, [modarr, modarr, modarr]];
-    //return [false, 1, []];
-    return [true, 0, completedata];
 }
 
 /* Validate file contents (proper data exits inside JSON file) */
@@ -441,11 +410,24 @@ function validateProjectJSON(json_data = {}) {// NEEDSTOBECHANGED errors give ou
                                                         }
                                                         if (file.hasOwnProperty("done")) {
                                                             if (typeof file["done"] !== "boolean") {
-                                                                //console.log("file done not a boolean");
+                                                                console.log("file done not a boolean");
                                                                 //console.log(file);
                                                                 //console.log(file["done"]);
                                                                 //console.log();
                                                                 return [false, 18];
+                                                            } else {
+                                                                //
+                                                            }
+                                                            if (file.hasOwnProperty("permission")) {
+                                                                if (typeof file["permission"] !== "boolean") {
+                                                                    console.log("file permission not boolean");
+                                                                    return [false, 46];
+                                                                } else {
+                                                                    // all done checking
+                                                                }
+                                                            } else {
+                                                                console.log("file permission doesn not exist");
+                                                                return [false, 47];
                                                             }
                                                         } else {
                                                             console.log("file done does not exits");
@@ -833,7 +815,19 @@ function validateSettings(settings = {}, mode = -1) {
                                             if (!Number.isNaN(Date.parse(avkwo["date"]))) {
                                                 if (avkwo.hasOwnProperty("name")) {
                                                     if (typeof (avkwo["name"]) === "string") {
-                                                        // everything ok. proceed...
+                                                        if (avkwo.hasOwnProperty("version")) {
+                                                            if (typeof (avkwo["version"]) === "string") {
+                                                                // everything ok. proceed...
+                                                            } else {
+                                                                // version not string
+                                                                logger.debug("FAIL 48");
+                                                                return false;
+                                                            }
+                                                        } else {
+                                                            // no version field
+                                                            logger.debug("FAIL 47");
+                                                            return false;
+                                                        }
                                                     } else {
                                                         // name not string
                                                         logger.debug("FAIL 24");
@@ -871,7 +865,19 @@ function validateSettings(settings = {}, mode = -1) {
                                                     if (!Number.isNaN(Date.parse(lkwo["date"]))) {
                                                         if (lkwo.hasOwnProperty("name")) {
                                                             if (typeof (lkwo["name"]) === "string") {
-                                                                // everything ok. proceed...
+                                                                if (lkwo.hasOwnProperty("version")) {
+                                                                    if (typeof (lkwo["version"]) === "string") {
+                                                                        // everything ok. proceed...
+                                                                    } else {
+                                                                        // version not string
+                                                                        logger.debug("FAIL 45");
+                                                                        return false;
+                                                                    }
+                                                                } else {
+                                                                    // no version field
+                                                                    logger.debug("FAIL 46");
+                                                                    return false;
+                                                                }
                                                             } else {
                                                                 // name not string
                                                                 logger.debug("FAIL 29");
@@ -974,10 +980,388 @@ function validateSettings(settings = {}, mode = -1) {
     //if (settings instanceof Array) { }
 }
 
+/* 
+ "event_0": {
+			"src-file": "lahdedata_1",
+			"src-data":[],
+			"a": "HTML GOES HERE",
+			"b": "HTML GOES HERE",
+			"c": "HTML GOES HERE",
+			"country": "FI",
+			"lang": "fi",
+			"kw": [
+				"basic-2",
+				"basic-39"
+			],
+			"done": false,
+            "permission": false
+		},
+ */
+
+// the element above (which is also tested here in parseutils) should propably need "allowed use" field for answers where people don't want data to be used with SLIPPS
+
+/* Creates temp-files from source files within the project's folders */
+function readAndParseSource(sourcearr = [], path = "") { //receives array of arrays that have raw import data... NEEDSTOBECHANGED
+    logger.debug("readAndParseSource");
+    logger.debug(path);
+    //logger.debug(sourcearr);
+    if (!(sourcearr instanceof Array)) {
+        logger.error("ReadAndParseSource file was not instanceof Array!");
+        sourcearr = [];
+    } else if (sourcearr.length === 0) {
+        logger.error("Can't parse source array with length of 0!");
+        throw "Source array length 0!";
+    }
+    //var processeddata = readSourceFile(arg[0], arg[1], arg[2]); // will be [false/true, status_code, result_array]
+    //mainWindow.webContents.send("output-to-chrome-console", processeddata)
+    //return {};//processeddata;
+    ///////// testreturn
+
+
+    //var temporaryArr = [];// not used
+
+    //mainWindow.webContents.send("output-to-chrome-console", temporaryArr);//testing the array
+
+    /*
+     
+     [ "event-desc", "event-relevancy", #profession-INT, "profession-other", #age-INT, #gender-INT, #yearinprog-INT, #eventplacement-INT, 
+     eventplacement-other", [#eventrelated-INT], "eventrelated-other", #typeofevent-INT, #reportedsystem-INT, "ifnotwhy", #reportedfiles-INT, "ifnotwhy", permission ]
+     
+     */
+
+    // ##############################################################################################################
+    // ############################################################################################################## LOOP TO CREATE MULTIPLE FILES from source array  
+    var files_to_return = {};
+    for (var q = 0; q < sourcearr.length; q++) {// loop specific events
+
+        var currentArr = sourcearr[q];
+
+        if (currentArr.length != 17) {
+            logger.error("Can't parse source array for import! Length not 17!");
+        }
+        var permissionbool = false;
+        if (currentArr[16] === 0) {
+            permissionbool = true;
+        }
+        //var tempNameBase = "event_";
+        var event_base = {
+            "src-file": path,
+            "src-data": currentArr,
+            "a": "",
+            "b": "",
+            "c": "",
+            "country": null,
+            "lang": null,
+            "kw": [],
+            "done": false,
+            "permission": permissionbool
+        }
+        //temp_store.set("subID", dataArray[1][0]); // Setting identifier
+        //temp_store.set("subDATE", dataArray[1][1]); // Setting create date
+
+        var secChtml = '<div class="secC-Q-allA">';
+        var elemtextA = '<p class="w3-blue w3-container secA-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
+        elemtextA = elemtextA + '<p class="secA-Q-allA">';
+        var elemtextB = '<p class="w3-blue w3-container secB-Q" style="width:100%;"></p>';// no text here, because it will be placed in UI, not in file
+        elemtextB = elemtextB + '<p class="secB-Q-allA">';
+
+
+        elemtextA = elemtextA + currentArr[0]/*.replace(/&/g, "&amp;")
+                                .replace(/"/g, "&quot;")
+                                .replace(/'/g, "&#039;")*/
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>') + '</p>';///\b(\w+?)\b/g
+        elemtextB = elemtextB + currentArr[1]/*.replace(/&/g, "&amp;")
+                                .replace(/"/g, "&quot;")
+                                .replace(/'/g, "&#039;")*/
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>') + '</p>';
+
+        //var elemA = "<p>" + elemtextA + "</p>";
+        //var elemB = "<p>" + elemtextB + "</p>";
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Creating C section from here on....
+        var j = 1;
+        var temp_c_list = [];
+        for (var line = 2; line < currentArr.length-1; line++) {
+
+            /*
+     ["event-desc"0, "event-relevancy"1, #profession - INT2, "profession-other"3, #age - INT4, #gender - INT5, #yearinprog - INT6, #eventplacement - INT7,
+    eventplacement - other"8, [#eventrelated-INT]9, "eventrelated - other"10, #typeofevent-INT11, #reportedsystem-INT12, "ifnotwhy"13, #reportedfiles-INT14, "ifnotwhy"15, permission16 ]
+     */
+            // INT 2 4 5 6 7 11 12* 14* (16)
+            // STRING 3 8 10 13* 15*
+            // INT ARRAY 9
+
+            var questID = "secC-Q-" + j;
+            var elemCQ = '<p class="w3-blue w3-container ' + questID + '" style="width:100%;"></p>'; // no text here, because it will be placed in UI, not in file
+            var ansID = "secC-Q-" + j + "-cont";
+            var ansText = "";
+            var elemCA = '';
+
+            if (line === 2 || line === 4 || line === 5 || line === 6 || line === 7 || line === 11) {// integer answers
+                // add data
+                var datareal = currentArr[line].toString();
+
+                //mainWindow.webContents.send("output-to-chrome-console", "line at integer: "+line);
+                //mainWindow.webContents.send("output-to-chrome-console", currentDataArr[line]);
+                elemCA = '<p class="w3-light-blue ' + ansID + '" data-real="' + datareal + '" style="display:inline;padding:3px;">' + ansText + '</p>';
+                secChtml = secChtml + elemCQ + elemCA;
+                j++;
+            }
+            else if (line === 12 || line === 14) {// integer answers UNSTABLE
+                // add data
+                var datareal = "";
+                if (currentArr[line] != null) {
+                    datareal = currentArr[line].toString();
+                }
+
+                elemCA = '<p class="w3-light-blue ' + ansID + '" data-real="' + datareal + '" style="display:inline;padding:3px;">' + ansText + '</p>';
+                secChtml = secChtml + elemCQ + elemCA;
+                j++;
+            }
+            else if (line === 3 || line === 8 || line === 10) {// open string answers
+                if (!!currentArr[line]) {
+
+                    ansText = currentArr[line]/*.replace(/&/g, "&amp;")
+                                            .replace(/"/g, "&quot;")
+                                            .replace(/'/g, "&#039;")*/
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>');
+
+                }
+                else {
+                    ansText = "";
+                }
+                elemCA = '<p class="' + ansID + '">' + ansText + '</p>';
+                secChtml = secChtml + elemCQ + elemCA;
+                j++;
+            }
+            else if (line === 13 || line === 15) {// open string answers UNSTABLE
+                if (!!currentArr[line]) {
+
+                    ansText = currentArr[line]/*.replace(/&/g, "&amp;")
+                                            .replace(/"/g, "&quot;")
+                                            .replace(/'/g, "&#039;")*/
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/[^ -\s +\!.":><'?!/\\]+/g, '<span class="word">$&</span>');
+
+                }
+                else {
+                    ansText = "";
+                }
+                elemCA = '<p class="' + ansID + '">' + ansText + '</p>';
+                secChtml = secChtml + elemCQ + elemCA;
+                j++;
+            } else if (line === 9) {// integer ARRAY
+                temp_c_list = currentArr[line];
+                
+                elemCA = "<p class='w3-light-blue " + ansID + "' data-real='" + JSON.stringify(temp_c_list) + "' style='display:inline;padding:3px;'>" + ansText + "</p>";
+                secChtml = secChtml + elemCQ + elemCA;
+                j++;
+            }
+            else {
+                logger.error("Unknown line number '"+line+"' while generating HTML for section C!");
+            }
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        secChtml = secChtml + '</div>';
+        logger.debug("created question lines for C section");
+        //console.log(secChtml);
+        // REMEMBER TO TURN \" and \' into regular " and ' when showing the data!!!!!!
+        //temp_store.set("a", elemtextA);
+        //temp_store.set("b", elemtextB);
+        //temp_store.set("c", secChtml);
+        //temp_store.set("src-data", currentDataArr); // just putting in all instead of [1]
+        //logger.debug("DATAAAAAAAAAAAAAAAAAAAAAAAAAAA:");
+        //logger.debug(dataArray);
+        //logger.debug(temp_store.get("c","WAS EMPTY"));
+        event_base["a"] = elemtextA;
+        event_base["b"] = elemtextB;
+        event_base["c"] = secChtml;
+        logger.debug("file section setted for A, B and C");
+
+        /*
+        ////////////////////////////////////////////////////////// THIS IS USELESS
+        if (dataArray[2] === undefined) {
+            logger.warn("Third line (keywords) is not available in convertable source file '" + fileS + "'!");
+        }
+        else {
+            logger.debug("KEYWORDS WITHIN THE SOURCE FILE: '" + fileS + "'!");
+            logger.debug(dataArray[2]);
+            //check if keywords in proper format, else, don't add anything... NOT USED ATM!!!
+        }
+        //////////////////////////////////////////////////////////
+        */
+
+        logger.debug("done! continuing to next");
+        //var currentprojkw = proj_store.get("kw-per-file", {});
+        //currentprojkw["temp#" + temp_finalname + ".json"] = [];
+        //proj_store.set('kw-per-file', currentprojkw);//currently and empty array. would be [ [listID, term], [listID_2, term2], [listID_3, term3],... ]
+        //newtempF["temp#" + temp_finalname + ".json"] = {};
+        //newtempF["temp#" + temp_finalname + ".json"]["file"] = fileS;
+        //newtempF["temp#" + temp_finalname + ".json"]["done"] = false;
+        //logger.debug("TESTING TYPEOF: " + typeof (newtempF["temp#" + fileS + ".json"]["done"]))
+        //proj_store.set('temp-files', newtempF);
+        //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]);
+        //logger.debug(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]);
+        //logger.debug(typeof(proj_store.get('temp-files', {})["temp#" + fileS + ".json"]["done"]));
+        //var successFile = [];
+        //successFile.push(fileS, "temp#" + temp_finalname + ".json", false);
+        //successArray.push(successFile);
+        //testvalue_nro++;
+
+
+        files_to_return[q] = event_base;
+    }
+    // ##############################################################################################################
+    // ##############################################################################################################
+
+
+    return files_to_return;
+
+}
+/* Validates parsed Google Forms array */
+/*
+["event-desc"0, "event-relevancy"1, #profession - INT2, "profession-other"3, #age - INT4, #gender - INT5, #yearinprog - INT6, #eventplacement - INT7,
+    eventplacement - other"8, [#eventrelated-INT]9, "eventrelated - other"10, #typeofevent-INT11, #reportedsystem-INT12, "ifnotwhy"13, #reportedfiles-INT14, "ifnotwhy"15, permission16 ]
+    */
+function validateParsedArray(arr) {
+    logger.debug("validateGoogleArr");
+    if (arr.length === 0) {
+        return false;
+    } else {
+        for (var k = 0; k < arr.length; k++) {
+            if (arr[k].length != 17) {
+                return false;
+            }
+            if (typeof arr[k][0] === "string") {
+                if (typeof arr[k][1] === "string") {
+                    if (typeof arr[k][2] === "number") {
+                        if (typeof arr[k][3] === "string") {
+                            if (typeof arr[k][4] === "number") {
+                                if (typeof arr[k][5] === "number") {
+                                    if (typeof arr[k][6] === "number") {
+                                        if (typeof arr[k][7] === "number") {
+                                            if (typeof arr[k][8] === "string") {
+                                                if (typeof arr[k][9] === "object") {
+                                                    // CHECK ARRAY CONTENTS
+                                                    if (typeof arr[k][10] === "string") {
+                                                        if (typeof arr[k][11] === "number") {
+                                                            //starting REPORT and IFNOTWHY x2
+                                                            if (typeof arr[k][12] === "number") {
+                                                                // was number, OK
+                                                            } else {
+                                                                // reportedsystem not number
+                                                                if (arr[k][12] === null) {
+                                                                    // was null, OK
+                                                                } else {
+                                                                    // FAIL!
+                                                                    return false;
+                                                                }
+                                                            }
+                                                            if (typeof arr[k][14] === "number") {
+                                                                // was number, OK
+                                                            } else {
+                                                                // reportedfiles not number
+                                                                if (arr[k][14] === null) {
+                                                                    // was null, OK
+                                                                } else {
+                                                                    // FAIL!
+                                                                    return false;
+                                                                }
+                                                            }
+                                                            if (typeof arr[k][13] === "string") {
+                                                                // was string, OK
+                                                            } else {
+                                                                if (arr[k][13] === null) {
+                                                                    //was null, OK
+                                                                } else {
+                                                                    //FAIL!
+                                                                    return false;
+                                                                }
+                                                            }
+                                                            if (typeof arr[k][15] === "string") {
+                                                                // was string, OK
+                                                            } else {
+                                                                if (arr[k][15] === null) {
+                                                                    //was null, OK
+                                                                } else {
+                                                                    //FAIL!
+                                                                    return false;
+                                                                }
+                                                            }
+                                                            //final part
+                                                            if (typeof arr[k][16] === "number") {
+                                                                // EVERYTHING CHECKED! OK!
+                                                                return true;
+                                                            } else {
+                                                                // permission not number
+                                                                return false;
+                                                            }
+                                                        } else {
+                                                            // type of event not number
+                                                            return false;
+                                                        }
+                                                    } else {
+                                                        // event related OTHER not string
+                                                        return false;
+                                                    }
+                                                } else {
+                                                    // event related not object (should be array)
+                                                    return false;
+                                                }
+                                            } else {
+                                                // event placement OTHER not string
+                                                return false;
+                                            }
+                                        } else {
+                                            // event placement not number
+                                            return false;
+                                        }
+                                    } else {
+                                        // year in program not number
+                                        return false;
+                                    }
+                                } else {
+                                    //gender not number
+                                    return false;
+                                }
+                            } else {
+                                // age not number
+                                return false;
+                            }
+                        } else {
+                            // profession OTHER not string
+                            return false;
+                        }
+                    } else {
+                        // profession not number
+                        return false;
+                    }
+                } else {
+                    // B not string
+                    return false;
+                }
+            } else {
+                // A not string
+                return false;
+            }
+        }
+    }
+}
+
 module.exports = {
     validateAndParseCSV: validateAndParseCSV,
     validateProjectJSON: validateProjectJSON,
     validateVersion: validateVersion,
     validateSettings: validateSettings,
-    parseArray: parseArray
+    parseArray: parseArray,
+    readAndParseSource: readAndParseSource,
+    validateParsedArray: validateParsedArray
 }

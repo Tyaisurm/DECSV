@@ -10,6 +10,7 @@
     "pack-win": "electron-builder --win --ia32 --dir",
     "dist-win": "electron-builder --win --ia32",
     "dist-mac": "electron-builder --mac",
+    "dist-m-w": "electron-builder --mac --win --ia32",
     "release-m-w": "build --mac --win --x64 --ia32 -p always",
     "dist-multi": "electron-builder -mwl",
     "release": "build --win --ia32 -p always"
