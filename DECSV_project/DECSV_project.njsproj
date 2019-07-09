@@ -10,6 +10,7 @@
     <NodeExeArguments>
     </NodeExeArguments>
     <ToolsVersionPromptShown>0.0</ToolsVersionPromptShown>
+    <SaveNodeJsSettingsInProjectFile>True</SaveNodeJsSettingsInProjectFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -107,7 +108,7 @@
     <Content Include="assets\html\sections\start.html">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="assets\js\parsing\parsetemplate_1.json">
+    <Content Include="assets\js\parsing\1.0.0_0.json">
       <SubType>Code</SubType>
     </Content>
     <Content Include="assets\select2\css\select2.css" />
@@ -125,9 +126,9 @@
     <Content Include="build\decsv.icns" />
     <Content Include="build\decsv.ico" />
     <Content Include="build\icon.png" />
-    <Content Include="demo_files\en-topics.json" />
-    <Content Include="demo_files\en-people_roles.json" />
-    <Content Include="demo_files\en-settings_specialities.json" />
+    <Content Include="keywordfiles\lists\en\en-topics.json" />
+    <Content Include="keywordfiles\lists\en\en-people_roles.json" />
+    <Content Include="keywordfiles\lists\en\en-settings_specialities.json" />
     <Content Include="en - Copy.json" />
     <Content Include="assets\translations\fi.json" />
     <Content Include="assets\translations\en.json">
@@ -173,9 +174,9 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="build\install-spinner.gif" />
-    <Content Include="demo_files\en-basic.json" />
+    <Content Include="keywordfiles\lists\en\en-basic.json" />
     <Content Include="old_demos\fi-basic.json" />
-    <Content Include="demo_files\keyword-config.json" />
+    <Content Include="keywordfiles\keyword-config-default.json" />
     <Content Include="LICENSE" />
     <Content Include="tsconfig.json">
       <SubType>Code</SubType>
@@ -215,7 +216,9 @@
     <Folder Include="assets\css\" />
     <Folder Include="assets\translations\" />
     <Folder Include="build\" />
-    <Folder Include="demo_files\" />
+    <Folder Include="keywordfiles\" />
+    <Folder Include="keywordfiles\lists\" />
+    <Folder Include="keywordfiles\lists\en\" />
     <Folder Include="old_demos\" />
     <Folder Include="__licenses\" />
     <Folder Include="Scripts\" />

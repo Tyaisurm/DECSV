@@ -239,19 +239,9 @@ function validateAndParseCSV(csv_data = null, lert_tool = null, lert_delimiter =
         logger.info("Delimeter null! Needs to be defined by lert_tool value: " + lert_tool);
         switch (lert_tool) {
             case 0:
-                //BOS
-                logger.debug("case BOS");
-                lert_delimiter = ",";
-                break;
-            case 1:
                 //GF
                 logger.debug("case GF");
                 lert_delimiter = ",";
-                break;
-            case 2:
-                //Webropol
-                logger.debug("case Webropol");
-                lert_delimiter = ";";
                 break;
             default:
                 //unknown
@@ -282,12 +272,6 @@ function parseArray(tool = -1, arr = [], survey_ver = -1) {// returns [boolean, 
             return [false, 1, []];
             break;
         case 0:
-            // 0.5.0
-            logger.info("Survey version 0.5.0");
-            var arr050 = pars050.parseHandler(arr, tool);
-            return arr050;
-            break;
-        case 1:
             // 1.0.0
             logger.info("Survey version 1.0.0");
             var arr100 = pars100.parseHandler(arr, tool, CSVtoArrayBOS, validateParsedArray);//pars100
@@ -318,7 +302,8 @@ function validateProjectJSON(json_data = {}) {// NEEDSTOBECHANGED errors give ou
                 console.log("created is NaN");
                 return [false, 2];
             }
-            if (json_data.hasOwnProperty("src-files")) {// this could need validation for filename....
+            //if (json_data.hasOwnProperty("src-files")) {// this could need validation for filename....
+                /*
                 if (typeof json_data["src-files"] !== "object") {
                     console.log("src-files is not object");
                     return [false, 3];
@@ -335,6 +320,7 @@ function validateProjectJSON(json_data = {}) {// NEEDSTOBECHANGED errors give ou
                         }
                     }
                 }
+                */
                 if (json_data.hasOwnProperty("project-files")) {// need to be done!!!!!
                     if (typeof json_data["project-files"] !== "object") {
                         console.log("project-files not an object");
@@ -423,7 +409,17 @@ function validateProjectJSON(json_data = {}) {// NEEDSTOBECHANGED errors give ou
                                                                     console.log("file permission not boolean");
                                                                     return [false, 46];
                                                                 } else {
-                                                                    // all done checking
+                                                                    if (file.hasOwnProperty("timestamp")) {
+                                                                        if (typeof file["timestamp"] !== "string") {
+                                                                            console.log("file timestamp not string!");
+                                                                            return [false, 49];
+                                                                        } else {
+                                                                            // all done checking
+                                                                        }
+                                                                    } else {
+                                                                        console.log("file timestamp doesn't exist");
+                                                                        return [false, 48];
+                                                                    }
                                                                 }
                                                             } else {
                                                                 console.log("file permission doesn not exist");
@@ -542,10 +538,10 @@ function validateProjectJSON(json_data = {}) {// NEEDSTOBECHANGED errors give ou
                     console.log("project-files does not exist");
                     return [false, 42];
                 }
-            } else {
-                console.log("src-files does not exist");
-                return [false, 43];
-            }
+            //} else {
+            //    console.log("src-files does not exist");
+            //    return [false, 43];
+            //}
         } else {
             console.log("created does not exist");
             return [false, 44];
@@ -591,10 +587,10 @@ function validateVersion(version = "0.0.0") {
     }
 }
 
-// first is json object od settings, second is mode 1 = application settings, 2 = keyword list settings, -1 = default nothing
+// first is json object od settings, second is mode 1 = application settings, -1 = default nothing
 function validateSettings(settings = {}, mode = -1) {
     logger.debug("validateSettings");
-    if (mode === -1 || (mode !== 1 && mode !== 2)) {
+    if (mode === -1 || mode !== 1) {
         // mode invalid
         logger.debug("FAIL 0");
         return false;
@@ -616,14 +612,16 @@ function validateSettings(settings = {}, mode = -1) {
         /*"app-lang": "en",
             "first-use": false,
             "app-version": app.getVersion(),
-            "demo-files": true,
             "latest-update-check": null,
             "latest-update-install": null,
             "zoom": 1,
             "edits": [
                 false,
                 null
-            ]*/
+            ],
+            "local-keywordlists":{},
+            "enabled-keywordlists":[]
+            */
         if (settings.hasOwnProperty("app-lang")) {
             if (typeof (settings["app-lang"]) !== "string") {
                 // app-lang not a string
@@ -663,8 +661,8 @@ function validateSettings(settings = {}, mode = -1) {
                         return false;
                     }
 
-                    if (settings.hasOwnProperty("demo-files")) {
-                        if (typeof (settings["demo-files"]) === typeof (true)) {
+                    //if (settings.hasOwnProperty("demo-files")) {
+                        //if (typeof (settings["demo-files"]) === typeof (true)) {
                             if (settings.hasOwnProperty("zoom")) {
                                 if (typeof (settings["zoom"]) === typeof (1)) {
                                     var zoommax = 150;
@@ -678,9 +676,97 @@ function validateSettings(settings = {}, mode = -1) {
                                                             if (settings.hasOwnProperty("latest-update-check") && settings.hasOwnProperty("latest-update-install")) {
                                                                 if (settings["latest-update-check"] === null || !Number.isNaN(Date.parse(settings["latest-update-check"]))) {
                                                                     if (settings["latest-update-install"] === null || !Number.isNaN(Date.parse(settings["latest-update-install"]))) {
-                                                                        // app config OK!
-                                                                        logger.debug("SUCCESS");
-                                                                        return true;
+
+                                                                        //if (settings.hasOwnProperty("local-keywordlists")) {
+                                                                        //    if (settings["local-keywordlists"].constructor === {}.constructor) {
+
+                                                                                /*
+                                                                                // validate all and loop
+                                                                                var lkwo = {};
+                                                                                for (var lkw in settings["local-keywordlists"]) {
+                                                                                    lkwo = settings["local-keywordlists"][lkw];
+                                                                                    if ((lkwo.constructor === {}.constructor) && (typeof (lkw) === "string")) {
+                                                                                        if (lkwo.hasOwnProperty("date")) {
+                                                                                            if (!Number.isNaN(Date.parse(lkwo["date"]))) {
+                                                                                                if (lkwo.hasOwnProperty("name")) {
+                                                                                                    if (typeof (lkwo["name"]) === "string") {
+                                                                                                        if (lkwo.hasOwnProperty("version")) {
+                                                                                                            if (typeof (lkwo["version"]) === "string") {
+                                                                                                                // everything ok. proceed...
+                                                                                                            } else {
+                                                                                                                // version not string
+                                                                                                                logger.debug("FAIL 45");
+                                                                                                                return false;
+                                                                                                            }
+                                                                                                        } else {
+                                                                                                            // no version field
+                                                                                                            logger.debug("FAIL 46");
+                                                                                                            return false;
+                                                                                                        }
+                                                                                                    } else {
+                                                                                                        // name not string
+                                                                                                        logger.debug("FAIL 29");
+                                                                                                        return false;
+                                                                                                    }
+                                                                                                } else {
+                                                                                                    // no name field
+                                                                                                    logger.debug("FAIL 30");
+                                                                                                    return false;
+                                                                                                }
+                                                                                            } else {
+                                                                                                // invalid date field
+                                                                                                logger.debug("FAIL 31");
+                                                                                                return false;
+                                                                                            }
+                                                                                        } else {
+                                                                                            // no date field on available kw
+                                                                                            logger.debug("FAIL 32");
+                                                                                            return false;
+                                                                                        }
+                                                                                    } else {
+                                                                                        // content not json object, or it's key is not string
+                                                                                        logger.debug("FAIL 33");
+                                                                                        return false;
+                                                                                    }
+                                                                                }
+                                                                                //
+                                                                                */
+
+                                                                                if (settings.hasOwnProperty("enabled-keywordlists")) {
+                                                                                    if (settings["enabled-keywordlists"] instanceof Array) {
+                                                                                        for (var enkw = 0; enkw < settings["enabled-keywordlists"].length; enkw++) {
+                                                                                            if (typeof (settings["enabled-keywordlists"][enkw]) === "string") {
+                                                                                                //was string, everything ok
+                                                                                            } else {
+                                                                                                //found something else than string
+                                                                                                logger.debug("FAIL 34");
+                                                                                                return false;
+                                                                                            }
+                                                                                        }
+                                                                                        //nothing to be tested anymore
+                                                                                        // app config OK!
+                                                                                        logger.debug("SUCCESS");
+                                                                                        return true;
+                                                                                    } else {
+                                                                                        //not array
+                                                                                        logger.debug("FAIL 35");
+                                                                                        return false;
+                                                                                    }
+                                                                                } else {
+                                                                                    // no enabled-keywordlists
+                                                                                    logger.debug("FAIL 36");
+                                                                                    return false;
+                                                                                }
+                                                                         //   } else {
+                                                                         //       // not an json object
+                                                                         //       logger.debug("FAIL 37");
+                                                                        //        return false;
+                                                                       //     }
+                                                                       // } else {
+                                                                       //     // no local-keywordlists
+                                                                       //     logger.debug("FAIL 38");
+                                                                       //     return false;
+                                                                        //}
                                                                     } else {
                                                                         // latest-update-install not null or date
                                                                         logger.debug("FAIL 8");
@@ -736,16 +822,12 @@ function validateSettings(settings = {}, mode = -1) {
                                 logger.debug("FAIL 18");
                                 return false;
                             }
-                        } else {
-                            // demo-files not boolean
-                            logger.debug("FAIL 19");
-                            return false;
-                        }
-                    } else {
-                        // no demo-files
-                        logger.debug("FAIL 20");
-                        return false
-                    }
+                        //} else {
+                        //    // demo-files not boolean
+                        //    logger.debug("FAIL 19");
+                        //    return false;
+                        //}
+                    //} 
                 } else {
                     // no app-version
                     logger.debug("FAIL 21");
@@ -761,222 +843,7 @@ function validateSettings(settings = {}, mode = -1) {
             logger.debug("FAIL 23");
             return false;
         }
-    } else if (mode === 2) {
-        logger.debug("MODE 2");
-        // keyword settings
-        /*
-         * "last-local-update": null,
-	       "last-availability-check": null,
-
-            "available-keywordlists": {
-                "en-basic": {
-                    "date": "2018-06-25T13:05:48.801Z",
-                    "name": "English - Basic"
-                },
-                "fi-basic": {
-                    "date": "2018-06-25T13:05:48.801Z",
-                    "name": "Suomi - Perus"
-                }
-            },
-            "local-keywordlists": {
-                "en-basic": {
-                    "date": "2018-06-25T13:05:48.801Z",
-                    "name": "English - Basic"
-                },
-                "fi-basic": {
-                    "date": "2018-06-25T13:05:48.801Z",
-                    "name": "Suomi - Perus"
-                }
-            },
-            "enabled-keywordlists": [
-                "en-basic"
-            ]*/
-        /*
-        asd.constructor === qwe["asdasd"].constructor
-        true
-        qwe["asdasd"] instanceof Object
-        true
-        typeof(qwe["asdasd"]) === "object"
-        true
-         */
-        if (settings.hasOwnProperty("last-local-update")) {
-            if (settings["last-local-update"] === null || !Number.isNaN(Date.parse(settings["last-local-update"]))) {
-                if (settings.hasOwnProperty("last-availability-check")) {
-                    if (settings["last-availability-check"] === null || !Number.isNaN(Date.parse(settings["last-availability-check"]))) {
-                        if (settings.hasOwnProperty("available-keywordlists")) {
-                            if (settings["available-keywordlists"].constructor === {}.constructor) {
-                                // validate all and loop
-                                var avkwo = {};
-                                for (var avkw in settings["available-keywordlists"]) {
-                                    avkwo = settings["available-keywordlists"][avkw];
-                                    if ((avkwo.constructor === {}.constructor) && (typeof (avkw) === "string")) {
-                                        if (avkwo.hasOwnProperty("date")) {
-                                            //
-                                            if (!Number.isNaN(Date.parse(avkwo["date"]))) {
-                                                if (avkwo.hasOwnProperty("name")) {
-                                                    if (typeof (avkwo["name"]) === "string") {
-                                                        if (avkwo.hasOwnProperty("version")) {
-                                                            if (typeof (avkwo["version"]) === "string") {
-                                                                // everything ok. proceed...
-                                                            } else {
-                                                                // version not string
-                                                                logger.debug("FAIL 48");
-                                                                return false;
-                                                            }
-                                                        } else {
-                                                            // no version field
-                                                            logger.debug("FAIL 47");
-                                                            return false;
-                                                        }
-                                                    } else {
-                                                        // name not string
-                                                        logger.debug("FAIL 24");
-                                                        return false;
-                                                    }
-                                                } else {
-                                                    // no name field
-                                                    logger.debug("FAIL 25");
-                                                    return false;
-                                                }
-                                            } else {
-                                                // invalid date field
-                                                logger.debug("FAIL 26");
-                                                return false;
-                                            }
-                                        } else {
-                                            // no date field on available kw
-                                            logger.debug("FAIL 27");
-                                            return false;
-                                        }
-                                    } else {
-                                        // content not json object, or it's key is not string
-                                        logger.debug("FAIL 28");
-                                        return false;
-                                    }
-                                }
-                                if (settings.hasOwnProperty("local-keywordlists")) {
-                                    if (settings["local-keywordlists"].constructor === {}.constructor) {
-                                        // validate all and loop
-                                        var lkwo = {};
-                                        for (var lkw in settings["local-keywordlists"]) {
-                                            lkwo = settings["local-keywordlists"][lkw];
-                                            if ((lkwo.constructor === {}.constructor) && (typeof (lkw) === "string")) {
-                                                if (lkwo.hasOwnProperty("date")) {
-                                                    if (!Number.isNaN(Date.parse(lkwo["date"]))) {
-                                                        if (lkwo.hasOwnProperty("name")) {
-                                                            if (typeof (lkwo["name"]) === "string") {
-                                                                if (lkwo.hasOwnProperty("version")) {
-                                                                    if (typeof (lkwo["version"]) === "string") {
-                                                                        // everything ok. proceed...
-                                                                    } else {
-                                                                        // version not string
-                                                                        logger.debug("FAIL 45");
-                                                                        return false;
-                                                                    }
-                                                                } else {
-                                                                    // no version field
-                                                                    logger.debug("FAIL 46");
-                                                                    return false;
-                                                                }
-                                                            } else {
-                                                                // name not string
-                                                                logger.debug("FAIL 29");
-                                                                return false;
-                                                            }
-                                                        } else {
-                                                            // no name field
-                                                            logger.debug("FAIL 30");
-                                                            return false;
-                                                        }
-                                                    } else {
-                                                        // invalid date field
-                                                        logger.debug("FAIL 31");
-                                                        return false;
-                                                    }
-                                                } else {
-                                                    // no date field on available kw
-                                                    logger.debug("FAIL 32");
-                                                    return false;
-                                                }
-                                            } else {
-                                                // content not json object, or it's key is not string
-                                                logger.debug("FAIL 33");
-                                                return false;
-                                            }
-                                        }
-                                        //
-
-                                        if (settings.hasOwnProperty("enabled-keywordlists")) {
-                                            if (settings["enabled-keywordlists"] instanceof Array) {
-                                                for (var enkw = 0; enkw < settings["enabled-keywordlists"].length; enkw++) {
-                                                    if (typeof (settings["enabled-keywordlists"][enkw]) === "string") {
-                                                        //was string, everything ok
-                                                    } else {
-                                                        //found something else than string
-                                                        logger.debug("FAIL 34");
-                                                        return false;
-                                                    }
-                                                }
-                                                //nothing to be tested anymore
-                                                logger.debug("SUCCESS");
-                                                return true;
-                                            } else {
-                                                //not array
-                                                logger.debug("FAIL 35");
-                                                return false;
-                                            }
-                                        } else {
-                                            // no enabled-keywordlists
-                                            logger.debug("FAIL 36");
-                                            return false;
-                                        }
-                                    } else {
-                                        // not an json object
-                                        logger.debug("FAIL 37");
-                                        return false;
-                                    }
-                                } else {
-                                    // no local-keywordlists
-                                    logger.debug("FAIL 38");
-                                    return false;
-                                }
-                            } else {
-                                // not an json object
-                                logger.debug("FAIL 39");
-                                return false;
-                            }
-                        } else {
-                            // no available-keywordlists
-                            logger.debug("FAIL 40");
-                            return false;
-                        }
-                        ///////
-
-                        ////////
-
-                        ////////
-                    } else {
-                        // last-availability-check is not null or valid date
-                        logger.debug("FAIL 41");
-                        return false;
-                    }
-                } else {
-                    // no last-availability-check
-                    logger.debug("FAIL 42");
-                    return false;
-                }
-            } else {
-                // last-local-update is not null or valid date
-                logger.debug("FAIL 43");
-                return false;
-            }
-        } else {
-            // no last-local-update
-            logger.debug("FAIL 44");
-            return false;
-        }
-
-    }
+    } 
     //if (settings instanceof Array) { }
 }
 
@@ -1036,13 +903,16 @@ function readAndParseSource(sourcearr = [], path = "") { //receives array of arr
 
         var currentArr = sourcearr[q];
 
-        if (currentArr.length != 17) {
-            logger.error("Can't parse source array for import! Length not 17!");
+        if (currentArr.length != 18) {
+            logger.error("Can't parse source array for import! Length not 18!");
         }
         var permissionbool = false;
         if (currentArr[16] === 0) {
             permissionbool = true;
         }
+
+        var curTimestamp = currentArr.pop(); // taking and removing last item
+
         //var tempNameBase = "event_";
         var event_base = {
             "src-file": path,
@@ -1054,7 +924,8 @@ function readAndParseSource(sourcearr = [], path = "") { //receives array of arr
             "lang": null,
             "kw": [],
             "done": false,
-            "permission": permissionbool
+            "permission": permissionbool,
+            "timestamp": curTimestamp
         }
         //temp_store.set("subID", dataArray[1][0]); // Setting identifier
         //temp_store.set("subDATE", dataArray[1][1]); // Setting create date
@@ -1104,7 +975,7 @@ function readAndParseSource(sourcearr = [], path = "") { //receives array of arr
 
             if (line === 2 || line === 4 || line === 5 || line === 6 || line === 7 || line === 11) {// integer answers
                 // add data
-                var datareal = currentArr[line].toString();
+                let datareal = currentArr[line].toString();
 
                 //mainWindow.webContents.send("output-to-chrome-console", "line at integer: "+line);
                 //mainWindow.webContents.send("output-to-chrome-console", currentDataArr[line]);
@@ -1114,7 +985,7 @@ function readAndParseSource(sourcearr = [], path = "") { //receives array of arr
             }
             else if (line === 12 || line === 14) {// integer answers UNSTABLE
                 // add data
-                var datareal = "";
+                let datareal = "";
                 if (currentArr[line] != null) {
                     datareal = currentArr[line].toString();
                 }
@@ -1237,7 +1108,7 @@ function validateParsedArray(arr) {
         return false;
     } else {
         for (var k = 0; k < arr.length; k++) {
-            if (arr[k].length != 17) {
+            if (arr[k].length != 18) {
                 return false;
             }
             if (typeof arr[k][0] === "string") {
@@ -1298,8 +1169,12 @@ function validateParsedArray(arr) {
                                                             }
                                                             //final part
                                                             if (typeof arr[k][16] === "number") {
-                                                                // EVERYTHING CHECKED! OK!
-                                                                return true;
+                                                                if (typeof arr[k][17] === "string") {
+                                                                    // EVERYTHING CHECKED! OK!
+                                                                    return true;
+                                                                } else {
+                                                                    return false;
+                                                                }
                                                             } else {
                                                                 // permission not number
                                                                 return false;

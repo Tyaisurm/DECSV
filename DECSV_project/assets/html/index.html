@@ -58,9 +58,21 @@
     </header>
 
     <div id="upper-nav-bar" style="min-height:68px;" class="w3-bar w3-gray w3-bottombar w3-border-white disable-select">
-        <div id="addfilebutton" class="w3-bar-item w3-button no-display">
-            <img draggable="false" id="nav-file-icon" class="navbar-image" src="../ui_icons/appbar.add.png" />
-            <p class="navbar-text">Add Files</p>
+        <div class="w3-dropdown-click ">
+            <div class="w3-button no-display" id="addfiledropdownbutton">
+                <img draggable="false" id="nav-file-icon" class="navbar-image" src="../ui_icons/appbar.add.png">
+                <p class="navbar-text">Add Files</p>
+            </div>
+            <div id="addfileddcont" class="w3-dropdown-content w3-bar-block" style="z-index:9999;">
+                <a href="#" class="w3-bar-item w3-button w3-card" id="addfilebuttonbypass" style="
+    width: auto;
+    height: auto;
+    ">CCSVE Files (.csv)</a>
+                <a href="#" class="w3-bar-item w3-button w3-card" style="
+    height: auto;
+    width: auto;
+    " id="addfilebutton">Import Wizard</a>
+            </div>
         </div>
         <div id="projinfobutton" class="w3-bar-item w3-button no-display">
             <img draggable="false" id="nav-proj-info-icon" class="navbar-image" src="../ui_icons/appbar.information.circle.png" />
@@ -86,11 +98,11 @@
             <img draggable="false" id="nav-settings-icon" class="navbar-image" src="../ui_icons/appbar.settings.png" />
             <p class="navbar-text">Settings</p>
         </div>
-        <div id="loginbutton" class="w3-bar-item w3-button w3-right w3-disabled">
+        <div id="loginbutton" class="w3-bar-item w3-button w3-right w3-disabled" style="display:none;">
             <img draggable="false" id="nav-login-icon" class="navbar-image" src="../ui_icons/appbar.people.png" />
             <p class="navbar-text">Log in</p>
         </div>
-        <div style="margin-top:15px;" class="w3-bar-item w3-right w3-border-right w3-border-black">
+        <div style="margin-top:15px;display:none;" class="w3-bar-item w3-right w3-border-right w3-border-black">
             <p class="navbar-text">Not logged</p>
         </div>
     </div>

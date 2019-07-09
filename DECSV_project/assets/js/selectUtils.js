@@ -28,14 +28,6 @@ function setAppLang() {
     ////////////////////////////
 }
 
-/* Setting up available kw-list selector (select2) */
-function setKWListAvailable() {
-    logger.debug("set_kw_list_available_select");
-    $("#kw-list-available-choose").select2({
-        placeholder: i18n.__('select2-kw-list-ph')
-    });
-}
-
 /* Setup language and country (in English) selectors on Create Project -view */
 function setCreateProjSelect() {
     logger.debug("setCreateProjSelect");
@@ -120,92 +112,101 @@ function setEditSelects() {
 }
 
 /* Setting up KW-selector on EDIT-view (select2) */
-function setupEditKW() {
+function setupEditKW(settings = { "app": { "enabled-keywordlists": ["en"] }}) {
     logger.debug("setupEditKW");
-    var enabledKW = [];
-    var apppath = remote.app.getPath('userData');
+    var enabledKW = settings.app["enabled-keywordlists"];
+    //if (enabledKW.length === 0) { enabledKW.push("en");}
+    //var apppath = remote.app.getPath('userData');
 
     $("#KW-selector").empty();
     $("#KW-selector").append(document.createElement("option"));
 
     logger.debug("getting enabled local lists...");
+    /*
     $("#settings-local-kw-lists .kw-list-enabled").each(function (i) {
         var kw_list_id = $(this).attr("data-id");
         enabledKW.push(kw_list_id);
         logger.debug("ADDED: " + kw_list_id);
     });
+    */
 
-    var kw_base = path.join(apppath, 'keywordlists');
+    var kw_base = path.join(__dirname, '../../keywordfiles/lists/');
+
     var kw_groups = [];
     var kw_current_group = "";
     logger.debug("GOING TO LOOP enabledKW now....");
     for (var i = 0; i < enabledKW.length; i++) {
         //logger.debug("Round: " + i);
+        // enabledKW is list of lang folder names ["en","fi",....]
+        var langfolderbase = path.join(kw_base, enabledKW[i]);
+        var kwfiles = fs.readdirSync(path.join(kw_base, enabledKW[i]), 'utf8');// read dir, like "en" contents
+        for (var f = 0; f < kwfiles.length; f++) {
+            // kwfiles is list of kw files under language folder, like "en"
+            let loadedlist = [];
+            if (fs.existsSync(path.join(langfolderbase, kwfiles[f]))) {
+                logger.debug("KW file '" + kwfiles[f] + "' located!");
+                try {
+                    //logger.debug("TRYING TO GET KW FILE CONTENTS AND LOOP 'EM");
+                    loadedlist = require(path.join(langfolderbase, kwfiles[f]));
+                    for (var k in loadedlist) {
+                        //logger.debug("in loop now. current: " + k);
+                        if (loadedlist.hasOwnProperty(k)) {
+                            var kw_tag = k;
+                            var kw_itself = loadedlist[k];
+                            if (Object.keys(loadedlist).indexOf(k) === 0) {//loadedlist.indexof(k) === 0) {// skipping 0, because that is the name
+                                //logger.debug(kw_itself);
+                                kw_current_group = kw_itself;//.substring(kw_itself.split(' - ')[0].length + 3, kw_itself.length);
+                                //logger.debug("First line! taking name...: " + kw_current_group);
+                                continue;
+                            } else if (Object.keys(loadedlist).indexOf(k) === 1) {
+                                //version number here...
+                                continue;
+                            }
+                            if (kw_groups.indexOf(kw_current_group) > -1) {
+                                //logger.debug("Group seems to exist: " + kw_current_group);
+                                let option_elem = document.createElement("option");
+                                let option_text = document.createTextNode(kw_itself);
+                                //logger.debug("KW ITSELF: " + kw_itself);
+                                //logger.debug("KW TAG: " + kw_tag);
+                                $(option_elem).attr({
+                                    value: kw_tag
+                                });
+                                $(option_elem).append(option_text);
+                                $("#KW-selector optgroup[label='" + kw_current_group + "']").append(option_elem);
+                                //logger.debug("#KW-selector optgroup[label='" + kw_current_group + "']");
+                            }
+                            else {
+                                //logger.debug("Group seems to NOT exist: " + kw_current_group);
+                                kw_groups.push(kw_current_group);
+                                var optgroup_elem = document.createElement("optgroup");
+                                $(optgroup_elem).attr({
+                                    label: kw_current_group
+                                });
+                                $("#KW-selector").append(optgroup_elem);
 
-        let loadedlist = [];
-        if (fs.existsSync(path.join(kw_base, enabledKW[i] + '.json'))) {
-            logger.info("KW file '" + enabledKW[i] + "' located!");
-            try {
-                //logger.debug("TRYING TO GET KW FILE CONTENTS AND LOOP 'EM");
-                loadedlist = require(path.join(kw_base, enabledKW[i] + '.json'));
-                for (var k in loadedlist) {
-                    //logger.debug("in loop now. current: " + k);
-                    if (loadedlist.hasOwnProperty(k)) {
-                        var kw_tag = k;
-                        var kw_itself = loadedlist[k];
-                        if (Object.keys(loadedlist).indexOf(k) === 0) {//loadedlist.indexof(k) === 0) {// skipping 0, because that is the name
-                            //logger.debug(kw_itself);
-                            kw_current_group = kw_itself;//.substring(kw_itself.split(' - ')[0].length + 3, kw_itself.length);
-                            //logger.debug("First line! taking name...: " + kw_current_group);
-                            continue;
-                        } else if (Object.keys(loadedlist).indexOf(k) === 1) {
-                            //version number here...
-                            continue;
-                        }
-                        if (kw_groups.indexOf(kw_current_group) > -1) {
-                            //logger.debug("Group seems to exist: " + kw_current_group);
-                            let option_elem = document.createElement("option");
-                            let option_text = document.createTextNode(kw_itself);
-                            //logger.debug("KW ITSELF: " + kw_itself);
-                            //logger.debug("KW TAG: " + kw_tag);
-                            $(option_elem).attr({
-                                value: kw_tag
-                            });
-                            $(option_elem).append(option_text);
-                            $("#KW-selector optgroup[label='" + kw_current_group + "']").append(option_elem);
-                            //logger.debug("#KW-selector optgroup[label='" + kw_current_group + "']");
-                        }
-                        else {
-                            //logger.debug("Group seems to NOT exist: " + kw_current_group);
-                            kw_groups.push(kw_current_group);
-                            var optgroup_elem = document.createElement("optgroup");
-                            $(optgroup_elem).attr({
-                                label: kw_current_group
-                            });
-                            $("#KW-selector").append(optgroup_elem);
-
-                            let option_elem = document.createElement("option");
-                            let option_text = document.createTextNode(kw_itself);
-                            //logger.debug("KW ITSELF: " + kw_itself);
-                            //logger.debug("KW TAG: " + kw_tag);
-                            $(option_elem).attr({
-                                value: kw_tag
-                            });
-                            $(option_elem).append(option_text);
-                            $("#KW-selector optgroup[label='" + kw_current_group + "']").append(option_elem);
-                            //logger.debug("#KW-selector optgroup[label='" + kw_current_group + "']");
+                                let option_elem = document.createElement("option");
+                                let option_text = document.createTextNode(kw_itself);
+                                //logger.debug("KW ITSELF: " + kw_itself);
+                                //logger.debug("KW TAG: " + kw_tag);
+                                $(option_elem).attr({
+                                    value: kw_tag
+                                });
+                                $(option_elem).append(option_text);
+                                $("#KW-selector optgroup[label='" + kw_current_group + "']").append(option_elem);
+                                //logger.debug("#KW-selector optgroup[label='" + kw_current_group + "']");
+                            }
                         }
                     }
+                } catch (err) {
+                    logger.error("Failed to load '" + enabledKW[i] + ".json' KW file...");
+                    logger.error(err.message);
+                    $("#settings-local-kw-lists li['data-id'='" + enabledKW[i] + "'] span").trigger("click");
                 }
-            } catch (err) {
-                logger.error("Failed to load '" + enabledKW[i] + ".json' KW file...");
-                logger.error(err.message);
-                $("#settings-local-kw-lists li['data-id'='" + enabledKW[i] + "'] span").trigger("click");
             }
-        }
-        else {
-            logger.warn("No desired KW-file found in keywords directory!");
-            $("#settings-local-kw-lists li[data-id='" + enabledKW[i] + "'] span").trigger("click");
+            else {
+                logger.warn("No desired KW-file found in keywords directory!");
+                $("#settings-local-kw-lists li[data-id='" + enabledKW[i] + "'] span").trigger("click");
+            }
         }
     }
     // here you update kw-selector in case of same words in current file
@@ -271,9 +272,9 @@ function setSettingsLoadedKW() {
             class: "w3-button w3-display-right",
             onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
             onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-            onclick: "$(\"#KW-selector option\").each(function(i){if($(this).val().substring(3, $(this).val().length) === \"" + kw_value.substring(3, kw_value.length) + "\"){$(this).removeAttr('disabled', 'disabled')}}); $(this.parentElement).remove(); $(\"#KW-selector\").select2({placeholder: i18n.__('select2-kw-add-ph')});"
+            onclick: "$(\"#KW-selector option\").each(function(i){if($(this).val().substring(3, $(this).val().length) === \"" + kw_value.substring(3, kw_value.length) + "\"){$(this).removeAttr('disabled', 'disabled')}}); $(\"#KW-selector\").select2({placeholder: i18n.__('select2-kw-add-ph')}); $(this.parentElement).remove(); $(this.parentElement.parentElement).trigger('deleted');"
         });
-        // //NEEDSTOBECHANGED save project to temp here (when object deleted...) 
+
         li_node.appendChild(span_node);
 
         $('#file-chosen-kw-ul').append(li_node);
@@ -379,7 +380,6 @@ function setImportSelect() {
 
 module.exports = {
     setAppLang: setAppLang,
-    setKWListAvailable: setKWListAvailable,
     setCreateProjSelect: setCreateProjSelect,
     setSettingsLoadedKW: setSettingsLoadedKW,
     setupEditKW: setupEditKW,

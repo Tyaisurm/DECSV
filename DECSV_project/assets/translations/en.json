@@ -14,7 +14,6 @@
   "select2-no-results": "No results found",
   "select2-searching": "Searching…",
   "select2-kw-add-ph": "Select keyword",
-  "select2-kw-list-ph": "Choose keyword lists",
   "select2-app-lang-ph": "Select language",
   "select2-proj-country-ph": "Select country",
   "select2-proj-lang-ph": "Select survey language",
@@ -56,7 +55,7 @@
   "import-data-fail-4": "No encoding chosen!",
   "import-data-fail-5": "Nothing chosen to be imported!",
   "import-data-fail-6": "No survey version chosen!",
-  "import-tip-1": "1# Select used survey tool and file (also edit defaults if results don't seem to make sense)",
+  "import-tip-1": "1# Select used survey tool and file (edit defaults if needed)",
   "import-tip-2": "#2 Review file contents, and select lines you wish to import below",
   "import-tip-3": "#3 Select survey template version, and confirm import of selected above",
   "import-select-all": "Select All",
@@ -94,6 +93,19 @@
 
   "open-file-prompt-window-title": "Open file",
   "open-project-prompt-window-title": "Open project",
+
+  "export-target-prompt-window-title": "Choose export destination and file name",
+  "export-status-wait": "Please wait...",
+  "export-status-complete": "Exporting done!",
+  "export-status-error-write": "Error while writing file!",
+  "export-status-error-no-cont": "Nothing to export!",
+  "export-status-error": "Error! Can't export!",
+  "export-window-title": "Export files",
+
+  "about-window-title": "About",
+  "about-window-collect-logs-btn": "Collect Logs",
+  "about-window-wiki-btn": "For online wiki, click here",
+  "about-window-version": "Version",
 
   "current-keys(unused)": "Added keywords:",
   "current-censored(unused)": "Words to be censored:",
@@ -133,11 +145,12 @@
   "secC-Q-13": " If the event was a patient safety incident, was it documented in the patient’s files:",
   "secC-Q-14": "If not, why not:",
 
+  "field-of-study--1": "Other (open answers)",
   "field-of-study-0": "Bioanalytics/Biology technician",
   "field-of-study-1": "Dietitian/Nutritionist",
   "field-of-study-2": "Medicine",
   "field-of-study-3": "Midwifery",
-  "field-of-study-4": "Nursing (Adult)",
+  "field-of-study-4": "Nursing",
   "field-of-study-5": "Nursing (Child/pediatrics)",
   "field-of-study-6": "Nursing (Mental Health)",
   "field-of-study-7": "Nursing (Learning Disabilities)",
@@ -151,7 +164,6 @@
   "field-of-study-15": "Social work (Adults)",
   "field-of-study-16": "Social work",
   "field-of-study-17": "Speech and Language therapist",
-  "field-of-study-18": "Other (open answers)",
 
   "age-0": "16-20",
   "age-1": "21-25",
@@ -176,6 +188,7 @@
   "study-year-6": "7th academic year",
   "study-year-7": "Other academic year",
 
+  "work-placement--1": "Other (open answers)",
   "work-placement-0": "Critical care (including Intensive care and Accident and emergency)",
   "work-placement-1": "Community care/home",
   "work-placement-2": "Elderly care (Geriatric) ward/unit",
@@ -194,8 +207,8 @@
   "work-placement-15": "Outpatients",
   "work-placement-16": "Social work",
   "work-placement-17": "Surgery ward/unit/theatre",
-  "work-placement-18": "Other (open answers)",
 
+  "event-related--1": "Other (open answers)",
   "event-related-0": "Communication",
   "event-related-1": "Confidentality",
   "event-related-2": "Checking/verification",
@@ -211,7 +224,6 @@
   "event-related-12": "Procedure and/or treatment",
   "event-related-13": "Using technology or equipment",
   "event-related-14": "Violence",
-  "event-related-15": "Other (open answers)",
 
   "event-type-0": "Good practice",
   "event-type-1": "Near miss",

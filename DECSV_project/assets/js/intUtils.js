@@ -1,6 +1,7 @@
 ﻿const remote = require("electron").remote;
 const Store = require("electron-store");
 const path = require('path');
+const fs = require('fs')
 
 const selectUtils = require("./selectUtils.js")
 const sectionUtils = require("./sectionUtils.js")
@@ -47,7 +48,7 @@ function toggleViewMode(mode) {
         setFooterBtnValue("preview");
         setFooterBtnMode("preview");
 
-        $("#addfilebutton").removeClass("element-disabled");
+        $("#addfiledropdownbutton").removeClass("element-disabled");
         $("#exportprojbutton").removeClass("element-disabled");
 
         $("#closeprojbutton").removeClass("element-disabled");
@@ -83,7 +84,7 @@ function toggleViewMode(mode) {
         setFooterBtnValue("editA");
         setFooterBtnMode("editA");
 
-        $("#addfilebutton").addClass("element-disabled");
+        $("#addfiledropdownbutton").addClass("element-disabled");
         $("#exportprojbutton").addClass("element-disabled");
 
         $("#closeprojbutton").addClass("element-disabled");
@@ -113,7 +114,7 @@ function toggleViewMode(mode) {
         setFooterBtnValue("editB");
         setFooterBtnMode("editB");
 
-        $("#addfilebutton").addClass("element-disabled");
+        $("#addfiledropdownbutton").addClass("element-disabled");
         $("#exportprojbutton").addClass("element-disabled");
 
         $("#closeprojbutton").addClass("element-disabled");
@@ -143,7 +144,7 @@ function toggleViewMode(mode) {
         setFooterBtnValue("editC");
         setFooterBtnMode("editC");
 
-        $("#addfilebutton").addClass("element-disabled");
+        $("#addfiledropdownbutton").addClass("element-disabled");
         $("#exportprojbutton").addClass("element-disabled");
 
         $("#closeprojbutton").addClass("element-disabled");
@@ -173,7 +174,7 @@ function toggleViewMode(mode) {
         setFooterBtnValue("login");
         setFooterBtnMode("login");
 
-        $("#addfilebutton").addClass("element-disabled");
+        $("#addfiledropdownbutton").addClass("element-disabled");
         $("#exportprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
@@ -199,7 +200,7 @@ function toggleViewMode(mode) {
         setFooterBtnValue("register");
         setFooterBtnMode("register");
 
-        $("#addfilebutton").addClass("element-disabled");
+        $("#addfiledropdownbutton").addClass("element-disabled");
         $("#exportprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
@@ -228,7 +229,7 @@ function toggleViewMode(mode) {
         setFooterBtnValue("settings");
         setFooterBtnMode("settings");
 
-        $("#addfilebutton").addClass("element-disabled");
+        $("#addfiledropdownbutton").addClass("element-disabled");
         $("#exportprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
@@ -264,7 +265,7 @@ function toggleViewMode(mode) {
         setFooterBtnValue("information");
         setFooterBtnMode("information");
 
-        $("#addfilebutton").addClass("element-disabled");
+        $("#addfiledropdownbutton").addClass("element-disabled");
         $("#exportprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
@@ -299,7 +300,7 @@ function toggleViewMode(mode) {
         setFooterBtnValue("forgotPW");
         setFooterBtnMode("forgotPW");
 
-        $("#addfilebutton").addClass("element-disabled");
+        $("#addfiledropdownbutton").addClass("element-disabled");
         $("#exportprojbutton").addClass("element-disabled");
 
         $("#start-div").removeClass("is-shown");
@@ -461,7 +462,7 @@ function setFooterBtnMode(view) {
         $("#footer-nav-btn4").text("Cancel");
     }
     else if (view === "project-open") {
-        $("#addfilebutton").removeClass("no-display");
+        $("#addfiledropdownbutton").removeClass("no-display");
         $("#projinfobutton").removeClass("no-display");
         $("#projstartbutton").removeClass("no-display");
         $("#exportprojbutton").removeClass("no-display");
@@ -469,7 +470,7 @@ function setFooterBtnMode(view) {
         $("#back-to-start-button").addClass("no-display");
     }
     else if (view === "project-closed") {
-        $("#addfilebutton").addClass("no-display");
+        $("#addfiledropdownbutton").addClass("no-display");
         $("#projinfobutton").addClass("no-display");
         $("#projstartbutton").addClass("no-display");
         $("#exportprojbutton").addClass("no-display");
@@ -496,12 +497,13 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
     // NEED TO CALL "GETSETTINGS" FIRST IN ORDER TO CORRECTLY INITIALIZE
     //
     //NEEDSTOBECHANGED
+    //logger.debug("updateSettingsUI");
     var settingsJSON = getSettings();
     var store1 = {};
-    var store2 = {};
+    //var store2 = {};
     try {
         store1 = settingsJSON.app;
-        store2 = settingsJSON.kw;
+        //store2 = settingsJSON.kw;
     } catch (err) {
         //
         logger.error("Unable to update settings UI");
@@ -509,7 +511,7 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
         return;
         //throw "Unable to update settings UI";
     }
-    var apppath = remote.app.getPath('userData');
+    //var apppath = remote.app.getPath('userData');
     logger.debug("updateSettingsUI");
     /*
     var apppath = remote.app.getPath('userData');
@@ -534,40 +536,51 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
      */
     $("#settings-app-lang-name").text("Current language: " + selectUtils.getFullLangName(applang));
 
-    var kw_update_latest = store2["last-successful-update"];
-    var kw_local_list = store2["local-keywordlists"];
-    var kw_available_list = store2["available-keywordlists"];
-    var enabled_kw_list = store2["enabled-keywordlists"];
-    var kw_update_date = store2["last-successful-update"];
-    if ((kw_update_date !== null) && !isNaN(Date.parse(kw_update_date))) {
-        kw_update_date = new Date(kw_update_date).toISOString();
-    }
-    else {
-        kw_update_date = "----";
-    }
-    $("#settings-kw-update-date").text("Latest successfull update: " + kw_update_date);
-    $("#kw-list-available-choose").empty();
-    $("#kw-list-available-choose").append(document.createElement("option"));
+    //var kw_update_latest = store2["last-successful-update"];
+    //var kw_local_list = store2["local-keywordlists"];
+    //var kw_available_list = store2["available-keywordlists"];
+    var enabled_kw_list = store1["enabled-keywordlists"];
+    
+    //$("#kw-list-available-choose").empty();
+    //$("#kw-list-available-choose").append(document.createElement("option"));
     $('#settings-local-kw-lists').empty();
 
     var localsArr = [];
-
+    var kw_base = path.join(__dirname, '../../keywordfiles/');
+    var kw_local_list = fs.readdirSync(path.join(kw_base, "lists/"), "utf8");// array of ["en","fi",.....]
+    //logger.debug(kw_base);
+    //logger.debug(path.join(kw_base, "keyword-config-default.json"));
+    var kw_local_list_default = fs.readFileSync(path.join(kw_base, "keyword-config-default.json"), "utf8");
+    //logger.debug(kw_local_list_default);
+    try {
+        kw_local_list_default = JSON.parse(kw_local_list_default)["local-keywordlists"];
+    } catch (err) {
+        //logger.debug(err)
+        kw_local_list_default = {
+            "local-keywordlists": {"enabled-keywordlists":[]}};
+    }
+    logger.debug(kw_local_list_default);
+    
+    //logger.debug(kw_local_list);
     //start loop (local lists)
     for (var k in kw_local_list) { // var i = 0; i < enabled_kw_list.length; i++sadasdasd
+        //logger.debug("k: " + k);
+        //k = kw_local_list[k];
+        //logger.debug(kw_local_list_default[k]);
         let list_id = "";
         let list_name = "";
-        let lang = "";
-        let version = "";
-        if (kw_local_list.hasOwnProperty(k)) {
-            list_id = k;// list's filename/identification
-            list_name = kw_local_list[k]["name"];// list's name from row 0 (within the file. actual, showable name)
-            version = kw_local_list[k]["version"];
-            lang = list_name.split(' - ')[0];
-            localsArr.push(k);
+        //let lang = "";
+        //let version = "";
+        //if (kw_local_list.hasOwnProperty(k)) {
+        list_id = kw_local_list[k];// list's filename/identification
+        list_name = kw_local_list_default[list_id]["name"];// list's name from row 0 (within the file. actual, showable name)
+        //version = kw_local_list_default[kw_local_list[k]]["version"];
+            //lang = list_name.split(' - ')[0];
+            localsArr.push(kw_local_list[k]);
             //list_date = new Date(kw_local_list[k]["date"]); // list's update date
-        }
+        //}
 
-        var li_string = document.createTextNode(list_name + "(v." + version + ")");
+        var li_string = document.createTextNode(list_name);
         var li_node = document.createElement("li");
         var span_node = document.createElement("span");
         var div1 = document.createElement('div');
@@ -622,13 +635,13 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
     //<li class="w3-hover-blue w3-display-container kw-list-enabled">list 3<span onclick="$(this.parentElement).toggleClass('kw-list-enabled');$(this).toggleClass('w3-red');$(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="mark_enabled w3-green w3-button w3-display-right">&radic;</span></li>
     //<li class="w3-hover-blue w3-display-container">list 4<span onclick="$(this.parentElement).toggleClass('kw-list-enabled');$(this).toggleClass('w3-red');$(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="w3-red w3-button w3-display-right">&times;</span></li>
     //end loop
-    var lang_groups = [];
-    for (var j in kw_available_list) {
-        let list_id = "";
-        let list_name = "";
-        let lang = "";
-        let langlast = "";
-
+    //var lang_groups = [];
+    //for (var j in kw_available_list) {
+        //let list_id = "";
+        //let list_name = "";
+        //let lang = "";
+        //let langlast = "";
+        /*
         if (kw_available_list.hasOwnProperty(j)) {
             list_id = j;// list's filename/identification
             list_name = kw_local_list[j]["name"];// list's name from row 0 (within the file. actual, showable name)
@@ -637,7 +650,8 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
             //logger.debug("list_id: "+list_id);
             //list_date = new Date(kw_local_list[k]["date"]); // list's update date
         }
-
+        */
+        /*
         if (localsArr.indexOf(list_id) > -1) {
             logger.warn("The list '" + list_id + "' is already loaded/local!");
             continue;
@@ -671,12 +685,13 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
 
             }
         }
-    }
+        */
+    //}
 
     $("#settings-zoomslider").val(zoomvalue);
     $("#settings-zoomslider").trigger("input");
     //
-    selectUtils.setKWListAvailable();
+    //selectUtils.setKWListAvailable();
     selectUtils.setAppLang();
 }
 
@@ -705,7 +720,7 @@ function markPendingChanges(value = false, file_source) {
     }
 }
 
-function setImportPreview(arr = null) {
+function setImportPreview(arr = null, automate = false) {
     logger.debug("setImportPreview");
 
     $('#import-preview-list').empty();
@@ -782,6 +797,11 @@ function setImportPreview(arr = null) {
             li_node.appendChild(div2);
 
             $('#import-preview-list').append(li_node);
+        }
+        // for automation
+        if (automate === true) {
+            $("#import-select-all-btn").trigger("click");
+            $("#import-preview-list li").first().find("span").trigger("click");
         }
     } else {
         li_string = document.createTextNode(window.i18n.__('import-file-cont-nothing'));

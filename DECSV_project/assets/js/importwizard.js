@@ -75,8 +75,7 @@ document.getElementById("import-add-file-btn").onclick = function () {
         title: i18n.__('open-file-prompt-window-title'),
         defaultPath: docpath,
         filters: [
-            { name: 'Spreadsheet', extensions: ['csv'] },
-            { name: 'Excel document', extensions: ['xlsx', 'xls'] }
+            { name: 'Comma Separated Values', extensions: ['csv'] }
         ],
         properties: ['openFile'
         ]
@@ -90,9 +89,13 @@ document.getElementById("import-add-file-btn").onclick = function () {
             logger.info("Selected file: '" + fileNames[0] + "'");
             window.import_ready = false;
             collectData();
+            thiswindow.show();
             return;
         }
         logger.warn("No file(s) chosen to be opened!");
+        if (window.automate === true) {
+            thiswindow.close();
+        }
     }
     dialog.showOpenDialog(thiswindow, options, callback);
 }
@@ -168,7 +171,7 @@ document.getElementById("import-confirm-btn").onclick = function () {
                 }
 
                 // JUST TO PREVENT NEEDLESS FUNCTIONALITY NEEDSTOBECHANGED
-                if (tool != 1) {
+                if (tool != 0) {
                     //not Google Forms output
                     logger.error("Not implemented! Need to be Google Forms file!");
                     $("#import-error-text").text(i18n.__('dummy-dia-2'));
@@ -214,6 +217,15 @@ intUtils.selectUtils.setImportSelect();// settings up select for survey tools
 // ipcRenderer.send("import-wiz-return",[import_tool,import_delimeter,import_file]);
 intUtils.setImportPreview();//testArray);
 
+ipcRenderer.on("automate", function (event, arg) {
+    window.automate = true;
+    logger.debug("import automate ipcRenderer....");
+    $("#import-select-tool").val("0").trigger("change");
+    $("#import-select-survey-ver").val("0").trigger("change");
+    $("#import-add-file-btn").trigger("click");
+});
+
+
 //import-wiz-reply
 /* data from main process... read arrays of file */
 ipcRenderer.on("import-wiz-reply", function (event, arg) {// should be [boolean, statusNUM, arr]
@@ -247,8 +259,8 @@ ipcRenderer.on("import-wiz-reply", function (event, arg) {// should be [boolean,
             }
             if (arrcheck) {
                 console.log("############### ARRAY #############################");
-                console.log(arr)
-                intUtils.setImportPreview(arr);
+                console.log(arr);
+                intUtils.setImportPreview(arr, true);
                 window.import_ready = true;
             } else {
                 $("#import-error-text").text(i18n.__('file-import-error-arr-2'));
@@ -295,7 +307,7 @@ ipcRenderer.on("import-wiz-result", function (event, arg) {
 });
 
 /* Collect filepath, delimiter, */
-function collectData() {
+function collectData(automated = false) {
     logger.debug("collectData")
     var tool = $("#import-select-tool").select2("val");
     var delimiter = $("#import-select-delimiter").select2("val");
@@ -442,18 +454,15 @@ function interfaceUpdate(settings = {}) {
     logger.debug("interfaceUpdate (importwizard.js)");
     //logger.debug(settings.constructor);
     if (settings.constructor === {}.constructor) {
-        if (Object.keys(settings).length !== 2) {
+        if (Object.keys(settings).length !== 1) {
             //logger.debug("INT FAIL 1");
             settings = getSettings();
-        } else if (!settings.hasOwnProperty("app") || !settings.hasOwnProperty("kw")) {
+        } else if (!settings.hasOwnProperty("app")) {
             //logger.debug("INT FAIL 2");
             settings = getSettings();
         }
     } else if (!parseUtils.validateSettings(settings.app, 1)) {
         //logger.debug("INT FAIL 4");
-        settings = getSettings();
-    } else if (!parseUtils.validateSettings(settings.kw, 2)) {
-        //logger.debug("INT FAIL 5");
         settings = getSettings();
     }
     /* setting current settings as window object (json) */

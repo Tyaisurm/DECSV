@@ -216,8 +216,7 @@ global.getSettings = function () {
     logger.debug("getSettings");
     var apppath = app.getPath('userData');
     var returnable = {
-        "app": {},
-        "kw": {}
+        "app": {}
     };
     var config1 = {
         name: "app-configuration",
@@ -231,20 +230,7 @@ global.getSettings = function () {
     } catch (err) {
         json1 = {};
     }
-    //
-    var config2 = {
-        name: "keyword-config",
-        cwd: path.join(apppath, 'keywordlists')
-    }
-    const store2 = new Store(config2);
-    var json2 = store2.store;
-    try {
-        json2 = JSON.stringify(json2);
-        json2 = JSON.parse(json2);
-    } catch (err) {
-        json2 = {};
-    }
-    //
+    
     if (parseUtils.validateSettings(json1,1)) {
         // settings valid; giving them out
         //returnable.push(json1);
@@ -255,39 +241,19 @@ global.getSettings = function () {
             "app-lang": "en",
             "first-use": false,
             "app-version": app.getVersion(),
-            "demo-files": true,
             "latest-update-check": null,
             "latest-update-install": null,
             "zoom": 100,
             "edits": [
                 false,
                 null
-            ]
-        }
-        //returnable.push(json1);
+            ],
+            "enabled-keywordlists": ["en"]
         };
-    
-    if (parseUtils.validateSettings(json2, 2)) {
-        // settings valid; giving them out
-        //returnable.push(json2);
-    } else {
-        // settings invalid; need to give out defaults 
-        logger.warn("GetSettings() keyword settings invalid!");
-        json2 = {
-            
-            "last-local-update": null,
-            "last-availability-check": null,
-                "available-keywordlists": {
-            },
-            "local-keywordlists": {
-            },
-            "enabled-keywordlists": []
+        //returnable.push(json1);
         }
-        //returnable.push(JSONjson2);
-    }
 
     returnable.app = json1;
-    returnable.kw = json2;
     
     return returnable;
 
@@ -298,21 +264,21 @@ global.setSettings = function (settings = {}) {
     logger.debug("setSettings");
     //logger.debug(settings);
     var json1 = {};
-    var json2 = {};
+    //var json2 = {};
     if (!(settings.constructor === {}.constructor)) {
         //settings is not an json object
         return [false,1];
     }
-    else if (Object.keys(settings).length !== 2) {
-        //settings keys not size of 2
+    else if (Object.keys(settings).length !== 1) {
+        //settings keys not size of {1}<< 2
         return [false,2];
     }
-    if (!settings.hasOwnProperty("app") || !settings.hasOwnProperty("kw")) {
+    if (!settings.hasOwnProperty("app")) {// || !settings.hasOwnProperty("kw")) {
         // no app or kw object in settings object
         return [false, 3];
     }
     json1 = settings.app;
-    json2 = settings.kw;
+    //json2 = settings.kw;
     
     //
     if (parseUtils.validateSettings(json1,1)) {
@@ -324,16 +290,17 @@ global.setSettings = function (settings = {}) {
             "app-lang": "en",
             "first-use": false,
             "app-version": app.getVersion(),
-            "demo-files": true,
             "latest-update-check": null,
             "latest-update-install": null,
             "zoom": 100,
             "edits": [
                 false,
                 null
-            ]
+            ],
+            "enabled-keywordlists": []
         };
     }
+    /*
     if (parseUtils.validateSettings(json2, 2)) {
         // settings valid; giving them out
     } else {
@@ -350,6 +317,7 @@ global.setSettings = function (settings = {}) {
             "enabled-keywordlists": []
         };
     }
+    */
     var apppath = app.getPath('userData');
     var config1 = {
         name: "app-configuration",
@@ -358,21 +326,23 @@ global.setSettings = function (settings = {}) {
     var store1 = new Store(config1);
     store1.store = json1;
     //
+    /*
     var config2 = {
         name: "keyword-config",
         cwd: path.join(apppath, 'keywordlists')
     }
     const store2 = new Store(config2);
     store2.store = json2;
+    */
 
     /* CALL FORCE UPDATE TO ALL WINDOWS HERE!!!!!!!! */
 
-    forceInterfaceUpdate(json1, json2)
+    forceInterfaceUpdate(json1);//, json2)
 
 };
 
 /* sends info to all webContents with proper  */
-function forceInterfaceUpdate(intset1 = {}, intset2 = {}) {
+function forceInterfaceUpdate(intset1 = {}) {//, intset2 = {}) {
     logger.debug("forceInterfaceUpdate (app.js)");
     //logger.debug(intset1);
     //logger.debug(intset2);
@@ -381,15 +351,16 @@ function forceInterfaceUpdate(intset1 = {}, intset2 = {}) {
         //logger.debug("FAIL 1");
         return false;
     }
+    /*
     else if (!parseUtils.validateSettings(intset2,2)) {
         //logger.debug("FAIL 2");
         return false;
     }
+    */
     var webconts = electron.webContents.getAllWebContents();
 
     var tobesent = {
-        "app": intset1,
-        "kw": intset2
+        "app": intset1
     }
     //logger.debug(webconts);
     //logger.debug(webconts.length);
@@ -413,9 +384,6 @@ createAppStructure();
 /////////////////////
 
 //////////////////////////////////////////////////////////// IPC MAIN LISTENERS
-ipcMain.on('regenerate-demo-keywords', function (event, arg) {
-    createAppStructure(1);
-});
 
 ipcMain.on('import-wiz-return', function (event, arg) {
     logger.debug("import-wiz-return");
@@ -448,9 +416,10 @@ ipcMain.on('import-wiz-return', function (event, arg) {
         }
     } else if (mode === 1) {
         //received selected lines to be imported.... parsing to proper form...
+        //mainWindow.webContents.send("output-to-chrome-console", arg[1]);
         var completearr = parseUtils.parseArray(arg[0], arg[1], arg[3]);// [tool, arr, survey_version] // returns [boolean, statuscode, arr] CURRENTLY USING PLACEHOLDERS!
         if (completearr[0]) {
-            //mainWindow.webContents.send("output-to-chrome-console", completearr[2]);
+            mainWindow.webContents.send("output-to-chrome-console", completearr[2]);
             // logger.error("DENIED! UNABLE TO USE BECAUSE NOT IMPLEMENTED!");
             //event.sender.send("import-wiz-result", [false, completearr[1], "{}"]);
             //return;
@@ -501,17 +470,17 @@ function createDocStructure() {
     logger.debug("createDocStructure");
     var docpath = app.getPath('documents');
     try {
-        if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
+        if (!fs.existsSync(path.join(docpath, 'SLIPPS Teacher Tool'))) {
             logger.info("No app documents folder found! Creating one...");
-            fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV'));
+            fs.mkdirSync(path.join(docpath, 'SLIPPS Teacher Tool'));
         }
-        if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
+        if (!fs.existsSync(path.join(docpath, 'SLIPPS Teacher Tool\\Projects'))) {
             logger.info("No app PROJECTS folder found! Creating one...");
-            fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Projects'));
+            fs.mkdirSync(path.join(docpath, 'SLIPPS Teacher Tool\\Projects'));
         }
-        if (!fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Output'))) {
+        if (!fs.existsSync(path.join(docpath, 'SLIPPS Teacher Tool\\Output'))) {
             logger.info("No app OUTPUT folder found! Creating one...");
-            fs.mkdirSync(path.join(docpath, 'SLIPPS DECSV\\Output'));
+            fs.mkdirSync(path.join(docpath, 'SLIPPS Teacher Tool\\Output'));
         }
     } catch (err) {
         logger.error("Unable to create file structure into user's documents! Reason: " + err.message);
@@ -522,7 +491,7 @@ function createDocStructure() {
 function createAppStructure(mode = 0) {
     logger.debug("createAppStructure");
     
-    var demostatus = false;
+    //var demostatus = false;
     var apppath = app.getPath('userData');
     var appconfigcheck = false;
     if (fs.existsSync(path.join(apppath, 'app-configuration.json'))) {
@@ -535,7 +504,7 @@ function createAppStructure(mode = 0) {
 
     if (!appconfigcheck) {
         logger.info("No app configuration file found! Creating one with defaults...");
-        var CA1_options = {
+        let CA1_options = {
             defaults: {
                 "app-lang": "en",
                 "first-use": true,
@@ -543,8 +512,8 @@ function createAppStructure(mode = 0) {
                 "latest-update-install": null,
                 "zoom":100,
                 "app-version": app.getVersion(),
-                "demo-files": false,
-                "edits": [false,null]
+                "edits": [false, null],
+                "enabled-keywordlists": ["en"]
             },
             name: "app-configuration",
             cwd: apppath
@@ -568,7 +537,7 @@ function createAppStructure(mode = 0) {
     }
     else {
         logger.info("App configuration file found! Checking version...");
-        var CA1_options = {
+        let CA1_options = {
             name: "app-configuration",
             cwd: apppath
         }
@@ -581,8 +550,9 @@ function createAppStructure(mode = 0) {
         var appzoom = CA1_store.get("zoom", 100);
 
         var appfirst = CA1_store.get("first-use", true);
-        demostatus = CA1_store.get("demo-files", false);
-        var appedits = CA1_store.get("edits", [false,null]);
+        //demostatus = CA1_store.get("demo-files", false);
+        var appedits = CA1_store.get("edits", [false, null]);
+        var enabledkwlists = CA1_store.get("enabled-keywordlists", ["en"]);
 
         //logger.info("Current ver.: " + app.getVersion() + " Ver. in file: " + appver);
         var appvercheck = parseUtils.validateVersion(appver);
@@ -597,11 +567,13 @@ function createAppStructure(mode = 0) {
 
             CA1_store.set("first-use", appfirst);
             CA1_store.set("app-version", app.getVersion());
-            CA1_store.set("demo-files", demostatus)
+            //CA1_store.set("demo-files", demostatus)
             CA1_store.set("edits", appedits)
+            CA1_store.set("enabled-keywordlists", enabledkwlists);
         } else {
             logger.info("Application config major version same or newer as application version! Not updating...");
         }
+        /*
         if (typeof (demostatus) !== typeof(true)) {
             demostatus = false;
         }
@@ -617,9 +589,10 @@ function createAppStructure(mode = 0) {
             logger.info("Assume no demofiles created! 'Demostatus' variable is false!");
             // is false, no demofiles have been done yet
         }
-
+        */
         // check if consistent with this version, if not, remove and rebuild
     }
+    /*
     var keyword_file_check = true;
     // checking if keyword-config file exists, and if it is file or directory
     if (fs.existsSync(path.join(apppath, 'keywordlists\\keyword-config.json'))) {
@@ -631,6 +604,8 @@ function createAppStructure(mode = 0) {
         keyword_file_check = false;
     }
     logger.info("Keywordlist config file exists: " + keyword_file_check);
+    */
+    /*
     try {
         if (!fs.existsSync(path.join(apppath, 'keywordlists'))) {
             fs.mkdirSync(path.join(apppath, 'keywordlists'));
@@ -651,17 +626,17 @@ function createAppStructure(mode = 0) {
         // #################################################################
         //      SETTING DEMO FILES - BELOW IS ORIGINAL, FURTHER BELOW CURRENT.....
         /*
-        var CA2_options = {
-            defaults: {
-                "last-successful-update": "----",
-                "available-keywordlists": {},
-                "local-keywordlists": {},
-                "enabled-keywordlists": []
-            },
-            name: "keyword-config",
-            cwd: path.join(apppath, 'keywordlists')
-        }
-        */
+        //var CA2_options = {
+            //defaults: {
+            //    "last-successful-update": "----",
+            //    "available-keywordlists": {},
+            //    "local-keywordlists": {},
+            //    "enabled-keywordlists": []
+          //  },
+           // name: "keyword-config",
+         //   cwd: path.join(apppath, 'keywordlists')
+        //}
+        
         if (!demostatus) {
             logger.info("Since 'demostatus' was false, creating demo keyword files, and proper settings for them...(copy and overwrite...)");
             if (!keyword_file_check) {
@@ -696,8 +671,9 @@ function createAppStructure(mode = 0) {
                         name: "keyword-config",
                         cwd: path.join(apppath, 'keywordlists')
                     }
-                    const CA2_store = new Store(CA2_options);*/
-
+                    const CA2_store = new Store(CA2_options);
+                    */
+                    /*
                     var source_demo_1 = path.join(__dirname, './demo_files/en-basic.json');
                     var source_demo_2 = path.join(__dirname, './demo_files/en-people_roles.json');
                     var source_demo_3 = path.join(__dirname, './demo_files/en-settings_specialities.json');
@@ -783,6 +759,7 @@ function createAppStructure(mode = 0) {
                     CA5_store.set("local-keywordlists", ca5lokw);
                     CA5_store.set("enabled-keywordlists", ca5ekw);
                     */
+                    /*
 
                     var source_demo_1 = path.join(__dirname, './demo_files/en-basic.json');
                     var source_demo_2 = path.join(__dirname, './demo_files/en-people_roles.json');
@@ -831,6 +808,7 @@ function createAppStructure(mode = 0) {
     } else {
         logger.info("Keyword configuration file found, and 'demostatus' variable was true! Assuming everything is ok!");
     }
+    */
 }
 
 /* Creates new project with a given name into Documents-folder */
@@ -867,10 +845,10 @@ function createNewProject(proj_name, proj_country, proj_lang) {//
         reason.push(false, 5);
         return reason;
     }
-    else if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV'))) {
-        if (fs.existsSync(path.join(docpath, 'SLIPPS DECSV\\Projects'))) {
+    else if (fs.existsSync(path.join(docpath, 'SLIPPS Teacher Tool'))) {
+        if (fs.existsSync(path.join(docpath, 'SLIPPS Teacher Tool\\Projects'))) {
             // testing if directory just in case....
-            var project_dircheck = fs.statSync(path.join(docpath, 'SLIPPS DECSV\\Projects')); 
+            var project_dircheck = fs.statSync(path.join(docpath, 'SLIPPS Teacher Tool\\Projects')); 
             if (project_dircheck.isDirectory()) {
                 logger.info("Projects directory in user's documents located!");
             }
@@ -882,9 +860,9 @@ function createNewProject(proj_name, proj_country, proj_lang) {//
             }
 
             try {
-                fs.accessSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.decsv'));
+                fs.accessSync(path.join(docpath, 'SLIPPS Teacher Tool\\Projects\\' + proj_name + '.decsv'));
                 // if we get past this, project exits...
-                var projFileCheck = fs.statSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.decsv'));
+                var projFileCheck = fs.statSync(path.join(docpath, 'SLIPPS Teacher Tool\\Projects\\' + proj_name + '.decsv'));
                 if (projFileCheck.isDirectory()) {
                     throw "Tested project was directory, not file!";
                 }
@@ -898,9 +876,8 @@ function createNewProject(proj_name, proj_country, proj_lang) {//
 
             //logger.debug("Creating new properties file.....");
             var project_data_template = JSON.stringify({
-                "____INFO____": "THIS IS PROJECT FILE FOR DECSV APPLICATION, USED AS PART OF THE SLIPPS EU PROJECT",
+                "____INFO____": "THIS IS PROJECT FILE FOR DECSV/SLIPPS Teacher Tool APPLICATION, USED AS PART OF THE SLIPPS EU PROJECT",
                 "created": new Date().toISOString(),
-                "src-files": [],
                 "project-files": {},
                 "notes": [],
                 "lang-preset": proj_lang,
@@ -909,7 +886,7 @@ function createNewProject(proj_name, proj_country, proj_lang) {//
             });
             //const CA3_store = new Store(CA3_options);
             try {
-                fs.writeFileSync(path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.decsv'), project_data_template, 'utf-8');
+                fs.writeFileSync(path.join(docpath, 'SLIPPS Teacher Tool\\Projects\\' + proj_name + '.decsv'), project_data_template, 'utf-8');
             } catch (err) {
                 logger.error("Failed to write new project file '" + proj_name + ".decsv'! Reason: " + err.message);
                 reason.push(false, 8);
@@ -917,7 +894,7 @@ function createNewProject(proj_name, proj_country, proj_lang) {//
             }
             
             logger.info("Created project '" + proj_name + "'!");
-            reason.push(true, 11, path.join(docpath, 'SLIPPS DECSV\\Projects\\' + proj_name + '.decsv'));
+            reason.push(true, 11, path.join(docpath, 'SLIPPS Teacher Tool\\Projects\\' + proj_name + '.decsv'));
             return reason;
         }
         else {
@@ -1459,8 +1436,8 @@ function readSourceFile(lert_tool = null, lert_delimiter = null, lert_encoding =
 
     /* file has .xlsx or .xls extension */
     if (file_ext === 'xlsx' || file_ext === 'xls') {
-        logger.info("Parsing XLSX or XLS file...");
-
+        logger.info("Parsing XLSX or XLS file... NOT ENABLED");
+        /*
         // xlsx-js 
         try {
             var workbook = XLSX.readFile(file);
@@ -1490,6 +1467,7 @@ function readSourceFile(lert_tool = null, lert_delimiter = null, lert_encoding =
             result.push([]);
             return result;
         }
+        */
     } else if (file_ext === 'csv') {
         logger.info("Parsing CSV file...");
         /*Node.js fs*/

@@ -13,18 +13,8 @@ function parseHandler(arr = [], tool = -1, CSVtoArrayBOS = function () { return 
             return [false, 3, []];
             break;
         case 0:
-            // Bristol Online Surveys / Online Surveys
-            var returnable = parseBOS(arr);
-            return returnable;
-            break;
-        case 1:
             // Google Forms
             var returnable = parseGoogle(arr, CSVtoArrayBOS, validateParsedArray);
-            return returnable;
-            break;
-        case 2:
-            // Webropol
-            var returnable = parseWebropol(arr);
             return returnable;
             break;
         default:
@@ -40,20 +30,19 @@ function parseHandler(arr = [], tool = -1, CSVtoArrayBOS = function () { return 
      
  */
 
-function parseBOS(arr = []) {
-    logger.warn("BOS 1.0.0 parsing not implemented!");
-    return [false, 3, []];
-}
-
 function parseGoogle(arr = [], CSVtoArrayBOS = function () { return []; }, validateParsedArray = function () { return false; }) {
             //parsed[3][10] = CSVtoArrayBOS(parsed[3][10], ";");
     try {
         var completedata = [];
         var shift = 0;
         for (var i = 0; i < arr.length; i++) {
-            var cursurv = arr[i+shift];
+            var cursurv = arr[i + shift];
+            logger.debug("////////////// CURSURV /////////////////////")
+            logger.debug(cursurv);
+            logger.debug("/////////////////////////////////")
             //now loop single survey form
             completedata[i] = [];
+            var curTimestamp = cursurv[0];
             completedata[i][0] = cursurv[1];
             completedata[i][1] = cursurv[2];
             var parsed = Number.parseInt(cursurv[3], 10);
@@ -91,9 +80,12 @@ function parseGoogle(arr = [], CSVtoArrayBOS = function () { return []; }, valid
 
             //the part after this contains reported and ifnotwhy x2, plus permission
             var reported1 = null;
+            logger.debug("CURSURV 13");
+            logger.debug(cursurv[13]);
             if (!!cursurv[13]) {
                 reported1 = Number.parseInt(cursurv[13], 10);
             }
+            logger.debug(reported1);
             completedata[i][12] = reported1;//cursurv[13];
             if (!cursurv[14]) {
                 cursurv[14] = null;
@@ -110,7 +102,14 @@ function parseGoogle(arr = [], CSVtoArrayBOS = function () { return []; }, valid
             completedata[i][15] = cursurv[16];
 
             completedata[i][16] = Number.parseInt(cursurv[17], 10);
+
+            // adding timestamp to end...
+            completedata[i][17] = curTimestamp;
         }
+        logger.debug("################################################ AAAAAAAAAAAAAA ##############################");
+        logger.debug(completedata[0]);
+        logger.debug("################################################ AAAAAAAAAAAAAA ##############################");
+        logger.debug(completedata[1]);
         if (validateParsedArray(completedata)) { return [true, 0, completedata]; } else { logger.error("Validating Google Forms array failed!");return [false, 3, []];}
 
     } catch (e) {
@@ -118,11 +117,6 @@ function parseGoogle(arr = [], CSVtoArrayBOS = function () { return []; }, valid
         logger.error(e.message);
         return [false, 3, []];
     }
-}
-
-function parseWebropol(arr = []) {
-    logger.warn("Webropol 1.0.0 parsing not implemented!");
-    return [false, 3, []];
 }
 
 module.exports = {

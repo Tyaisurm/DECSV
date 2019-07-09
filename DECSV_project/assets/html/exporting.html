@@ -36,16 +36,10 @@
             <img draggable="false" id="win-close-icon" class="w3-bar-item w3-button corner-buttons w3-hover-red" style="padding: 3px 16px;" src="../ui_icons/appbar.close.png" />
         </div>
     </header>
-    <div class="w3-border w3-border-black w3-white" style="flex: 1;overflow-wrap:normal;overflow-x:auto;">
-        <ul id="exportlist" class="w3-ul">
-            <li class="w3-green">test 1.csv - COMPLETED</li>
-            <li class="w3-green">test 2.csv - COMPLETED</li>
-            <li class="w3-red">test 3.csv - FAILED</li>
-            <li class="w3-green">test 4.csv - COMPLETED</li>
-        </ul>
+    <div class="w3-border w3-border-black w3-white" style="display:flex;justify-content:center; text-align:center; flex-direction:column; flex: 1;overflow-wrap:normal;overflow-x:auto;">
+        <h1 id="export-status-text">STATUS</h1>
     </div>
     <button id="ok-button" class="w3-button w3-gray">OK</button>
-    <button id="view-button" class="w3-button w3-gray">View folder contents</button>
     <script>require('../js/file_export');</script>
 </body>
 </html>

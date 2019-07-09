@@ -37,25 +37,22 @@ function interfaceUpdate(settings = {}) {
     logger.debug("interfaceUpdate (openwin.js)");
     //logger.debug(settings.constructor);
     if (settings.constructor === {}.constructor) {
-        if (Object.keys(settings).length !== 2) {
+        if (Object.keys(settings).length !== 1) {
             //logger.debug("INT FAIL 1");
             settings = getSettings();
-        } else if (!settings.hasOwnProperty("app") || !settings.hasOwnProperty("kw")) {
+        } else if (!settings.hasOwnProperty("app")) {
             //logger.debug("INT FAIL 2");
             settings = getSettings();
         }
     } else if (!parseUtils.validateSettings(settings.app, 1)) {
         //logger.debug("INT FAIL 4");
         settings = getSettings();
-    } else if (!parseUtils.validateSettings(settings.kw, 2)) {
-        //logger.debug("INT FAIL 5");
-        settings = getSettings();
     }
     /* setting current settings as window object (json) */
     window.allsettings = settings;
 
     /* only in main window! */
-    $("body").css("zoom", settings.app.zoom / 100);
+    //$("body").css("zoom", settings.app.zoom / 100);
 
     /* Setting up UI texts */
     setupTranslations(settings.app["app-lang"]);

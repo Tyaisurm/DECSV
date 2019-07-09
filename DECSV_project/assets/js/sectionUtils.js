@@ -45,6 +45,14 @@ function setupCensorSelect() {
 
 
 function setupCsectionUI() {
+    // INT 2 4 5 6 7 11 12* 14* (16)
+            // STRING 3 8 10 13* 15*
+            // INT ARRAY 9
+    /*
+     ["event-desc"0, "event-relevancy"1, #profession - INT2 #1, "profession-other"3 #2, #age - INT4 #3, #gender - INT5 #4, #yearinprog - INT6 #5, #eventplacement - INT7 #6,
+    eventplacement - other"8 #7, [#eventrelated-INT]9 #8, "eventrelated - other"10 #9, #typeofevent-INT11 #10, #reportedsystem-INT12 #11,
+    "ifnotwhy"13 #12, #reportedfiles-INT14 #13, "ifnotwhy"15 #14, permission16 ]
+     */
     logger.debug("setupCsectionUI");
     for (var f = 1; f < 15; f++) {
         var realdata = "";
@@ -58,13 +66,13 @@ function setupCsectionUI() {
                     $("#edit-C-edit-text ." + classStr).text(i18n.__("field-of-study-" + realdata.toString()));
                 }
                 else if (f === 3) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("age-" + (realdata - 1).toString()));
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("age-" + (realdata).toString()));
                 }
                 else if (f === 4) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("gender-" + (realdata - 1).toString()));
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("gender-" + (realdata).toString()));
                 }
                 else if (f === 5) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("study-year-" + (realdata - 1).toString()));
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("study-year-" + (realdata).toString()));
                 }
                 else if (f === 6) {
                     $("#edit-C-edit-text ." + classStr).text(i18n.__("work-placement-" + realdata.toString()));
@@ -77,13 +85,13 @@ function setupCsectionUI() {
                     $("#edit-C-edit-text ." + classStr).text(temparr.toString());
                 }
                 else if (f === 10) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("event-type-" + (realdata - 1).toString()));
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("event-type-" + (realdata).toString()));
                 }
                 else if (f === 11) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("report-document-" + (realdata - 1).toString()));
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("report-document-" + (realdata).toString()));
                 }
                 else if (f === 13) {
-                    $("#edit-C-edit-text ." + classStr).text(i18n.__("report-document-" + (realdata - 1).toString()));
+                    $("#edit-C-edit-text ." + classStr).text(i18n.__("report-document-" + (realdata).toString()));
                 }
                 //$("#edit-C-edit-text ." + classStr).addClass("w3-light-blue"); //adding background color
             }

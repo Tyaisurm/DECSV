@@ -107,14 +107,14 @@ ipcRenderer.on("force-open-project", function (event, filepath) {
  }
  
  */
-ipcRenderer.on("import-wiz-import-result", function (event, args = {}) {
+ipcRenderer.on("import-wiz-import-result", function (event_in, args = {}) {
     logger.debug("import-wiz-import-result");
     console.log("############### RETURNED FROM IMPORT WINDOW #######################");
     console.log(args);// for testing to see how works
 
     // add new content into window variable, save temp file
     var window_json = window.currentFileContent;
-    var sourcef = window_json["src-files"];
+    //var sourcef = window_json["src-files"];
     var projectf = window_json["project-files"];
 
     var eventname = "event_";
@@ -126,28 +126,28 @@ ipcRenderer.on("import-wiz-import-result", function (event, args = {}) {
         if (!projectf.hasOwnProperty(tempename)) { test = false; logger.debug("Name '" + tempename + "' first available!"); break;}
         nro++;
     }
-    var sourcename = "";
+    //var sourcename = "";
     var elang = window_json["lang-preset"];
     var ecountry = window_json["country-preset"];
     for (var id in args) {
         var event = args[id];
         event["lang"] = elang;
         event["country"] = ecountry;
-        sourcename = event["src-file"]
+        //sourcename = event["src-file"]
         tempename = eventname + nro;
         projectf[tempename] = {};
         projectf[tempename] = event;
         logger.debug("Added tempename: '"+tempename+"' to projectf");
         nro++;
     }
-    sourcef.push(sourcename);
+    //sourcef.push(sourcename);
     window_json["project-files"] = projectf;
-    window_json["src-files"] = sourcef;
+    //window_json["src-files"] = sourcef;
     window.currentFileContent = window_json;
 
     if (window.currentEvent === undefined) {
         logger.info("No event open while importing! Saving only notes..");
-        var notes = [];
+        let notes = [];
         $("#proj-notes-ul li").each(function (i) {
             var text = $(this).ignore("span").text();
             notes.push(text);
@@ -160,8 +160,8 @@ ipcRenderer.on("import-wiz-import-result", function (event, args = {}) {
         var done = false;
         $('#proj-files-ul li.w3-yellow').each(function (i) {
             done = ($(this).attr('data-done') === "true");
-            country = $(this).attr('data-country');
-            lang = $(this).attr('data-lang');
+            country = $("#preview-event-country-select").val();
+            lang = $("#preview-event-lang-select").val();
         });
 
 
@@ -172,12 +172,12 @@ ipcRenderer.on("import-wiz-import-result", function (event, args = {}) {
         var dataKW = [];
 
         $("#file-chosen-kw-ul li").each(function (i) {
-            var value = $(this).attr("data-value").substring(3, test.length - 1);
+            var value = $(this).attr("data-value").substring(3);//, test.length - 1);
             $(this).find('span').remove();
             dataKW.push(value);
         });
 
-        var notes = [];
+        let notes = [];
         $("#proj-notes-ul li").each(function (i) {
             var text = $(this).ignore("span").text();
             notes.push(text);
@@ -205,10 +205,9 @@ jquerySetup();
 intUtils.selectUtils.setSettingsLoadedKW();
 
 intUtils.selectUtils.setAppLang();
-intUtils.selectUtils.setKWListAvailable();
 
 intUtils.updateSettingsUI();
-intUtils.selectUtils.setupEditKW();
+//intUtils.selectUtils.setupEditKW();// Will be called after UI has been updated to get window.allsettings
 intUtils.selectUtils.setCreateProjSelect();
 intUtils.selectUtils.setEditSelects();
 
@@ -266,8 +265,8 @@ document.getElementById("save-cur-edits-btn").onclick = function () {
 
     $('#proj-files-ul li.w3-yellow').each(function (i) {
         done = ($(this).attr('data-done') === "true");
-        country = $(this).attr('data-country');
-        country = $(this).attr('data-lang');
+        country = $("#preview-event-country-select").val();
+        lang = $("#preview-event-lang-select").val();
     });
 
     // since we are closing, we need to clear the edit sections of the UI
@@ -286,7 +285,7 @@ document.getElementById("save-cur-edits-btn").onclick = function () {
     var dataC = $("#edit-C-orig-text").html();
     var dataKW = [];
     $("#file-chosen-kw-ul li").each(function (i) {
-        var value = $(this).attr("data-value").substring(3, test.length - 1);
+        var value = $(this).attr("data-value").substring(3);//, test.length - 1);
         //$(this).find('span').remove(); // no need to remove span, since we don't need text
         dataKW.push(value);
     });
@@ -299,6 +298,17 @@ document.getElementById("save-cur-edits-btn").onclick = function () {
 
     // saving, because user wanted to click the button....
     saveProject(1, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+
+    // resetting UI...
+    if (window.currentEvent != undefined) {
+        $(".secA-Q").text(i18n.__("secA-Q"));
+        $(".secB-Q").text(i18n.__("secB-Q"));
+        for (var b = 1; b < 15; b++) {
+            $(".secC-Q-" + b).text(i18n.__("secC-Q-" + b));
+        }
+        intUtils.sectionUtils.setupCsectionUI();
+        intUtils.sectionUtils.updateCensoredList();
+    }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -362,6 +372,34 @@ $("#proj-notes-ul").on("deleted", function () {
     });
     // saving, because user deleted a note....
     saveProject(0, "", "", "", [], notes);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+});
+
+/* Follows if kw is removed from event selected list */
+$("#file-chosen-kw-ul").on("deleted", function () {
+    intUtils.markPendingChanges(true, window.currentFile);
+    var notes = [];
+    $("#proj-notes-ul li").each(function (i) {
+        var text = $(this).ignore("span").text();
+        notes.push(text);
+    });
+    var kwlist = [];
+    $("#file-chosen-kw-ul li").each(function (i) {
+        var value = $(this).attr("data-value").substring(3);//, test.length - 1);
+        kwlist.push(value);
+    });
+
+    /*
+
+            window_json["project-files"][current_event]["a"] = dataA;
+            window_json["project-files"][current_event]["b"] = dataB;
+            window_json["project-files"][current_event]["c"] = dataC;
+            window_json["project-files"][current_event]["country"] = country;
+            window_json["project-files"][current_event]["lang"] = lang;
+            window_json["project-files"][current_event]["kw"] = kw;
+     */
+
+    // saving, because user deleted a kw from selected list....
+    saveProject(0, "", "", "", kwlist, notes);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
 });
 
 /* Follows input into new project name field */
@@ -463,35 +501,28 @@ document.getElementById("check-app-updates-button").onclick = function () { //NE
     });
     ipcRenderer.send("check-updates", "");
 }
-document.getElementById("regeneratedemokw").onclick = function () {
-    //
-    logger.debug("regeneratedemokw button");
-    ipcRenderer.send("regenerate-demo-keywords",null);
-}
-
-document.getElementById("downloadandupdatekeywords").onclick = function () {//NEEDSTOBECHANGED
-    logger.debug("downloadandupdatekeywords button");
-    createDummyDialog(firstWindow);
-    /*
-    var loadable_kw_lists = $("#kw-list-available-choose").val();
-    logger.debug("WOULD be downloading: " + loadable_kw_lists);
-
-    var local_kw_lists = [];
-    $("#settings-local-kw-lists li").each(function (i) {
-        local_kw_lists.push($(this).attr("data-id"));
-    });
-    logger.debug("WOULD be updating: " + local_kw_lists);
-    
-    //checkAndUpdateKWLists();
-    // REMEMBER TO SET "NAME" TO KW LISTS properties-file FROM THE FIRST ELEMENT within the .json file, when you have downloaded them!!!!!!
-    */
-}
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////// UPPER NAV BAR LISTENERS / BUTTONS
+/* Import dropdown */
+document.getElementById("addfiledropdownbutton").onclick = function () {
+    logger.debug("addfile drowdown button");
+    var x = document.getElementById("addfileddcont");
+    if (x.className.indexOf("w3-show") == -1) {
+        x.className += " w3-show";
+    } else {
+        x.className = x.className.replace(" w3-show", "");
+    }
+}
+document.getElementById("addfilebuttonbypass").onclick = function () {
+    logger.debug("addfile bypass button");
+    addFilesPrompt(1);
+    $("#addfiledropdownbutton").trigger("click");
+}
 document.getElementById("addfilebutton").onclick = function () {
     logger.debug("addfile button");
-    addFilesPrompt();
+    addFilesPrompt(0);
+    $("#addfiledropdownbutton").trigger("click");
 }
 
 document.getElementById("projinfobutton").onclick = function () {// NEEDSTOBECHANGED
@@ -514,7 +545,7 @@ document.getElementById("projinfobutton").onclick = function () {// NEEDSTOBECHA
         $("#proj-info-files-ul li").removeAttr("onmouseout");
 
         var docpath = remote.app.getPath('documents');
-        var proj_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + window.currentProject + '\\');
+        var proj_base = path.join(docpath, 'SLIPPS Teacher Tool\\Projects\\' + window.currentProject + '\\');
         var options = {
             name: window.currentProject,
             cwd: proj_base
@@ -600,18 +631,18 @@ document.getElementById("projstartbutton").onclick = function () {//
 
 /* ASYNC answers to EXPORT-window about the current project's name (IPC to file_export.js) */
 ipcRenderer.on('get-project-data', function (event, fromWindowId) {
-    logger.debug("RECEIVED REQUESST");
+    logger.debug("RECEIVED REQUEST");
     logger.debug("fromwindowID: " + fromWindowId);
     var result = [];
     result.push(window.currentProject, window.currentFileContent);
     var fromWindow = BrowserWindow.fromId(fromWindowId);
-    fromWindow.webContents.send('get-project-data-reply', result);
+    fromWindow.webContents.send('get-project-data-reply', JSON.stringify(result));
 });
 
 document.getElementById("exportprojbutton").onclick = function () {// NEEDSTOBECHANGED
     logger.debug("exportproject button");
-    createDummyDialog(firstWindow);
-    return;
+    //createDummyDialog(firstWindow);
+    //return;
 
     //export "done" marked project files 
     var options = {
@@ -632,8 +663,8 @@ document.getElementById("exportprojbutton").onclick = function () {// NEEDSTOBEC
     // going through yellow file list elements (as in currently opened/selected)
         $('#proj-files-ul li.w3-yellow').each(function (i) {
             done = ($(this).attr('data-done') === "true");
-            country = $(this).attr('data-country');
-            lang = $(this).attr('data-lang');
+            country = $("#preview-event-country-select").val();
+            lang = $("#preview-event-lang-select").val();
         });
 
     
@@ -644,7 +675,7 @@ document.getElementById("exportprojbutton").onclick = function () {// NEEDSTOBEC
         var dataKW = [];
 
         $("#file-chosen-kw-ul li").each(function (i) {
-            var value = $(this).attr("data-value").substring(3, test.length - 1);
+            var value = $(this).attr("data-value").substring(3);//, test.length - 1);
             $(this).find('span').remove();
             dataKW.push(value);
         });
@@ -668,9 +699,9 @@ document.getElementById("exportprojbutton").onclick = function () {// NEEDSTOBEC
             
             // need to disable ALL controls from user!!!
             var asdwin = new BrowserWindow({
-                width: 500,
-                height: 400,
-                resizable: true,
+                width: 450,
+                height: 360,
+                resizable: false,
                 devTools: true,
                 frame: false,
                 backgroundColor: '#dadada',
@@ -682,7 +713,7 @@ document.getElementById("exportprojbutton").onclick = function () {// NEEDSTOBEC
             let winurl = url.format({
                 protocol: 'file',
                 slashes: true,
-                pathname: path.join(__dirname, '../html/exporting.html')
+                pathname: path.join(__dirname, '../html/exporting.html') 
             });
             asdwin.on('ready-to-show', function () {
                 asdwin.show();
@@ -737,7 +768,7 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
                     var dataKW = [];
 
                     $("#file-chosen-kw-ul li").each(function (i) {
-                        var value = $(this).attr("data-value").substring(3, test.length - 1);
+                        var value = $(this).attr("data-value").substring(3);//, test.length - 1);
                         $(this).find('span').remove();
                         dataKW.push(value);
                     });
@@ -901,10 +932,10 @@ document.getElementById("open-proj-button").onclick = function () {
     logger.debug("open-proj-button");
 
     var docpath = remote.app.getPath('documents');
-    if (fs.existsSync(path.join(docpath, "SLIPPS DECSV\\Projects\\"))){
+    if (fs.existsSync(path.join(docpath, "SLIPPS Teacher Tool\\Projects\\"))){
         var options = {
             title: i18n.__('open-project-prompt-window-title'),
-            defaultPath: path.join(docpath, "SLIPPS DECSV\\Projects\\"),
+            defaultPath: path.join(docpath, "SLIPPS Teacher Tool\\Projects\\"),
             filters: [
                 { name: 'DECSV project file', extensions: ['decsv'] }
             ],
@@ -1073,7 +1104,7 @@ document.getElementById("footer-nav-btn3").onclick = function () {//
                 var tobesent = collectSettings();
 
                 setSettings(tobesent);
-                intUtils.selectUtils.setupEditKW();
+                //intUtils.selectUtils.setupEditKW();
             }
             else {
                 // no need to anything else
@@ -1214,14 +1245,15 @@ function collectSettings() {
             "app-lang": "en",
             "first-use": false,
             "app-version": app.getVersion(),
-            "demo-files": true,
+          //  "demo-files": true,
             "latest-update-check": null,
             "latest-update-install": null,
             "zoom": 100,
             "edits": [
                 false,
                 null
-            ]
+            ],
+            "enabled-keywordlists":[]
         };*/
     var applang = $("#app-lang-selector").select2('val');
     if ((applang !== null) && (applang !== undefined) && (applang !== "")) {
@@ -1270,7 +1302,8 @@ function collectSettings() {
         enabledarr.push(langtag);
         logger.debug(langtag);
     });
-    settings.kw["enabled-keywordlists"] = enabledarr;
+    if (enabledarr.length < 1) { enabledarr.push("en"); } else if (enabledarr.length > 1) { enabledarr = enabledarr[0]; }// allow only one for now...
+    settings.app["enabled-keywordlists"] = enabledarr;
 
     return settings;
 }
@@ -1375,21 +1408,135 @@ function updateFileList() {
     for (var k in tempfiles) {
         //logger.debug("Looping through tempfiles...");
         if (tempfiles.hasOwnProperty(k)) {
-            var filetemp = k;
-            var fileorig = tempfiles[k]["src-file"];
+            var filetemp = k;//event name in events list
             var filedone = tempfiles[k]["done"];
-            var filelang = tempfiles[k]["lang"];
-            var filecountry = tempfiles[k]["country"];
+            //var filelang = tempfiles[k]["lang"];
+            //var filecountry = tempfiles[k]["country"];
             var filepermission = tempfiles[k]["permission"];
             //logger.debug("FROM TEMP FILE IN UPDATEFILELIST");
             //logger.debug(filedone);
             //logger.debug(typeof(filedone));
             var fileArr = [];
-            fileArr.push(filetemp, filedone, filelang, filecountry, filepermission);// NEEDSTOBECHANGED
+            fileArr.push(filetemp, filedone, filepermission);// NEEDSTOBECHANGED
             addProjFile(fileArr);
         } else {
             logger.error("UpdateFileList tempfiles.hasOwnProperty(k) FALSE! Shouldn't happen...");
         }
+    }
+    ///////////////////////////////777
+    $('#proj-files-ul li').off('click');
+    $('#proj-files-ul li').on('click', function () {
+        logger.debug('CLICKED FILE OBJECT!');
+        logger.debug($(this).text());
+        //var done = false;
+        if ($(this).hasClass("w3-yellow")) {
+            // do nothing
+            logger.warn("Tried to open already showed event!");
+        }
+        else {
+            logger.info("Switching files...");
+            $('#proj-files-ul li.w3-yellow').each(function (i) {
+                //done = ($(this).attr('data-done') === "true");
+                $(this).removeClass('w3-yellow');
+                if ($(this).attr('data-permission') === 'false') {
+                    $(this).addClass('w3-red');
+                }
+                if ($(this).attr('data-done') === 'true') {
+                    $(this).addClass('w3-green');
+                }
+                ///////////////////////////////////////////////////
+
+                $("#edit-A-orig-text .secA-Q").empty();
+                $("#edit-B-orig-text .secB-Q").empty();
+                for (var k = 1; k < 15; k++) {
+                    $("#edit-C-orig-text .secC-Q-" + k).empty();
+                }
+                var dataA = $("#edit-A-orig-text").html();
+                var dataB = $("#edit-B-orig-text").html();
+                intUtils.sectionUtils.clearCsectionUI();
+                var dataC = $("#edit-C-orig-text").html();
+                var dataKW = [];
+                
+                $("#file-chosen-kw-ul li").each(function (i) {
+                    var value = $(this).attr("data-value").substring(3);//, test.length - 1);
+                    $(this).find('span').remove();
+                    //var name = $(this).text();
+                    //logger.debug("THIS IS AFTER REMOVAL!!!!");
+                    //logger.debug(name);
+
+                    dataKW.push(value);
+                });
+                var notes = [];
+                
+                $("#proj-notes-ul li").each(function (i) {
+                    var text = $(this).ignore("span").text();
+                    //logger.error("text_5: " + text);
+                    notes.push(text);
+                });
+                var country = $("#preview-event-country-select").val();
+                var lang = $("#preview-event-lang-select").val();
+                var done = false;
+                if ($(this).attr('data-done') === 'true') { done = true;}
+                // triggering save project, because we are switching to different event
+                saveProject(0,dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+                
+            });
+            // previous saved data, now looking at setting other....
+
+            $(this).addClass('w3-yellow');
+            $(this).removeClass('w3-green');
+            $(this).removeClass('w3-red');
+
+            // reset kw list and selector
+            $("#file-chosen-kw-ul").empty();
+            $("#KW-selector option").each(function (i) {
+                if (this.hasAttribute("disabled")) {
+                    $(this).removeAttr("disabled");
+                }
+            });
+            $("#KW-selector").select2({
+                placeholder: i18n.__('select2-kw-add-ph')
+            });
+
+            ////// reset countries etc.
+            $("#preview-event-country-select").select2({
+                placeholder: i18n.__('select2-event-country-ph')
+            });
+
+            $("#preview-event-lang-select").select2({
+                placeholder: i18n.__('select2-event-lang-ph')
+            });
+
+            $("#preview-event-country-select").val(null).trigger("change");
+            $("#preview-event-lang-select").val(null).trigger("change");
+            //////
+            openAndShowFile(this);
+            //createDummyDialog(firstWindow);
+        }
+    });
+    ///////////////////////////////////
+    /*
+    $("#edit-A-orig-text .secA-Q").empty();
+    $("#edit-B-orig-text .secB-Q").empty();
+    for (var s = 1; k < 15; s++) {
+        $("#edit-C-orig-text .secC-Q-" + s).empty();
+    }
+    intUtils.sectionUtils.clearCsectionUI();
+    $("#file-chosen-kw-ul").empty();
+    $("#KW-selector option").each(function (i) {
+        if (this.hasAttribute("disabled")) {
+            $(this).removeAttr("disabled");
+        }
+    });
+    $("#KW-selector").select2({
+        placeholder: i18n.__('select2-kw-add-ph')
+    });
+    */
+    //window.currentEvent = undefined;
+    if (window.currentEvent === undefined) {
+        //
+    } else {
+        $('#proj-files-ul li').find("[data-eventid='" + window.currentEvent + "']").addClass('w3-yellow');
     }
 }
 
@@ -1404,7 +1551,7 @@ function openAndViewProject(proj_location, backup_proj = false) {
     proj_name.join(".");
 
     var regex_filepath_val = /^[^\\/:\*\?"<>\|]+$/;
-    var docpath = remote.app.getPath('documents');
+    //var docpath = remote.app.getPath('documents');
     var reason = [];
 
     if (proj_location === undefined) {
@@ -1500,10 +1647,11 @@ function openAndViewProject(proj_location, backup_proj = false) {
 
     // Adding simple details to UI:
     //$("#titlebar-appname").text("SLIPPS Teacher Tool" + " - " + proj_name); // ONLY AFTER EVERYTHING HAS BEEN CHECKED!!!!!
+    logger.debug("SHOULD NOT BE HERE");
     $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2') + " - " + proj_name)
 
-    $("#proj-info-name").text("Project Name: \"" + proj_name + "\"");
-    $("#proj-info-created").text("Created: " + new Date(json_file["created"]));//NEEDSTOBECHANGED
+    //$("#proj-info-name").text("Project Name: \"" + proj_name + "\"");//NEEDSTOBECHANGED
+    //$("#proj-info-created").text("Created: " + new Date(json_file["created"]));//NEEDSTOBECHANGED
 
     var proj_notes = json_file["notes"];
     //console.log("NOTES: ");
@@ -1558,7 +1706,7 @@ function addProjNote(note) {
 }
 
 /* Add given filename + details into EDIT-view filelist ul-element */
-//fileArr.push(filetemp, filedone, filelang, filecountry, filepermission);
+//fileArr.push(filetemp, filedone, filepermission);
 function addProjFile(fileArr) {// NEEDSTOBECHANGED
     logger.debug("addProjFile");
     //logger.debug(fileArr);
@@ -1573,20 +1721,36 @@ function addProjFile(fileArr) {// NEEDSTOBECHANGED
         <li class="w3-hover-blue w3-display-container">File8.csv</li>
         <li class="w3-hover-blue w3-display-container">File9.csv</li>
     */
-    //fileArr.push(filetemp, filedone, filelang, filecountry, filepermission);
-    // filearr 0 = fileoriginal, 1 = filetemp / name, 2 = filedonestatus, 3 = filelanguage, 4 = filecountry
+    //fileArr.push(filetemp, filedone, filepermission);
     var li_string = document.createTextNode(fileArr[0]);
+    var li_symbol = "&#9888;";
+    var li_p1 = document.createElement("p");
+    var li_p2 = document.createElement("p");
+    li_p1.appendChild(li_string);
+    $(li_p1).attr({
+        style: "margin: 0;overflow-wrap: normal;overflow-x: hidden;text-overflow: ellipsis;max-width: 80%;"
+    });
+    li_p2.innerHTML = li_symbol;
+    $(li_p2).attr({
+        style: "font-size: 30px;position: absolute;float: right;top: -7px;right: 7%;margin: 0;"
+    });
     //console.log("####################################################");
     //console.log(li_string);
     var li_node = document.createElement("li");
     //console.log(li_node);
     //console.log(document.createElement("li"));
     var classes = "w3-display-container";
-    li_node.appendChild(li_string);
+    li_node.appendChild(li_p1);
+    if (fileArr[2] === false || fileArr[2] === "false") {
+        li_node.appendChild(li_p2);
+    }
     //logger.debug("BEFORE USAGE AT ADDPROJFILE");
     //logger.debug(fileArr[2]);
     //logger.debug(typeof (fileArr[2]));
-    if (fileArr[1]) {
+    if (fileArr[2] === false || fileArr[2] === "false") {//permission
+        classes = classes + " w3-red";
+    }
+    else if (fileArr[1] === true || fileArr[1] === "true") {//done
         classes = classes + " w3-green";
     }
     $(li_node).attr({
@@ -1594,74 +1758,11 @@ function addProjFile(fileArr) {// NEEDSTOBECHANGED
         class: classes,
         onmouseover: "$(this).addClass('w3-hover-blue');",
         onmouseout: "$(this).removeClass('w3-hover-blue');",
-        "data-permission": fileArr[4],
-        "data-temp": fileArr[0],
-        "data-done": fileArr[1],
-        "data-lang": fileArr[2],
-        "data-country": fileArr[3]
+        "data-permission": fileArr[2],
+        "data-eventid": fileArr[0],
+        "data-done": fileArr[1]
     });
     $('#proj-files-ul').append(li_node);
-    $('#proj-files-ul li').off('click');
-    $('#proj-files-ul li').on('click', function () {
-        logger.debug('CLICKED FILE OBJECT!');
-        logger.debug($(this).text());
-        var done = false;
-        if ($(this).hasClass("w3-yellow")) {
-            // do nothing
-            logger.warn("Tried to open already showed event!");
-        }
-        else {
-            logger.info("Switching files...");
-            $('#proj-files-ul li.w3-yellow').each(function (i) {
-                done = ($(this).attr('data-done') === "true");
-                $(this).removeClass('w3-yellow');
-                if ($(this).attr('data-done') === 'true') {
-                    $(this).addClass('w3-green');
-                }
-                $("#edit-A-orig-text .secA-Q").empty();
-                $("#edit-B-orig-text .secB-Q").empty();
-                for (var k = 1; k < 15; k++) {
-                    $("#edit-C-orig-text .secC-Q-" + k).empty();
-                }
-                var dataA = $("#edit-A-orig-text").html();
-                var dataB = $("#edit-B-orig-text").html();
-                intUtils.sectionUtils.clearCsectionUI();
-                var dataC = $("#edit-C-orig-text").html();
-                var dataKW = [];
-                $("#file-chosen-kw-ul li").each(function (i) {
-                    var value = $(this).attr("data-value").substring(3, test.length - 1);
-                    $(this).find('span').remove();
-                    //var name = $(this).text();
-                    //logger.debug("THIS IS AFTER REMOVAL!!!!");
-                    //logger.debug(name);
-
-                    dataKW.push(value);
-                });
-                var notes = [];
-                $("#proj-notes-ul li").each(function (i) {
-                    var text = $(this).ignore("span").text();
-                    //logger.error("text_5: " + text);
-                    notes.push(text);
-                });
-                // triggering save project, because we are switching to different event
-                saveProject(0,dataA, dataB, dataC, dataKW, notes, done);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
-            });
-            $(this).addClass('w3-yellow');
-            $(this).removeClass('w3-green');
-            $("#file-chosen-kw-ul").empty();
-            $("#KW-selector option").each(function (i) {
-                //
-                if (this.hasAttribute("disabled")) {
-                    $(this).removeAttr("disabled");
-                }
-            });
-            $("#KW-selector").select2({
-                placeholder: i18n.__('select2-kw-add-ph')
-            });
-            //openAndShowFile(this);
-            createDummyDialog(firstWindow);
-        }
-    });
 }
 
 /* Called when window.currentFileContent is modified. backup file is modified in the same time */
@@ -1673,7 +1774,7 @@ function addProjFile(fileArr) {// NEEDSTOBECHANGED
  * 1 == save to previous, but also to actual file (set "edits" to false)
  * 2 == discard changes. not saving to backup, not saving to file: just set "edits" to false/null, and remove backup file
  */
-function saveProject(mode = 0, dataA = "", dataB = "", dataC = "", kw = [], notes = [], done = false, country = "", lang = "") {
+function saveProject(mode = 0, dataA = "", dataB = "", dataC = "", kw = [], notes = [], done = false, country = "", lang = "") { 
 
     // NEED TO CALL GETSETTINGS!!!! 
     logger.debug("saveProject");
@@ -1753,6 +1854,7 @@ function saveProject(mode = 0, dataA = "", dataB = "", dataC = "", kw = [], note
             window_json["project-files"][current_event]["country"] = country;
             window_json["project-files"][current_event]["lang"] = lang;
             window_json["project-files"][current_event]["kw"] = kw;
+            window_json["project-files"][current_event]["done"] = done;
         } else {
             //
             logger.error("Window.currentFileContent variable doesn't have 'current_event' property! Unable to save!");
@@ -1798,12 +1900,11 @@ function saveProject(mode = 0, dataA = "", dataB = "", dataC = "", kw = [], note
 
 // NEEDS CHANGES!!!!!!
 /* Retrieve data from a temp-file and show it on the window */
-function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
+function openAndShowFile(fileObj) {// NEEDSTOBECHANGED 
     logger.debug("openAndShowFile");
     //window.currentFile = $(fileObj).text();
     //window.fileDoneStatus = ($(fileObj).attr("data-done") === "true");
-    window.currentEvent = $(fileObj).text();
-
+    window.currentEvent = $(fileObj).data("eventid");
     //$("#preview-cur-file-name").text("Current file: NONE");
     $("#preview-third-1").removeClass("no-display");
     $("#preview-third-2").removeClass("no-display");
@@ -1813,21 +1914,14 @@ function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
     $("#footer-nav-btn1").removeClass("no-display");
     $("#footer-nav-btn5").removeClass("no-display");
     $("#footer-nav-btn6").removeClass("no-display");
-
-    var docpath = remote.app.getPath('documents');
-    var temp_base = path.join(docpath, 'SLIPPS DECSV\\Projects\\' + window.currentProject + '\\temp\\');
-    var options = {
-        name: 'temp#'+$(fileObj).text(),
-        cwd: temp_base
-    }
-    const store = new Store(options);//
-
-    $("#edit-A-edit-text").html(store.get("a",""));
-    $("#edit-A-orig-text").html(store.get("a",""));
-    $("#edit-B-edit-text").html(store.get("b",""));
-    $("#edit-B-orig-text").html(store.get("b",""));
-    $("#edit-C-edit-text").html(store.get("c",""));
-    $("#edit-C-orig-text").html(store.get("c", ""));
+    
+    var eventJSON = window.currentFileContent["project-files"][window.currentEvent];
+    $("#edit-A-edit-text").html(eventJSON.a);
+    $("#edit-A-orig-text").html(eventJSON.a);
+    $("#edit-B-edit-text").html(eventJSON.b);
+    $("#edit-B-orig-text").html(eventJSON.b);
+    $("#edit-C-edit-text").html(eventJSON.c);
+    $("#edit-C-orig-text").html(eventJSON.c);
 
     /*
     HERE EDIT THE C SECTION TO SHOW PROPER ANSERWS FROM TRANSLATION FILE....
@@ -1838,7 +1932,7 @@ function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
 
 
 
-    window.currentFileContent = store.get("src-data",[]);
+    //window.currentFileContent = store.get("src-data",[]);
 
     $(".secA-Q").text(i18n.__("secA-Q"));
     $(".secB-Q").text(i18n.__("secB-Q"));
@@ -1852,19 +1946,33 @@ function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
 
     // HERE, YOU CHECK AND SETUP KEYWORDS FOR THIS SPECIFIC FILE (and restart select2) remember to remove all "disabled" attr before adding them!
     // loop start
-    var listofkw = store.get("kw", []);
+    var listofkw = eventJSON.kw;
     logger.debug("starting file-kwlist compare...");
     //logger.debug(listofkw);
 
     //$("#KW-selector").select2("destroy");
 
     for (var j = 0; j < listofkw.length; j++) {
-        var kw_value = listofkw[j][0];
-        var kw_text = listofkw[j][1];
+        var kw_value = listofkw[j];// basic-13
+        var kw_text = ""; // en-basic-13
+        var kw_title = ""; // Name is This
+
+        // would like to add "red" bgc if element does not exist in current kw-selector. currently only disables those already in there
+        //logger.debug("3# VALUE: " + kw_value + " # TEXT: " + kw_text);
+        //logger.debug($("#KW-selector option"));
+        $("#KW-selector option").each(function (i) {
+            if ($(this).val().substring(3, $(this).val().length) === kw_value) {
+                //
+                //logger.debug("YEEEEEEEEE :)");
+                kw_text = $(this).val();
+                kw_title = $(this).text();
+                $(this).attr('disabled', 'disabled');
+            }
+        });
 
         //logger.debug("1# VALUE: " + kw_value + " # TEXT: " + kw_text);
 
-        var li_string = document.createTextNode(kw_text);
+        var li_string = document.createTextNode(kw_title);
         var li_node = document.createElement("li");
         var span_node = document.createElement("span");
 
@@ -1873,7 +1981,7 @@ function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
 
         $(li_node).attr({
             class: "w3-display-container",
-            "data-value": kw_value
+            "data-value": kw_text
         });
 
         $(span_node).attr({
@@ -1881,24 +1989,12 @@ function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
             class: "w3-button w3-display-right",
             onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
             onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-            onclick: "$(\"#KW-selector option\").each(function(i){if($(this).val().substring(3, $(this).val().length) === \"" + kw_value.substring(3, kw_value.length) + "\"){$(this).removeAttr('disabled', 'disabled')}}); $(this.parentElement).remove(); $(\"#KW-selector\").select2({placeholder: i18n.__('select2-kw-add-ph')});"
+            onclick: "$(\"#KW-selector option\").each(function(i){if($(this).val().substring(3, $(this).val().length) === \"" + kw_value + "\"){$(this).removeAttr('disabled', 'disabled')}}); $(this.parentElement).remove(); $(\"#KW-selector\").select2({placeholder: i18n.__('select2-kw-add-ph')});"
         });
         //logger.debug("2# VALUE: " + kw_value + " # TEXT: " + kw_text);
         li_node.appendChild(span_node);
 
         $('#file-chosen-kw-ul').append(li_node); 
-
-
-        // would like to add "red" bgc if element does not exist in current kw-selector. currently only disables those already in there
-        //logger.debug("3# VALUE: " + kw_value + " # TEXT: " + kw_text);
-        //logger.debug($("#KW-selector option"));
-        $("#KW-selector option").each(function (i) {
-            if ($(this).val().substring(3, $(this).val().length) === kw_value.substring(3, kw_value.length)){
-                //
-                //logger.debug("YEEEEEEEEE :)");
-                $(this).attr('disabled','disabled');
-            }
-        });
 
         //logger.debug("5# VALUE: " + kw_value + " # TEXT: " + kw_text);
     }
@@ -1915,6 +2011,8 @@ function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
     $("#KW-selector").select2({
         placeholder: i18n.__('select2-kw-add-ph')
     });
+    $("#preview-event-country-select").val(eventJSON.country).trigger("change");
+    $("#preview-event-lang-select").val(eventJSON.lang).trigger("change");
     
     $("#file-chosen-kw-ul").removeClass("element-disabled");
     //
@@ -1927,7 +2025,7 @@ function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
 
 
 /* Show file import wizard so that new files may be imported into current project */
-function addFilesPrompt() {
+function addFilesPrompt(mode = -1) {
     logger.debug("addFilesPrompt");
     
     logger.debug("create import wizard");
@@ -1954,7 +2052,12 @@ function addFilesPrompt() {
     fileWizard.loadURL(fileWizard_url);
 
     fileWizard.on('ready-to-show', function () {
+        // check if need to automate...
         fileWizard.show();
+        //return;
+        if (mode === 1) {
+            fileWizard.webContents.send("automate", true);
+        } else { logger.warn("invalid mode in addFilesPrompt function!");}
     });
 
     fileWizard.on('closed', function () {
@@ -1969,7 +2072,7 @@ function setupTranslations(applang = "en") {
     logger.info("Loading translations into UI (init)");
 
     // Set text to window here...
-    if (window.currentProject !== undefined) {
+    if (window.currentProject === undefined) {
         $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2'));
     } else {
         $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2') + " - " + window.currentProject);
@@ -1985,18 +2088,15 @@ function interfaceUpdate(settings = {}) {
     logger.debug("interfaceUpdate (init.js)");
     //logger.debug(settings.constructor);
     if (settings.constructor === {}.constructor) {
-        if (Object.keys(settings).length !== 2) {
+        if (Object.keys(settings).length !== 1) {
             //logger.debug("INT FAIL 1");
             settings = getSettings();
-        } else if (!settings.hasOwnProperty("app") || !settings.hasOwnProperty("kw")) {
+        } else if (!settings.hasOwnProperty("app")) {
             //logger.debug("INT FAIL 2");
             settings = getSettings();
         }
     } else if (!parseUtils.validateSettings(settings.app, 1)) {
         //logger.debug("INT FAIL 4");
-        settings = getSettings();
-    } else if (!parseUtils.validateSettings(settings.kw, 2)) {
-        //logger.debug("INT FAIL 5");
         settings = getSettings();
     }
     /* setting current settings as window object (json) */
@@ -2007,6 +2107,7 @@ function interfaceUpdate(settings = {}) {
 
     /* Setting up UI texts */
     setupTranslations(settings.app["app-lang"]);
+    intUtils.selectUtils.setupEditKW(settings)
 }
 
 function jquerySetup() {
@@ -2025,7 +2126,7 @@ interfaceUpdate();
 /* If there was a backupfile mentioned in app properties */
 if (window.allsettings.app.edits[0] === true || window.allsettings.app.edits[1] != null) {
     // there is unsaved backupfile available!
-    logger.info("Unsaved backup mentioned in app properties! Asking if users wishes to open and edit it (App itself just launched)");
+    logger.info("Unsaved backup mentioned in app properties! Asking if users wishes to open and edit it (App itself just launched)"); 
     //openAndViewProject(window.allsettings.app.edits[1], true, ___LOCATION_HERE______);
     //                     original_file_location
     // NEED TO TEST IF BACKUPFILE EXISTS, and send ITS LOCATION IN TOO

@@ -1,7 +1,7 @@
 {
   "name": "decsv",
   "productName": "SLIPPS Teacher Tool",
-  "copyright": "Copyright (c) 2018 ${author}",
+  "copyright": "Copyright (c) 2019 ${author}",
   "version": "3.0.0-alpha",
   "description": "SLIPPS survey results review and edit application.",
   "main": "app.js",

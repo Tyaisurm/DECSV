@@ -120,7 +120,12 @@ function setupTranslations(applang = "en") {
     logger.debug("setupTranslations (about)");
     logger.info("Loading translations into UI (about)");
     // Set window texts here
-    $("#about-version").text("Version: " + remote.app.getVersion());
+    $("#about-version").text(i18n.__('about-window-version') + ": " +remote.app.getVersion());
+    $("#titlebar-appname").text(i18n.__('about-window-title'));
+    $("#app-name-1").text(i18n.__('app-name-1'));
+    $("#app-name-2").text(i18n.__('app-name-2'));
+    $("#wiki-button").text(i18n.__('about-window-wiki-btn'));
+    $("#logs-button").text(i18n.__('about-window-collect-logs-btn'));
 }
 
 electron.ipcRenderer.on('force-interface-update', (event, settings) => {
@@ -132,18 +137,15 @@ function interfaceUpdate(settings = {}) {
     logger.debug("interfaceUpdate (about.js)");
     //logger.debug(settings.constructor);
     if (settings.constructor === {}.constructor) {
-        if (Object.keys(settings).length !== 2) {
+        if (Object.keys(settings).length !== 1) {
             //logger.debug("INT FAIL 1");
             settings = getSettings();
-        } else if (!settings.hasOwnProperty("app") || !settings.hasOwnProperty("kw")) {
+        } else if (!settings.hasOwnProperty("app")) {
             //logger.debug("INT FAIL 2");
             settings = getSettings();
         }
     } else if (!parseUtils.validateSettings(settings.app, 1)) {
         //logger.debug("INT FAIL 4");
-        settings = getSettings();
-    } else if (!parseUtils.validateSettings(settings.kw, 2)) {
-        //logger.debug("INT FAIL 5");
         settings = getSettings();
     }
     /* setting current settings as window object (json) */
