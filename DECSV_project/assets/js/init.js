@@ -648,8 +648,8 @@ document.getElementById("exportprojbutton").onclick = function () {// NEEDSTOBEC
     var options = {
         type: 'info',
         title: "Exporting files",
-        message: "Files marked 'DONE' will be exported!",
-        detail: "Exporting files into csv-format. Editing will be disabled until export is finished.",
+        message: "Events marked 'done' will now be exported.",
+        detail: "Note: Only events that have 'permission for data to be used as part of SLIPPS' can be exported!",
         buttons: [i18n.__('conf-yes'), i18n.__('conf-no')]
     };
 
@@ -886,7 +886,7 @@ document.getElementById("settingsbutton").onclick = function () {//NEEDSTOBECHAN
     else {
         // CHECK SETTINGS FROM FILES > and update view like you wanted to
         $("#app-lang-selector").val(null).trigger("change");
-        $("#kw-list-available-choose").val(null).trigger("change");
+        //$("#kw-list-available-choose").val(null).trigger("change");
         intUtils.updateSettingsUI();
     }
     intUtils.toggleViewMode(7);
@@ -1104,6 +1104,7 @@ document.getElementById("footer-nav-btn3").onclick = function () {//
                 var tobesent = collectSettings();
 
                 setSettings(tobesent);
+                //intUtils.updateSettingsUI(); 
                 //intUtils.selectUtils.setupEditKW();
             }
             else {
@@ -1160,7 +1161,7 @@ document.getElementById("footer-nav-btn4").onclick = function () {
     }
     else if (value === "settings") { //NEEDSTOBECHANGED
         $("#app-lang-selector").val(null).trigger("change");
-        $("#kw-list-available-choose").val(null).trigger("change");
+        //$("#kw-list-available-choose").val(null).trigger("change");
         intUtils.updateSettingsUI();
         // revert changes in settings
     }
@@ -2107,7 +2108,8 @@ function interfaceUpdate(settings = {}) {
 
     /* Setting up UI texts */
     setupTranslations(settings.app["app-lang"]);
-    intUtils.selectUtils.setupEditKW(settings)
+    intUtils.selectUtils.setupEditKW(settings);
+    intUtils.updateSettingsUI();
 }
 
 function jquerySetup() {
