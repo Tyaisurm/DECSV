@@ -212,13 +212,13 @@ function writeFile_csv(dataArray, targetFile) {// NEEDSTOBECHANGED
                 currentString = currentString + ",";
             } else if (typeof (done_c[i]) === "string") {
                 if (done_c[i].length === 0) {
-                    currentString = currentString + "\"" + "\"" + ",";
+                    currentString = currentString + "," + "\"" + "\"";
                 } else {
-                    currentString = currentString + "\"" + done_c[i] + "\"" + ",";
+                    currentString = currentString + "," + "\"" + done_c[i] + "\"";
                 }
             } else {
                 // must be number...
-                currentString = currentString + done_c[i].toString() + ",";
+                currentString = currentString + "," + done_c[i].toString();
             }
         }
 
@@ -231,12 +231,12 @@ function writeFile_csv(dataArray, targetFile) {// NEEDSTOBECHANGED
             for (var q = 0; q < currentKW.length; q++) {
                 kwString = kwString + currentKW[q] + ";";
             }
-            currentString = currentString + kwString.substring(0, kwString.length - 1) + "\r\n";//removing last ";" frmo kwString
-            currentString = currentString.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"); // innerHTML/own formatting made these, so reverting... 
+            currentString = currentString + kwString.substring(0, kwString.length - 1) + "\r\n";//removing last ";" from kwString
         }
 
         //currentString = currentString.substring(0, currentString.length - 1);// remove last "," from string...
         //currentString = currentString + "\r\n";
+        currentString = currentString.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"); // innerHTML/own formatting made these, so reverting... 
         finArr.push(currentString);
     }
     //return;
@@ -247,7 +247,7 @@ function writeFile_csv(dataArray, targetFile) {// NEEDSTOBECHANGED
     }
 
     /* Overwriting if same name at the moment! */
-    
+
     fs.writeFile(targetFile, temp, "utf8", function (msg) {
         if (!msg) {
             logger.info("File '" + targetFile + "' successfully saved!");

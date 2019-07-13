@@ -9,11 +9,11 @@ function setAppLang() {
     $("#app-lang-selector").empty();
     fs.readdirSync(path.join(__dirname, "..\\translations")).forEach(file => {
         if (file.split('.').pop() === "js") { return; }
-        var lang = getFullLangName(file.split('.')[0]);
+        var lang = file.split('.')[0];
         logger.debug("LANGUAGE: " + lang);
         logger.debug("FILE: " + file);
         if (lang === null) {
-            logger.warn("Requested language not defined in getFullLangName function!! Using placeholder 'NOT_DEFINED'...");
+            logger.warn("Lang was null! Using placeholder 'NOT_DEFINED'...");
             lang = "NOT_DEFINED";
         }
         $("#app-lang-selector").append('<option value="' + file.split('.')[0] + '">' + lang + '</option>');
@@ -242,20 +242,26 @@ function setSettingsLoadedKW() {
     });
     $('#KW-selector').on("select2:select", function (e) {
         //NEEDSTOBECHANGED save project to temp here
+        // -> is saved in another onClick listener, specified in init.js
 
         //console.log(e);
         //console.log(this);
-        var kw_value = e.params.data.id;
-        var kw_text = e.params.data.text;
+        //var kw_value = e.params.data.id;
+        //var kw_text = e.params.data.text;
+
+        var kw_text = e.params.data.id; // en-basic-13
+        var kw_value = kw_text.substring(3, kw_text.length);// basic-13
+        var kw_title = e.params.data.text; // Name is This
+
         //logger.debug("VALUE: "+kw_value + " # TEXT: " + kw_text);
         $('#KW-selector').val(null).trigger("change");
         $("#KW-selector option").each(function (i) {
-            if ($(this).val().substring(3, $(this).val().length) === kw_value.substring(3, kw_value.length)) {
+            if ($(this).val().substring(3, $(this).val().length) === kw_value) {
                 $(this).attr('disabled', 'disabled');
             }
         });
 
-        var li_string = document.createTextNode(kw_text);
+        var li_string = document.createTextNode(kw_title);
         var li_node = document.createElement("li");
         var span_node = document.createElement("span");
 
@@ -264,7 +270,7 @@ function setSettingsLoadedKW() {
 
         $(li_node).attr({
             class: "w3-display-container",
-            "data-value": kw_value
+            "data-value": kw_text
         });
 
         $(span_node).attr({
@@ -272,7 +278,7 @@ function setSettingsLoadedKW() {
             class: "w3-button w3-display-right",
             onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
             onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-            onclick: "$(\"#KW-selector option\").each(function(i){if($(this).val().substring(3, $(this).val().length) === \"" + kw_value.substring(3, kw_value.length) + "\"){$(this).removeAttr('disabled', 'disabled')}}); $(\"#KW-selector\").select2({placeholder: i18n.__('select2-kw-add-ph')}); $(this.parentElement).remove(); $(this.parentElement.parentElement).trigger('deleted');"
+            onclick: "$(\"#KW-selector option\").each(function(i){if($(this).val().substring(3, $(this).val().length) === \"" + kw_value + "\"){$(this).removeAttr('disabled', 'disabled')}}); $(\"#KW-selector\").select2({placeholder: i18n.__('select2-kw-add-ph')}); $(this.parentElement.parentElement).trigger({type: 'deleted', params : {data: '" + kw_text + "'}}); $(this.parentElement).remove();"
         });
 
         li_node.appendChild(span_node);
@@ -284,24 +290,6 @@ function setSettingsLoadedKW() {
         });
     });
     $('#KW-selector').prop("disabled", true);
-}
-
-/* So that you get full displayed name for short identifier */
-function getFullLangName(lang_short) {
-    logger.debug("getFullLangName");
-    var lang_full = null;
-
-    switch (lang_short) {
-        case "en":
-            lang_full = "English";
-            break;
-        case "fi":
-            lang_full = "Suomi";
-            break;
-        default:
-        //
-    }
-    return lang_full;
 }
 
 /* Sets up select field for import wizard window */
@@ -383,7 +371,6 @@ module.exports = {
     setCreateProjSelect: setCreateProjSelect,
     setSettingsLoadedKW: setSettingsLoadedKW,
     setupEditKW: setupEditKW,
-    getFullLangName: getFullLangName,
     setEditSelects: setEditSelects,
     setImportSelect: setImportSelect
 }

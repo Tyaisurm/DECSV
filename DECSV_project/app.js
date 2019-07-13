@@ -84,6 +84,8 @@ logger.transports.console.level = "silly";
 //logger.transports.file.appName = 'SLIPPS Teacher Tool';
 ///////////////////////////////
 autoUpdater.logger = logger;
+//autoUpdater.allowPrerelease = true; // flag for beta....
+//autoUpdater.autoDownload = false; // flag for handling updating manually, instead of automatically testing...
 
 //logger.warn("AAAAAAAAAAAAAAAAAAAAAAAAAA   FIRST WARN    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa");
 const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {

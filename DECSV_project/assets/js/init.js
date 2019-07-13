@@ -199,6 +199,60 @@ var setSettings = remote.getGlobal('setSettings');
 
 logger.debug("Running init...");
 
+// listeners for UI changes, when user makes changes to event selectors...
+/*
+ 
+Need to check  Save project when edits happen in edit views...
+
+
+ */
+$("#preview-event-lang-select").on("select2:select", function (e) {
+    logger.debug("LANGUAGE select2:select");
+    logger.debug(e.params.data);
+    //return;
+    // save project mode 0, take data from window variable....
+    if (window.currentEvent != undefined) {
+        intUtils.markPendingChanges(true, window.currentFile);
+        var curEventId = window.currentEvent;
+        var curEvent = window.currentFileContent["project-files"][curEventId];
+        // make changes here...
+        curEvent.lang = e.params.data.id;
+        //
+        saveProject(0, curEvent.a, curEvent.b, curEvent.c, curEvent.kw, window.currentFileContent["notes"], curEvent.done, curEvent.country, curEvent.lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+    }
+});
+$("#preview-event-country-select").on("select2:select", function (e) {
+    logger.debug("COUNTRY select2:select");
+    logger.debug(e.params.data);
+    //return;
+    // save project mode 0, take data from window variable....  
+    if (window.currentEvent != undefined) {
+        intUtils.markPendingChanges(true, window.currentFile);
+        var curEventId = window.currentEvent;
+        var curEvent = window.currentFileContent["project-files"][curEventId];
+        // make changes here...
+        curEvent.country = e.params.data.id;
+        //
+        saveProject(0, curEvent.a, curEvent.b, curEvent.c, curEvent.kw, window.currentFileContent["notes"], curEvent.done, curEvent.country, curEvent.lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+    }
+});
+$("#KW-selector").on("select2:select", function (e) { 
+    logger.debug("KW select2:select");
+    logger.debug(e.params.data);
+    //return;
+    // save project mode 0, take data from window variable....
+    // only handling saving the info to window variable here... other function handles adding list items
+    if (window.currentEvent != undefined) {
+        intUtils.markPendingChanges(true, window.currentFile);
+        var curEventId = window.currentEvent;
+        var curEvent = window.currentFileContent["project-files"][curEventId];
+        // make changes here...
+        curEvent.kw.push(e.params.data.id.substring(3));
+        //
+        saveProject(0, curEvent.a, curEvent.b, curEvent.c, curEvent.kw, window.currentFileContent["notes"], curEvent.done, curEvent.country, curEvent.lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+    }
+});
+
 ///////////////////////////////////////////////////////// STARTUP FUNCTIONS
 jquerySetup();
 
@@ -363,30 +417,54 @@ document.getElementById("proj-note-input-field").onkeypress = function (e) {
 }
 
 /* Follows if note is removed */
-$("#proj-notes-ul").on("deleted", function () {
+$("#proj-notes-ul").on("deleted", function (e) {
+    logger.debug("notes onDeleted");
+    logger.debug(e.params.data);
+
     intUtils.markPendingChanges(true, window.currentFile);
     var notes = [];
+    var counter = 0;
     $("#proj-notes-ul li").each(function (i) {
+        if (counter === e.params.data) {
+            // need to skip this...
+            logger.debug("skipping id: " + counter);
+            counter++;
+            return;
+        }
         var text = $(this).ignore("span").text();
         notes.push(text);
+        counter++;
     });
     // saving, because user deleted a note....
     saveProject(0, "", "", "", [], notes);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
 });
 
 /* Follows if kw is removed from event selected list */
-$("#file-chosen-kw-ul").on("deleted", function () {
+$("#file-chosen-kw-ul").on("deleted", function (e) {
+    logger.debug("KW onDeleted");
+    logger.debug(e.params.data);// en-basic-13
+
     intUtils.markPendingChanges(true, window.currentFile);
-    var notes = [];
-    $("#proj-notes-ul li").each(function (i) {
-        var text = $(this).ignore("span").text();
-        notes.push(text);
-    });
     var kwlist = [];
     $("#file-chosen-kw-ul li").each(function (i) {
-        var value = $(this).attr("data-value").substring(3);//, test.length - 1);
-        kwlist.push(value);
+        // check which kw element is this... need to skip it to prevent resaving
+        //if ($(this).attr) { }
+        var value = $(this).attr("data-value").substring(3);// basic-13
+        if (value !== e.params.data.substring(3)) {
+            kwlist.push(value);
+        } else {
+            logger.debug("skipping same kw...");
+        }
     });
+
+    // deleted should be triggered AFTER deletion..... u fokin idiot
+
+    var curEventId = window.currentEvent;
+    var curEvent = window.currentFileContent["project-files"][curEventId];
+    // make changes here...
+
+    //
+    saveProject(0, curEvent.a, curEvent.b, curEvent.c, kwlist, window.currentFileContent["notes"], curEvent.done, curEvent.country, curEvent.lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
 
     /*
 
@@ -399,7 +477,7 @@ $("#file-chosen-kw-ul").on("deleted", function () {
      */
 
     // saving, because user deleted a kw from selected list....
-    saveProject(0, "", "", "", kwlist, notes);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+    //saveProject(0, "", "", "", kwlist, notes);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
 });
 
 /* Follows input into new project name field */
@@ -653,6 +731,7 @@ document.getElementById("exportprojbutton").onclick = function () {// NEEDSTOBEC
         buttons: [i18n.__('conf-yes'), i18n.__('conf-no')]
     };
 
+    /*
     ////////////////////////////////////////////////////////////////// Saving before exporting..... 
     var country = "";
     var lang = "";
@@ -691,6 +770,7 @@ document.getElementById("exportprojbutton").onclick = function () {// NEEDSTOBEC
     } else {
         logger.warn("No open project to be saved! Window.currentProject undefined!");
     }
+    */
 
     dialog.showMessageBox(firstWindow, options, function (index) {
         if (index === 0) {
@@ -736,36 +816,36 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
 
     dialog.showMessageBox(firstWindow, options, function (index) {
         if (index === 0) {
-            //save before closing, but only when prompted
-            var country = "";
-            var lang = "";
-            var done = false;
+            //save before closing, but only when prompted 
+            //var country = "";
+            //var lang = "";
+            //var done = false;
 
             if (window.currentProject !== undefined) {
                 var close_opt = {
                     name: "app-configuration",
                     cwd: remote.app.getPath('userData')
                 }
-                var close_store = new Store(close_opt)
+                var close_store = new Store(close_opt);
                 // testing if pending edits that need to be saved
                 if (close_store.get("edits", [false, null])[0]) {
-
+                    /*
                     $('#proj-files-ul li.w3-yellow').each(function (i) {
                         done = ($(this).attr('data-done') === "true");
-                        country = $(this).attr('data-country');
-                        lang = $(this).attr('data-lang');
+                        //country = $(this).attr('data-country');
+                        //lang = $(this).attr('data-lang');
                     });
-
+                    */
                     $("#edit-A-orig-text .secA-Q").empty();
                     $("#edit-B-orig-text .secB-Q").empty();
                     for (var k = 1; k < 15; k++) {
                         $("#edit-C-orig-text .secC-Q-" + k).empty();
                     }
-                    var dataA = $("#edit-A-orig-text").html();
-                    var dataB = $("#edit-B-orig-text").html();
+                    //var dataA = $("#edit-A-orig-text").html();
+                    //var dataB = $("#edit-B-orig-text").html();
                     intUtils.sectionUtils.clearCsectionUI();
-                    var dataC = $("#edit-C-orig-text").html();
-                    var dataKW = [];
+                    //var dataC = $("#edit-C-orig-text").html();
+                    /*var dataKW = [];
 
                     $("#file-chosen-kw-ul li").each(function (i) {
                         var value = $(this).attr("data-value").substring(3);//, test.length - 1);
@@ -778,7 +858,7 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
                         var text = $(this).ignore("span").text();
                         notes.push(text);
                     });
-
+                    */
 
                     var options = {
                         type: 'info',
@@ -792,7 +872,18 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
                         if (index === 0) {
                             //save changes into file
                             // saving, because we are about to close the current project and return into start-view (only backup-file, but need to be prompted to save to file)
-                            saveProject(1, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang 
+
+                            // get data from window here...
+                            if (window.currentEvent != undefined) {
+                                // only saving if currently event open...
+                                var curEventId = window.currentEvent;
+                                var curEvent = window.currentFileContent["project-files"][curEventId];
+                                // make changes here...
+                                //
+                                saveProject(1, curEvent.a, curEvent.b, curEvent.c, curEvent.kw, window.currentFileContent["notes"], curEvent.done, curEvent.country, curEvent.lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+                            } else {
+                                logger.error("Can't save! There should have been EVENT open while closing project, since edits was marked 'true'!");
+                            }
                         }
                         else {
                             //remove backup data
@@ -874,6 +965,13 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
                 intUtils.toggleViewMode(0);
                 intUtils.toggleViewMode(10);
             }
+            // resetting UI to old state->
+            $("#KW-selector").prop("disabled", true);
+            $("#preview-event-country-select").prop("disabled", true);
+            $("#preview-event-lang-select").prop("disabled", true);
+            $("#preview-event-country-select").val(null).trigger("change");
+            $("#preview-event-lang-select").val(null).trigger("change");
+            $("#file-chosen-kw-ul").addClass("element-disabled");
         }
     });
 }
@@ -1050,28 +1148,64 @@ document.getElementById("footer-nav-btn3").onclick = function () {//
         intUtils.toggleViewMode(1);
         intUtils.toggleViewMode(9);
         // save A edits and update preview
+        let check = true;
+        if ($("#edit-A-orig-text").html() === $("#edit-A-edit-text").html()) { check = false; }
         $("#edit-A-orig-text").html($("#edit-A-edit-text").html());
         intUtils.sectionUtils.updatePreview();
         intUtils.sectionUtils.updateCensoredList();
-        //NEEDSTOBECHANGED save project to temp
+        //NEEDSTOBECHANGED save project to temp 
+        if (window.currentEvent != undefined && check) {
+            intUtils.markPendingChanges(true, window.currentFile);
+            let curEventId = window.currentEvent;
+            let curEvent = window.currentFileContent["project-files"][curEventId];
+            // make changes here...
+            curEvent.a = $("#edit-A-orig-text").html();
+            //
+            saveProject(0, curEvent.a, curEvent.b, curEvent.c, curEvent.kw, window.currentFileContent["notes"], curEvent.done, curEvent.country, curEvent.lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+        }
+        //
     }
     else if (value === "editB") {
         intUtils.toggleViewMode(1);
         intUtils.toggleViewMode(9);
         // save B edits and update preview
+        let check = true;
+        if ($("#edit-B-orig-text").html() === $("#edit-B-edit-text").html()) { check = false; }
         $("#edit-B-orig-text").html($("#edit-B-edit-text").html());
         intUtils.sectionUtils.updatePreview();
         intUtils.sectionUtils.updateCensoredList();
-        //NEEDSTOBECHANGED save project to temp
+        //NEEDSTOBECHANGED save project to temp 
+        if (window.currentEvent != undefined && check) {
+            intUtils.markPendingChanges(true, window.currentFile);
+            let curEventId = window.currentEvent;
+            let curEvent = window.currentFileContent["project-files"][curEventId];
+            // make changes here...
+            curEvent.b = $("#edit-B-orig-text").html();
+            //
+            saveProject(0, curEvent.a, curEvent.b, curEvent.c, curEvent.kw, window.currentFileContent["notes"], curEvent.done, curEvent.country, curEvent.lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+        }
+        //
     }
     else if (value === "editC") {
         intUtils.toggleViewMode(1);
         intUtils.toggleViewMode(9);
         // save C edits and update preview
+        let check = true;
+        if ($("#edit-C-orig-text").html() === $("#edit-C-edit-text").html()) { check = false; }
         $("#edit-C-orig-text").html($("#edit-C-edit-text").html());
         intUtils.sectionUtils.updatePreview();
         intUtils.sectionUtils.updateCensoredList();
-        //NEEDSTOBECHANGED save project to temp
+        //NEEDSTOBECHANGED save project to temp 
+        if (window.currentEvent != undefined && check) {
+            intUtils.markPendingChanges(true, window.currentFile);
+            let curEventId = window.currentEvent;
+            let curEvent = window.currentFileContent["project-files"][curEventId];
+            // make changes here...
+            curEvent.c = $("#edit-C-orig-text").html();
+            //
+            saveProject(0, curEvent.a, curEvent.b, curEvent.c, curEvent.kw, window.currentFileContent["notes"], curEvent.done, curEvent.country, curEvent.lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+        }
+        //
     }
     else if (value === "login") {
         //login
@@ -1179,20 +1313,37 @@ document.getElementById("footer-nav-btn5").onclick = function () {
 
     if (value === "preview") {
         // Toggle done and not done
+        var doneCheck = null;
         $('#proj-files-ul li.w3-yellow').each(function (i) {
             //
             if ($(this).attr("data-done") === "true") {
                 $(this).attr({
                     "data-done": false
                 });
+                doneCheck = false;
             }
             else {
                 $(this).attr({
                     "data-done": true
                 });
+                doneCheck = true;
             }
             intUtils.setFooterBtnMode("preview");
         });
+
+        if (window.currentEvent != undefined) {
+            if (doneCheck === null) {
+                logger.error("While settings 'DONE' status with footer btn, there was no event open! Unable to save!");
+            } else {
+                intUtils.markPendingChanges(true, window.currentFile);
+                var curEventId = window.currentEvent;
+                var curEvent = window.currentFileContent["project-files"][curEventId];
+                // make changes here...
+                curEvent.done = doneCheck;
+                //
+                saveProject(0, curEvent.a, curEvent.b, curEvent.c, curEvent.kw, window.currentFileContent["notes"], curEvent.done, curEvent.country, curEvent.lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+            }
+        }
     }
     else if (value === "login") {
         intUtils.toggleViewMode(6);
@@ -1468,7 +1619,10 @@ function updateFileList() {
                     dataKW.push(value);
                 });
                 var notes = [];
-                
+
+                /*
+                 * Removed this section, since we'd like to save WHEN EDITS ACTUALLY HAPPEN, not when shown event is switched...
+                 * 
                 $("#proj-notes-ul li").each(function (i) {
                     var text = $(this).ignore("span").text();
                     //logger.error("text_5: " + text);
@@ -1479,7 +1633,8 @@ function updateFileList() {
                 var done = false;
                 if ($(this).attr('data-done') === 'true') { done = true;}
                 // triggering save project, because we are switching to different event
-                saveProject(0,dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+                saveProject(0, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+                */
                 
             });
             // previous saved data, now looking at setting other....
@@ -1697,7 +1852,7 @@ function addProjNote(note) {
         class: "w3-button w3-display-right",
         onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
         onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-        onclick: "$(this.parentElement.parentElement).trigger('deleted');$(this.parentElement).remove();"
+        onclick: "var index = $(this.parentElement).index(); $(this.parentElement.parentElement).trigger({type: 'deleted',params:{data: index}});$(this.parentElement).remove();"
     });
 
     li_node.appendChild(span_node);
@@ -1990,7 +2145,7 @@ function openAndShowFile(fileObj) {// NEEDSTOBECHANGED
             class: "w3-button w3-display-right",
             onmouseover: "$(this.parentElement).addClass('w3-hover-blue');",
             onmouseout: "$(this.parentElement).removeClass('w3-hover-blue');",
-            onclick: "$(\"#KW-selector option\").each(function(i){if($(this).val().substring(3, $(this).val().length) === \"" + kw_value + "\"){$(this).removeAttr('disabled', 'disabled')}}); $(this.parentElement).remove(); $(\"#KW-selector\").select2({placeholder: i18n.__('select2-kw-add-ph')});"
+            onclick: "$(\"#KW-selector option\").each(function(i){if($(this).val().substring(3, $(this).val().length) === \"" + kw_value + "\"){$(this).removeAttr('disabled', 'disabled')}}); $(\"#KW-selector\").select2({placeholder: i18n.__('select2-kw-add-ph')}); $(this.parentElement.parentElement).trigger({type: 'deleted', params : {data: '" + kw_text + "'}}); $(this.parentElement).remove();"
         });
         //logger.debug("2# VALUE: " + kw_value + " # TEXT: " + kw_text);
         li_node.appendChild(span_node);

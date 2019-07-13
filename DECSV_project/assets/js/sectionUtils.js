@@ -57,6 +57,7 @@ function setupCsectionUI() {
     for (var f = 1; f < 15; f++) {
         var realdata = "";
         var classStr = "secC-Q-" + f + "-cont";
+        logger.debug("classStr: "+ classStr);
         if (document.getElementById("edit-C-edit-text").getElementsByClassName(classStr)[0].hasAttribute("data-real")) { // has data-real attr
             if ($("#edit-C-edit-text ." + classStr).attr("data-real").length !== 0) {// has non-empty real-data attr
 

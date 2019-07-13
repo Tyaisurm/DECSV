@@ -534,7 +534,7 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
      "latest-update-check": null,
      "latest-update-install": null,
      */
-    $("#settings-app-lang-name").text("Current language: " + selectUtils.getFullLangName(applang));
+    $("#settings-app-lang-name").text("Current language: " + applang);
 
     //var kw_update_latest = store2["last-successful-update"];
     //var kw_local_list = store2["local-keywordlists"];
