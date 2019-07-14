@@ -2,7 +2,7 @@
   "name": "teacher_tool",
   "productName": "SLIPPS Teacher Tool",
   "copyright": "Copyright (c) 2019 ${author}",
-  "version": "4.0.0-beta",
+  "version": "4.0.1-beta",
   "description": "SLIPPS survey results review and edit application.",
   "main": "app.js",
   "scripts": {

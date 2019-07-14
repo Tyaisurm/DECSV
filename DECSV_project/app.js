@@ -168,6 +168,14 @@ if (!gotTheLock) {
         }
     });
 
+    // saving command line parameter (file to be opened...)
+    if (process.platform == 'win32' && process.argv.length >= 2) {
+        pre_project = process.argv[1];
+        logger.info("[FIRST INSTANCE] Settings main process pre_project variable(win32): " + pre_project);
+    } else {
+        logger.warn("[FIRST INSTANCE] Platform is not win32, or argv.length is not >=2!");
+    }
+
     /* Called when application has finished loading */
     app.on('ready', () => {
         //setTimeout(function () {
