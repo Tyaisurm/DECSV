@@ -577,7 +577,7 @@ document.getElementById("check-app-updates-button").onclick = function () { //NE
             var download_data = "Downloading " + (Math.round((progressObj.transferred / 1000000) * 100) / 100) + "MB/" + (Math.round((progressObj.total / 1000000) * 100) / 100) + "MB @ " + (Math.round((progressObj.bytesPerSecond / 1000) * 100) / 100) + " kBps";
             var download_percent = progressObj.percent;
 
-            if (arg[1] = 100) {
+            if (arg[1] == 100) {
                 //completed download
             }
             $("#settings-update-text").text(download_data);
