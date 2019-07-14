@@ -1,4 +1,5 @@
 ﻿'use strict';
+
 //////////////////////////////////// CUSTOM ERROR MESSAGE
 process.on('uncaughtException', function (err) {
     const electron = require('electron');
@@ -12,11 +13,10 @@ process.on('uncaughtException', function (err) {
         title: "Uncaught Exception",
         message: "Unknown error occurred!",
         detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\n#### ERROR #####\r\n" + err,
-        buttons: ["Close application", "Open Wiki"],
-        browserWindow: electron.remote.getCurrentWindow()
+        buttons: ["Close application", "Open Wiki"]
     };
 
-    uncaugetdia.showMessageBox(uncaughtoptions, function (index) {
+    uncaugetdia.showMessageBox(electron.remote.getCurrentWindow(), uncaughtoptions, function (index) {
         // no need to deal with anything.... just notifying user
         if (index === 1) {
             //open wiki
@@ -31,17 +31,16 @@ process.on('uncaughtException', function (err) {
     });
 });
 ////////////////////////////////////
-
 const remote = require('electron').remote;
-const app = remote.app;
-const dialog = remote.dialog;
 const thiswindow = remote.getCurrentWindow();
+//const app = remote.app;
+const dialog = remote.dialog;
 const path = require('path');
 const fs = require('fs');
 //const Store = require('electron-config');
-const Store = require("electron-store");
+//const Store = require("electron-store");
 const htmlParser = require('html-parse-stringify2');
-const shell = remote.shell;
+//const shell = remote.shell;
 const parentwindow = thiswindow.getParentWindow();
 const getSettings = remote.getGlobal("getSettings");
 const ipcRenderer = require('electron').ipcRenderer;
@@ -223,10 +222,10 @@ function writeFile_csv(dataArray, targetFile) {// NEEDSTOBECHANGED
         }
 
         if (currentKW.length === 0) {
-            currentString = currentString + "\r\n"; // no KWs, adding newline
+            currentString = currentString + ",\r\n"; // no KWs, adding newline
         } else {
             // KWs, adding them before newline
-            var kwString = "";
+            var kwString = ",";// since need something to separate C section answers and keywords
 
             for (var q = 0; q < currentKW.length; q++) {
                 kwString = kwString + currentKW[q] + ";";

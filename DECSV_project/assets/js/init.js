@@ -14,11 +14,10 @@ process.on('uncaughtException', (err) => {
         title: "Uncaught Exception",
         message: "Unknown error occurred!",
         detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\n#### ERROR #####\r\n" + err,
-        buttons: ["Close application", "Open Wiki"],
-        browserWindow: electron.remote.getCurrentWindow()
+        buttons: ["Close application", "Open Wiki"]
     };
 
-    uncaugetdia.showMessageBox(uncaughtoptions, function (index) {
+    uncaugetdia.showMessageBox(electron.remote.getCurrentWindow(), uncaughtoptions, function (index) {
         // no need to deal with anything.... just notifying user
         if (index === 1) {
             //open wiki
@@ -33,27 +32,29 @@ process.on('uncaughtException', (err) => {
     });
 });
 ////////////////////////////////////
-
 const electron = require('electron');
 const remote = electron.remote;
+const firstWindow = remote.getCurrentWindow();
+const electronLocalshortcut = require('electron-localshortcut');
 const ipcRenderer = electron.ipcRenderer;
 const BrowserWindow = remote.BrowserWindow;
 const dialog = remote.dialog;
-const firstWindow = remote.getCurrentWindow();
 var fileWizard = null;
 const fs = require('fs');
-const autoUpdater = remote.autoUpdater;
+//const autoUpdater = remote.autoUpdater;
 const path = require('path');
 const url = require('url');
-
 const { Menu, MenuItem } = remote;
 
-const menu = new Menu()
-menu.append(new MenuItem({ label: 'Developer Tools', click() { firstWindow.toggleDevTools()} }))
+const menu = new Menu();
+menu.append(new MenuItem({ label: 'Developer Tools', click() { firstWindow.toggleDevTools(); console.error("\n\n\nNOTICE, PLEASE READ!\n\n\n\n\nThis is intended for debugging purposes, and you don't need to do anything here unless specifically told so! There is a possibility that things will break if you don't know what you're doing. \n\nIf someone told you to paste something here, please don't do that :)\n\n\n\n\n\n"); } }));
+
+electronLocalshortcut.register(firstWindow, 'CmdOrCtrl+S', () => {
+    if ($("#save-cur-edits-btn").attr("disabled") !== "disabled" && window.currentProject !== undefined) { $("#save-cur-edits-btn").trigger("click"); }
+});
 
 window.addEventListener('contextmenu', (e) => {
     e.preventDefault();
-    logger.error("\n\n\nNOTICE, PLEASE READ!\n\n\n\n\nThis is intended for debugging purposes, and you don't need to do anything here unless specifically told so! There is a possibility that things will break if you don't know what you're doing. \n\nIf someone told you to paste something here, please don't do that :)\n\n\n\n\n\n");
     menu.popup({ window: firstWindow });
 }, false);
 
@@ -749,7 +750,7 @@ document.getElementById("exportprojbutton").onclick = function () {// NEEDSTOBEC
     var options = {
         type: 'info',
         title: "Exporting files",
-        message: "Events marked 'done' will now be exported.",
+        message: "Export events marked 'DONE'?",
         detail: "Note: Only events that have 'permission for data to be used as part of SLIPPS' can be exported!",
         buttons: [i18n.__('conf-yes'), i18n.__('conf-no')]
     };

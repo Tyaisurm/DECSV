@@ -12,11 +12,10 @@ process.on('uncaughtException', function (err) {
         title: "Uncaught Exception",
         message: "Unknown error occurred!",
         detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\n#### ERROR #####\r\n" + err,
-        buttons: ["Close application", "Open Wiki"],
-        browserWindow: electron.remote.getCurrentWindow()
+        buttons: ["Close application", "Open Wiki"]
     };
 
-    uncaugetdia.showMessageBox(uncaughtoptions, function (index) {
+    uncaugetdia.showMessageBox(electron.remote.getCurrentWindow(), uncaughtoptions, function (index) {
         // no need to deal with anything.... just notifying user
         if (index === 1) {
             //open wiki

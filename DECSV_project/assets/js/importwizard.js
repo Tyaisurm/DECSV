@@ -1,4 +1,5 @@
 ﻿'use strict';
+
 //////////////////////////////////// CUSTOM ERROR MESSAGE
 process.on('uncaughtException', function (err) {
     const electron = require('electron');
@@ -12,11 +13,10 @@ process.on('uncaughtException', function (err) {
         title: "Uncaught Exception",
         message: "Unknown error occurred!",
         detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\n#### ERROR #####\r\n" + err,
-        buttons: ["Close application", "Open Wiki"],
-        browserWindow: electron.remote.getCurrentWindow()
+        buttons: ["Close application", "Open Wiki"]
     };
 
-    uncaugetdia.showMessageBox(uncaughtoptions, function (index) {
+    uncaugetdia.showMessageBox(electron.remote.getCurrentWindow(), uncaughtoptions, function (index) {
         // no need to deal with anything.... just notifying user
         if (index === 1) {
             //open wiki
@@ -31,13 +31,12 @@ process.on('uncaughtException', function (err) {
     });
 });
 ////////////////////////////////////
-
 const electron = require('electron');
-const path = require('path');
 const remote = electron.remote;
-const shell = electron.shell;
-const dialog = remote.dialog;
 const thiswindow = remote.getCurrentWindow();
+const path = require('path');
+//const shell = electron.shell;
+const dialog = remote.dialog;
 const getSettings = remote.getGlobal("getSettings");
 const intUtils = require(path.join(__dirname, './intUtils.js'));
 const ipcRenderer = electron.ipcRenderer;
@@ -47,12 +46,11 @@ window.import_ready = false;
 
 const { Menu, MenuItem } = remote;
 
-const menu = new Menu()
-menu.append(new MenuItem({ label: 'Developer Tools', click() { thiswindow.toggleDevTools() } }))
+const menu = new Menu();
+menu.append(new MenuItem({ label: 'Developer Tools', click() { thiswindow.toggleDevTools(); console.error("\n\n\nNOTICE, PLEASE READ!\n\n\n\n\nThis is intended for debugging purposes, and you don't need to do anything here unless specifically told so! There is a possibility that things will break if you don't know what you're doing. \n\nIf someone told you to paste something here, please don't do that :)\n\n\n\n\n\n"); } }))
 
 window.addEventListener('contextmenu', (e) => {
     e.preventDefault();
-    logger.error("\n\n\nNOTICE, PLEASE READ!\n\n\n\n\nThis is intended for debugging purposes, and you don't need to do anything here unless specifically told so! There is a possibility that things will break if you don't know what you're doing. \n\nIf someone told you to paste something here, please don't do that :)\n\n\n\n\n\n");
     menu.popup({ window: thiswindow });
 }, false);
 
