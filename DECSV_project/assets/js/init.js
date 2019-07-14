@@ -110,8 +110,8 @@ ipcRenderer.on("force-open-project", function (event, filepath) {
  */
 ipcRenderer.on("import-wiz-import-result", function (event_in, args = {}) {
     logger.debug("import-wiz-import-result");
-    console.log("############### RETURNED FROM IMPORT WINDOW #######################");
-    console.log(args);// for testing to see how works
+    //console.log("############### RETURNED FROM IMPORT WINDOW #######################");
+    //console.log(args);// for testing to see how works
 
     // add new content into window variable, save temp file
     var window_json = window.currentFileContent;
@@ -1104,21 +1104,21 @@ document.getElementById("open-proj-button").onclick = function () {
 /////////////////////////////////////////////////////////////////////////////////////////////// WINDOW LISTENERS FOR A,B and C SECTIONS
 document.getElementById("secAmodetoggle").onclick = function () {
     logger.debug("secAmodetoggle button");
-    console.log("toggle A");
+    //console.log("toggle A");
     intUtils.toggleViewMode(2);
     intUtils.toggleViewMode(9);
 }
 
 document.getElementById("secBmodetoggle").onclick = function () {
     logger.debug("secBmodetoggle button");
-    console.log("toggle B");
+    //console.log("toggle B");
     intUtils.toggleViewMode(3);
     intUtils.toggleViewMode(9);
 }
 
 document.getElementById("secCmodetoggle").onclick = function () {
     logger.debug("secCmodetoggel button");
-    console.log("toggle C");
+    //console.log("toggle C");
     intUtils.toggleViewMode(4);
     intUtils.toggleViewMode(9);
 }

@@ -557,7 +557,8 @@ ipcMain.on('import-wiz-return', function (event, arg) {
         //mainWindow.webContents.send("output-to-chrome-console", arg[1]);
         var completearr = parseUtils.parseArray(arg[0], arg[1], arg[3]);// [tool, arr, survey_version] // returns [boolean, statuscode, arr] CURRENTLY USING PLACEHOLDERS!
         if (completearr[0]) {
-            mainWindow.webContents.send("output-to-chrome-console", completearr[2]);
+            //mainWindow.webContents.send("output-to-chrome-console", completearr[2]);
+
             // logger.error("DENIED! UNABLE TO USE BECAUSE NOT IMPLEMENTED!");
             //event.sender.send("import-wiz-result", [false, completearr[1], "{}"]);
             //return;
@@ -1572,7 +1573,7 @@ function readSourceFile(lert_tool = null, lert_delimiter = null, lert_encoding =
         /*Node.js fs*/
         var data = "";
         try {
-            mainWindow.webContents.send("output-to-chrome-console", "PARSING DATAAAAAAAAAAAAAAAAAAAAAAAA  ORIGINAL     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+            //mainWindow.webContents.send("output-to-chrome-console", "PARSING DATAAAAAAAAAAAAAAAAAAAAAAAA  ORIGINAL     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
             data = fs.readFileSync(file, null);
         }
         catch (err) {
