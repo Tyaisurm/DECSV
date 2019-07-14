@@ -299,6 +299,7 @@ document.getElementById("win-close-icon").onclick = function () {
 
     // checking if edits variable was true
     if (close_store.get("edits", [false, null])[0]) {
+        logger.info("While closing, there were edits mentioned in properties file!");
         // checking if we have project open
         if (window.currentProject !== undefined) {
             logger.info("Project open while closing the main window! window.currentProject = '" + window.currentProject + "'");
