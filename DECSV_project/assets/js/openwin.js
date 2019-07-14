@@ -117,9 +117,9 @@ ipcRenderer.on('check-updates-reply', (event, arg) => {
         var download_data = i18n.__("open-update-downloading") + (Math.round((progressObj.transferred / 1000000) * 100) / 100) + "MB/" + (Math.round((progressObj.total / 1000000) * 100) / 100) + "MB @ " + (Math.round((progressObj.bytesPerSecond / 1000) * 100) / 100) + " kBps";
         var download_percent = progressObj.percent;
 
-        if (arg[1] = 100) {
+        if (download_percent == 100) {
             //completed download
-            $("#open-update-text").text('open-update-finish');
+            $("#open-update-text").text(i18n.__('open-update-finish'));
         } else {
             $("#open-update-text").text(download_data);
         }
@@ -127,7 +127,7 @@ ipcRenderer.on('check-updates-reply', (event, arg) => {
     else if (arg[0] === 5) {
         // mark download progress as 100%
         //var download_percent = 100;
-        $("#open-update-text").text('open-update-restarting');
+        $("#open-update-text").text(i18n.__('open-update-restarting'));
         var ver = arg[1];
         var relDat = arg[2];
         var relNote = arg[3];

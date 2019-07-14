@@ -170,7 +170,7 @@ if (!gotTheLock) {
 
     // saving command line parameter (file to be opened...)
     if (process.platform == 'win32' && process.argv.length >= 2) {
-        pre_project = process.argv[1];
+        if (process.argv[1] !== "--updated") { pre_project = process.argv[1]; }// since this is put here after updating
         logger.info("[FIRST INSTANCE] Settings main process pre_project variable(win32): " + pre_project);
     } else {
         logger.warn("[FIRST INSTANCE] Platform is not win32, or argv.length is not >=2!");
