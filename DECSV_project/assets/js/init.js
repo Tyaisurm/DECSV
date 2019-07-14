@@ -289,18 +289,39 @@ document.getElementById("win-maximize-restore-icon").onclick = function () {
 }
 document.getElementById("win-close-icon").onclick = function () {
     logger.debug("win-close icon/button");
-    var country = "";
-    var lang = "";
-    var done = false;
+    // need to update backup to up-to-date version, so that rogue backup file doesn't just overwrite the 'actual' project file while saving in handleClosing... 
 
-    
-    // checking if we have project and/or event open
-    if (window.currentProject !== undefined) {
-        logger.info("Project open while closing the main window! window.currentProject = '"+window.currentProject+"'");
-        
+    var close_opt = {
+        name: "app-configuration",
+        cwd: remote.app.getPath('userData')
     }
-    else {
-        logger.info("No open project while closing main window! Window.currentProject undefined!");
+    var close_store = new Store(close_opt);
+
+    // checking if edits variable was true
+    if (close_store.get("edits", [false, null])[0]) {
+        // checking if we have project open
+        if (window.currentProject !== undefined) {
+            logger.info("Project open while closing the main window! window.currentProject = '" + window.currentProject + "'");
+            var curProjectId = window.currentProject;
+            var curProject = window.currentFileContent;
+            // checking if we have event open
+            if (window.currentEvent !== undefined) {
+                logger.info("Project open with event open while closing the main window!");
+                var curEventId = window.currentEvent;
+                var curEvent = curProject["project-files"][curEventId];
+                // saving to backup, since it might be old
+                saveProject(0, curEvent.a, curEvent.b, curEvent.c, curEvent.kw, window.currentFileContent["notes"], curEvent.done, curEvent.country, curEvent.lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+            } else {
+                logger.info("No open event while closing, but open project!");
+                saveProject(0, "", "", "", [], window.currentFileContent["notes"], "", "", "");//mode, dataA, dataB, dataC, kw, notes, done, country, lang
+            }
+        }
+        else {
+            logger.info("No open project while closing main window! Window.currentProject undefined!");
+            close_store.set("edits", [false, null]);
+        }
+    } else {
+        logger.info("While closing, no edits were mentioned in app properties file!");
     }
     //ipcRenderer.send('set-project-status', null); 
     firstWindow.close();
