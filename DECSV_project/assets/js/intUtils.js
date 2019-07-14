@@ -547,19 +547,19 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
 
     var localsArr = [];
     var kw_base = path.join(__dirname, '../../keywordfiles/');
-    var kw_local_list = fs.readdirSync(path.join(kw_base, "lists/"), "utf8");// array of ["en","fi",.....]
-    //logger.debug(kw_base);
-    //logger.debug(path.join(kw_base, "keyword-config-default.json"));
+    var kw_local_list = fs.readdirSync(path.join(kw_base, "lists"), "utf8");// array of ["en","fi",.....]
+
     var kw_local_list_default = fs.readFileSync(path.join(kw_base, "keyword-config-default.json"), "utf8");
     //logger.debug(kw_local_list_default);
     try {
         kw_local_list_default = JSON.parse(kw_local_list_default)["local-keywordlists"];
     } catch (err) {
         //logger.debug(err)
+        logger.error("Error while parsing 'kw_local_list_default' JSON! Using blank...");
         kw_local_list_default = {
             "local-keywordlists": {"enabled-keywordlists":[]}};
     }
-    logger.debug(kw_local_list_default);
+    //logger.warn(kw_local_list_default);
     
     //logger.debug(kw_local_list);
     //start loop (local lists)
@@ -573,6 +573,11 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
         //let version = "";
         //if (kw_local_list.hasOwnProperty(k)) {
         list_id = kw_local_list[k];// list's filename/identification
+
+        //logger.warn(kw_local_list);
+        //logger.warn(list_id);
+        //logger.warn(kw_local_list_default[list_id]);
+
         list_name = kw_local_list_default[list_id]["name"];// list's name from row 0 (within the file. actual, showable name)
         //version = kw_local_list_default[kw_local_list[k]]["version"];
             //lang = list_name.split(' - ')[0];

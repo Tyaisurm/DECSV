@@ -52,8 +52,9 @@ const menu = new Menu()
 menu.append(new MenuItem({ label: 'Developer Tools', click() { firstWindow.toggleDevTools()} }))
 
 window.addEventListener('contextmenu', (e) => {
-    e.preventDefault()
-    menu.popup({ window: firstWindow })
+    e.preventDefault();
+    logger.error("\n\n\nNOTICE, PLEASE READ!\n\n\n\n\nThis is intended for debugging purposes, and you don't need to do anything here unless specifically told so! There is a possibility that things will break if you don't know what you're doing. \n\nIf someone told you to paste something here, please don't do that :)\n\n\n\n\n\n");
+    menu.popup({ window: firstWindow });
 }, false);
 
 //const Store = require('electron-config');

@@ -83,20 +83,147 @@ logger.transports.file.level = "verbose";
 logger.transports.console.level = "silly";
 //logger.transports.file.appName = 'SLIPPS Teacher Tool';
 ///////////////////////////////
+
 autoUpdater.logger = logger;
+
 //autoUpdater.allowPrerelease = true; // flag for beta....
 //autoUpdater.autoDownload = false; // flag for handling updating manually, instead of automatically testing...
 
 //logger.warn("AAAAAAAAAAAAAAAAAAAAAAAAAA   FIRST WARN    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa");
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+    logger.info("Was unable to get a single instance lock! Quitting application...");
+    app.quit();
+} else {
+    app.on('second-instance', (event, commandLine, workingDirectory) => {
+        logger.info("Tried to create second instance!");
+        // Someone tried to run a second instance, we should focus our window.
+        if (mainWindow !== null) {
+            logger.info("Main maindow was not null! Restoring and focusing...");
+            if (mainWindow.isMinimized()) {
+                mainWindow.restore();
+            }
+            mainWindow.focus();
+
+            // here take [1] command line arg (calling location / opened file) and try to open
+            // HOWEVER, if there is a file open atm, show notification that current needs to be closed...
+            // if nothing is wrong, let's try 1) switch to "open project"-view, 2) try to open arg[1] file, 3) notify if worked or not
+            // THIS ABOVE NEEDS TO BE IN >win32< 
+            //
+            // otherwise, you need to listen event in MacOS 'open-file' with event.preventDefault()
+            // in windows parse process.argv
+            //logger.error("AAAAAAAAAAAAAAAAAAAAAAAAAAA  THIRD ERROR  AAAAAAAAAAAAAAAAAAAAAAAAAAa");
+            logger.info("Testing if we need to open a new project...");
+            if (process.platform == 'win32' && commandLine.length >= 2) {
+                var openFilePath = commandLine[1];
+                if (current_project !== null) {
+                    // there is a project open
+                    logger.warn("Tried to open new project, while old one still exits!");
+                    logger.info("# Old: " + current_project);
+                    logger.info("# New: " + openFilePath);
+                    // create dialog and notify to exit current project before opening new projects...
+                    var options = {
+                        type: 'info',
+                        title: "Project open",
+                        message: "Unable to open new project while there is one open!",
+                        detail: "Please close the current project, and try opening again.",
+                        buttons: [i18n_app.__('conf-ok', true)]
+                    };
+                    dialog.showMessageBox(mainWindow, options, function (index) {
+                        // no need to deal with anything.... just notifying user
+                        if (index === 1) {
+                            //
+                        } else {
+                            // close, do nothing
+                        }
+                    });
+                } else {
+                    //no project exist... need to force opening
+                    logger.info("No project exists! Need to force open new project at mainWindow...");
+                    mainWindow.webContents.send("force-open-project", openFilePath);
+                }
+
+            } else {
+                // do nothing
+                logger.warn("Platform is not win32, or argv.length is not >=2!");
+            }
+        } else {
+            //logger.error("AAAAAAAAAAAAAAAAAAAAAAAAAAA  FOURTH ERROR  AAAAAAAAAAAAAAAAAAAAAAAAAAa");
+            // no mainwindow! if we are opening project, we are settings this variable just in case
+            logger.info("No main window exists! Setting variable just in case...");
+            if (process.platform == 'win32' && commandLine.length >= 2) {
+                pre_project = commandLine[1];
+                logger.info("[SECOND INSTANCE] Settings main process pre_project variable(win32): " + pre_project);
+            } else {
+                logger.warn("[SECOND INSTANCE] Platform is not win32, or argv.length is not >=2!");
+            }
+            /*
+            if (process.platform == 'darwin') {
+                logger.info("Platform was 'darwin'! Opening new mainWindow...");
+                createMainWindow();
+            }
+            */
+
+        }
+    });
+
+    /* Called when application has finished loading */
+    app.on('ready', () => {
+        //setTimeout(function () {
+        if (process.platform === 'win32') {
+            //
+        }
+        else if (process.platform === 'linux') {
+            //
+        }
+        else if (process.platform === 'darwin') {
+            //
+        }
+        else {
+            //well then, you are done for :x
+        }
+        logger.info('app ready');
+
+        logger.debug("setupTranslations(app.js)");
+        i18n_app = new (require('./assets/translations/i18n'))(true);
+        showExitPrompt = true;
+
+        logger.debug("checking first usage...");
+        var options = {
+            name: "app-configuration",
+            cwd: app.getPath('userData')
+        }
+        const store = new Store(options);
+        var firstuse = store.get('first-use');
+        //logger.debug(firstuse);
+        //logger.debug(typeof(firstuse));
+
+        // Checking if the app json data file shows that the program has been opened before
+        if (firstuse) {
+            logger.info("######################################################");
+            logger.info("WELCOME! This app is now started for the first time :)");
+            logger.info("######################################################");
+            store.set('first-use', false);
+        }
+        else {
+            logger.info("App has been started before!");
+        }
+        createWin();
+        //}, 0)
+    });
+}
+
+/*
 const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
     // Someone tried to run a second instance, we should focus our window
     logger.info("Testing for second instance...");
-    /*
-    logger.info("################## SECOND INSTANCE DATA ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤");
-    logger.info("process.platform = " + process.platform);
-    logger.info("process.argv = " + process.argv);
-    logger.info("commandLine = " + commandLine);
-    */
+    
+    //logger.info("################## SECOND INSTANCE DATA ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤");
+    //logger.info("process.platform = " + process.platform);
+    //logger.info("process.argv = " + process.argv);
+    //logger.info("commandLine = " + commandLine);
+
     //logger.debug(ipcMain.send("asdasd",""));
     if (mainWindow !== null) {
         logger.info("Main maindow was not null! Restoring and focusing...");
@@ -157,32 +284,33 @@ const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) 
         } else {
             logger.warn("[SECOND INSTANCE] Platform is not win32, or argv.length is not >=2!");
         }
-        /*
-        if (process.platform == 'darwin') {
-            logger.info("Platform was 'darwin'! Opening new mainWindow...");
-            createMainWindow();
-        }
-        */
+
+        //if (process.platform == 'darwin') {
+        //    logger.info("Platform was 'darwin'! Opening new mainWindow...");
+        //    createMainWindow();
+        //}
+
     }
 });
-
+*/
+/*
 if (isSecondInstance) {
     logger.info("Tried to create second instance!");
     app.quit()
 } else {
     logger.info("This instance is first one!");
-    /*
-    logger.info("###################### FIRST INSTANCE DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-    logger.info("process.platform = " + process.platform);
-    logger.info("process.argv = " + process.argv);
-    */
+    
+    //logger.info("###################### FIRST INSTANCE DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+    //logger.info("process.platform = " + process.platform);
+    //logger.info("process.argv = " + process.argv);
+    
     if (process.platform == 'win32' && process.argv.length >= 2) {
         pre_project = process.argv[1];
         logger.info("[FIRST INSTANCE] Settings main process pre_project variable(win32): " + pre_project);
     } else {
         logger.warn("[FIRST INSTANCE] Platform is not win32, or argv.length is not >=2!");
     }
-}
+}*/
 
 /* Handle opening files in program (while not open before; that is above in the makeSingleInstance callback) */
 app.on('will-finish-launching', function () {
@@ -1155,51 +1283,6 @@ app.on('window-all-closed', function () {
     }
 });
 
-/* Called when application has finished loading */
-app.on('ready', () => {
-    //setTimeout(function () {
-        if (process.platform === 'win32') {
-            //
-        }
-        else if (process.platform === 'linux') {
-            //
-        }
-        else if (process.platform === 'darwin') {
-            //
-        }
-        else {
-            //well then, you are done for :x
-        }
-        logger.info('app ready');
-
-        logger.debug("setupTranslations(app.js)");
-        i18n_app = new (require('./assets/translations/i18n'))(true);
-        showExitPrompt = true;
-
-        logger.debug("checking first usage...");
-        var options = {
-            name: "app-configuration",
-            cwd: app.getPath('userData')
-        }
-        const store = new Store(options);
-        var firstuse = store.get('first-use');
-        //logger.debug(firstuse);
-        //logger.debug(typeof(firstuse));
-
-        // Checking if the app json data file shows that the program has been opened before
-        if (firstuse) {
-            logger.info("######################################################");
-            logger.info("WELCOME! This app is now started for the first time :)");
-            logger.info("######################################################");
-            store.set('first-use', false);
-        }
-        else {
-            logger.info("App has been started before!");
-        }
-        createWin();
-    //}, 0)
-});
-
 /* Called when activating application window */
 app.on('activate', function () {
     // On OS X it's common to re-create a window in the app when the
@@ -1231,7 +1314,7 @@ app.on('quit', function () {
     // 5 = downloaded
 /* Called from init.js (or somewhere else) when wanted to check updates */
 ipcMain.on("check-updates", (event, arg) => { // CREATING LISTENERS IN FUNCTION ONLY SO THAT THE "event"-object CAN BE SAVED
-
+    logger.debug("check-updates here!");
 autoUpdater.on('checking-for-update', function () {
     logger.info("Current version: " + app.getVersion().toString());
     var chekcupdatesettings = getSettings();
@@ -1351,8 +1434,14 @@ autoUpdater.on('download-progress', function (progressObj) {
     arr.push(4, progressObj);
     event.sender.send("check-updates-reply", arr);
    });
-    logger.debug("CALLING CHECKFORUPDATES!!!");
-   autoUpdater.checkForUpdates();
+    //logger.debug("CALLING CHECKFORUPDATES!!!");
+    autoUpdater.checkForUpdates().then(
+        function (val) {
+            logger.info('Promise fulfilled!');
+        }).catch(
+            function (reason) {
+                logger.warn('Rejected promise handler...');
+            });
 });
 
 /* Clears away all listeners after updates have been checked - prevents listener-dublicates */
