@@ -78,15 +78,6 @@ interfaceUpdate();
 // 4 = downloading %
 // 5 = downloaded
 //     arr.push(5, ver, relDat, relNote); downloaded & available
-/*
- "open-update-search": "Checking for updates...",
-  "open-update-found": "Update found!",
-  "open-update-downloading": "Downloading ",
-  "open-update-restarting": "Installing and restarting...",
-  "open-update-error": "Failed to check for updates!",
-  "open-update-nothing": "No updates available!",
-  "open-update-finish": "Update downloaded!",
- */
 ipcRenderer.on('check-updates-reply', (event, arg) => {
     logger.debug("RETURNED FROM APP: " + arg);
     if (arg[0] === 0) {

@@ -631,7 +631,7 @@ document.getElementById("projinfobutton").onclick = function () {// NEEDSTOBECHA
     logger.debug("projinfo button");
     createDummyDialog(firstWindow);
     return;
-
+    /*
     var value = $("#footer-nav-btn3").val();
     if (value === "information"){
         // do NOTHING
@@ -723,6 +723,7 @@ document.getElementById("projinfobutton").onclick = function () {// NEEDSTOBECHA
     }
     intUtils.toggleViewMode(12);
     intUtils.toggleViewMode(10);
+    */
 }
 
 document.getElementById("projstartbutton").onclick = function () {//
@@ -754,47 +755,6 @@ document.getElementById("exportprojbutton").onclick = function () {// NEEDSTOBEC
         detail: "Note: Only events that have 'permission for data to be used as part of SLIPPS' can be exported!",
         buttons: [i18n.__('conf-yes'), i18n.__('conf-no')]
     };
-
-    /*
-    ////////////////////////////////////////////////////////////////// Saving before exporting..... 
-    var country = "";
-    var lang = "";
-    var done = false;
-
-    if (window.currentProject !== undefined) {
-
-    // going through yellow file list elements (as in currently opened/selected)
-        $('#proj-files-ul li.w3-yellow').each(function (i) {
-            done = ($(this).attr('data-done') === "true");
-            country = $("#preview-event-country-select").val();
-            lang = $("#preview-event-lang-select").val();
-        });
-
-    
-        var dataA = $("#edit-A-orig-text").html();
-        var dataB = $("#edit-B-orig-text").html();
-        intUtils.sectionUtils.clearCsectionUI();
-        var dataC = $("#edit-C-orig-text").html();
-        var dataKW = [];
-
-        $("#file-chosen-kw-ul li").each(function (i) {
-            var value = $(this).attr("data-value").substring(3);//, test.length - 1);
-            $(this).find('span').remove();
-            dataKW.push(value);
-        });
-
-        var notes = [];
-        $("#proj-notes-ul li").each(function (i) {
-            var text = $(this).ignore("span").text();
-            notes.push(text);
-        });
-
-        // saving, because we are about to export files. can't have them exported unsaved, right? :) (saving to backup files and window-variable)
-        saveProject(0, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
-    } else {
-        logger.warn("No open project to be saved! Window.currentProject undefined!");
-    }
-    */
 
     dialog.showMessageBox(firstWindow, options, function (index) {
         if (index === 0) {
@@ -853,36 +813,12 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
                 var close_store = new Store(close_opt);
                 // testing if pending edits that need to be saved
                 if (close_store.get("edits", [false, null])[0]) {
-                    /*
-                    $('#proj-files-ul li.w3-yellow').each(function (i) {
-                        done = ($(this).attr('data-done') === "true");
-                        //country = $(this).attr('data-country');
-                        //lang = $(this).attr('data-lang');
-                    });
-                    */
                     $("#edit-A-orig-text .secA-Q").empty();
                     $("#edit-B-orig-text .secB-Q").empty();
                     for (var k = 1; k < 15; k++) {
                         $("#edit-C-orig-text .secC-Q-" + k).empty();
                     }
-                    //var dataA = $("#edit-A-orig-text").html();
-                    //var dataB = $("#edit-B-orig-text").html();
                     intUtils.sectionUtils.clearCsectionUI();
-                    //var dataC = $("#edit-C-orig-text").html();
-                    /*var dataKW = [];
-
-                    $("#file-chosen-kw-ul li").each(function (i) {
-                        var value = $(this).attr("data-value").substring(3);//, test.length - 1);
-                        $(this).find('span').remove();
-                        dataKW.push(value);
-                    });
-
-                    var notes = [];
-                    $("#proj-notes-ul li").each(function (i) {
-                        var text = $(this).ignore("span").text();
-                        notes.push(text);
-                    });
-                    */
 
                     var options = {
                         type: 'info',
@@ -930,9 +866,6 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
                         intUtils.setFooterBtnMode("project-closed");
                         intUtils.sectionUtils.clearElements();
                         $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2'));// {Alpha version " + remote.app.getVersion() + "}")
-                        //$("#preview-cur-file-name").text("Current file: NONE");
-                        //$("#preview-subid").text("Submission ID:");
-                        //$("#preview-subdate").text("Submission Date:");
                         intUtils.toggleViewMode(0);
                         intUtils.toggleViewMode(10);
                     });
@@ -957,9 +890,6 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
                     intUtils.setFooterBtnMode("project-closed");
                     intUtils.sectionUtils.clearElements();
                     $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2'));// {Alpha version " + remote.app.getVersion() + "}")
-                    //$("#preview-cur-file-name").text("Current file: NONE");
-                    //$("#preview-subid").text("Submission ID:");
-                    //$("#preview-subdate").text("Submission Date:");
                     intUtils.toggleViewMode(0);
                     intUtils.toggleViewMode(10);
                 }
@@ -983,9 +913,6 @@ document.getElementById("closeprojbutton").onclick = function () {// NEEDSTOBECH
                 intUtils.setFooterBtnMode("project-closed");
                 intUtils.sectionUtils.clearElements();
                 $("#titlebar-appname").text(i18n.__('app-name-1') + " " + i18n.__('app-name-2'));// {Alpha version " + remote.app.getVersion() + "}")
-                //$("#preview-cur-file-name").text("Current file: NONE");
-                //$("#preview-subid").text("Submission ID:");
-                //$("#preview-subdate").text("Submission Date:");
                 intUtils.toggleViewMode(0);
                 intUtils.toggleViewMode(10);
             }
@@ -1064,7 +991,7 @@ document.getElementById("open-proj-button").onclick = function () {
             properties: ['openFile'
             ]
         }// This need verifications!!!
-        function callback(pname) {
+        var callback = function(pname) {
             if (pname !== undefined) {
                 var opened_res = openAndViewProject(pname[0]);
                 var file_ext = pname[0].split('.').pop();
@@ -1643,23 +1570,6 @@ function updateFileList() {
                     dataKW.push(value);
                 });
                 var notes = [];
-
-                /*
-                 * Removed this section, since we'd like to save WHEN EDITS ACTUALLY HAPPEN, not when shown event is switched...
-                 * 
-                $("#proj-notes-ul li").each(function (i) {
-                    var text = $(this).ignore("span").text();
-                    //logger.error("text_5: " + text);
-                    notes.push(text);
-                });
-                var country = $("#preview-event-country-select").val();
-                var lang = $("#preview-event-lang-select").val();
-                var done = false;
-                if ($(this).attr('data-done') === 'true') { done = true;}
-                // triggering save project, because we are switching to different event
-                saveProject(0, dataA, dataB, dataC, dataKW, notes, done, country, lang);//mode, dataA, dataB, dataC, kw, notes, done, country, lang
-                */
-                
             });
             // previous saved data, now looking at setting other....
 
@@ -1695,24 +1605,6 @@ function updateFileList() {
         }
     });
     ///////////////////////////////////
-    /*
-    $("#edit-A-orig-text .secA-Q").empty();
-    $("#edit-B-orig-text .secB-Q").empty();
-    for (var s = 1; k < 15; s++) {
-        $("#edit-C-orig-text .secC-Q-" + s).empty();
-    }
-    intUtils.sectionUtils.clearCsectionUI();
-    $("#file-chosen-kw-ul").empty();
-    $("#KW-selector option").each(function (i) {
-        if (this.hasAttribute("disabled")) {
-            $(this).removeAttr("disabled");
-        }
-    });
-    $("#KW-selector").select2({
-        placeholder: i18n.__('select2-kw-add-ph')
-    });
-    */
-    //window.currentEvent = undefined;
     if (window.currentEvent === undefined) {
         //
     } else {
@@ -1815,15 +1707,6 @@ function openAndViewProject(proj_location, backup_proj = false) {
             }
         }
     }
-    /*// THIS IS NOT NEEDED, BECAUSE WE DON'T YET HAVE ANY EDITS!
-    var backup_opt = {
-        name: proj_name,
-        cwd: path.join(apppath, 'backup_files')
-    }
-    logger.info("Saving backup copy: "+path.join(apppath, proj_name+".json"));
-    const backup_store = new Store(backup_opt);
-    backup_store.store = json_file;
-    */
 
     // Adding simple details to UI:
     //$("#titlebar-appname").text("SLIPPS Teacher Tool" + " - " + proj_name); // ONLY AFTER EVERYTHING HAS BEEN CHECKED!!!!!

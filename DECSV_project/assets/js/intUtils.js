@@ -511,22 +511,7 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
         return;
         //throw "Unable to update settings UI";
     }
-    //var apppath = remote.app.getPath('userData');
     logger.debug("updateSettingsUI");
-    /*
-    var apppath = remote.app.getPath('userData');
-    var options1 = {
-        name: "app-configuration",
-        cwd: apppath
-    }
-    const store1 = new Store(options1);
-
-    var options2 = {
-        name: "keyword-config",
-        cwd: path.join(apppath, 'keywordlists')
-    }
-    const store2 = new Store(options2);
-    */
 
     var applang = store1["app-lang"];
     var zoomvalue = store1["zoom"];
@@ -637,61 +622,6 @@ function updateSettingsUI() { // FOR SOME REASON NOT PROPERLY USED!!!!!!
         logger.debug("settings local list element into list....");
         $('#settings-local-kw-lists').append(li_node);
     }
-    //<li class="w3-hover-blue w3-display-container kw-list-enabled">list 3<span onclick="$(this.parentElement).toggleClass('kw-list-enabled');$(this).toggleClass('w3-red');$(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="mark_enabled w3-green w3-button w3-display-right">&radic;</span></li>
-    //<li class="w3-hover-blue w3-display-container">list 4<span onclick="$(this.parentElement).toggleClass('kw-list-enabled');$(this).toggleClass('w3-red');$(this).toggleClass('w3-green'); $(this).toggleClass('mark_enabled'); if ($(this).hasClass('mark_enabled')) { $(this).text('&radic;'); } else { $(this).text('&times;');};" class="w3-red w3-button w3-display-right">&times;</span></li>
-    //end loop
-    //var lang_groups = [];
-    //for (var j in kw_available_list) {
-        //let list_id = "";
-        //let list_name = "";
-        //let lang = "";
-        //let langlast = "";
-        /*
-        if (kw_available_list.hasOwnProperty(j)) {
-            list_id = j;// list's filename/identification
-            list_name = kw_local_list[j]["name"];// list's name from row 0 (within the file. actual, showable name)
-            lang = list_name.split(' - ')[0];
-            langlast = list_name.substring(lang.length + 3, list_name.length);
-            //logger.debug("list_id: "+list_id);
-            //list_date = new Date(kw_local_list[k]["date"]); // list's update date
-        }
-        */
-        /*
-        if (localsArr.indexOf(list_id) > -1) {
-            logger.warn("The list '" + list_id + "' is already loaded/local!");
-            continue;
-        }
-        else {
-            logger.info("The list '" + list_id + "' is not loaded/local!");
-            if (lang_groups.indexOf(lang) > -1) {
-                //logger.debug("already have a GROUP in kw list: " + lang);
-                //logger.debug("creating option-element: " + langlast);
-                let option_elem = document.createElement("option");
-                let option_string = document.createTextNode(langlast);
-                $(option_elem).append(option_string);
-
-                $("#kw-list-available-choose optgroup[label='" + lang + "']").append(option_elem);
-            }
-            else {
-                //logger.debug("GROUP will be added to kw list: " + lang);
-                //logger.debug("creating optgroup-element: " + lang);
-                var optgroup_elem = document.createElement("optgroup");
-                $(optgroup_elem).attr({
-                    label: lang
-                });
-                $("#kw-list-available-choose").append(optgroup_elem);
-
-                //logger.debug("creating option-element: " + langlast);
-                let option_elem = document.createElement("option");
-                let option_string = document.createTextNode(langlast);
-                $(option_elem).append(option_string);
-
-                $("#kw-list-available-choose optgroup[label='" + lang + "']").append(option_elem);
-
-            }
-        }
-        */
-    //}
 
     $("#settings-zoomslider").val(zoomvalue);
     $("#settings-zoomslider").trigger("input");

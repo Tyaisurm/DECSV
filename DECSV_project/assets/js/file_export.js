@@ -107,15 +107,6 @@ $("#ok-button").on("click", function () {
     //
     thiswindow.close();
 });
-/*
-$("#view-button").on("click", function () {
-    //
-    var docpath = app.getPath('documents');
-    var out_base = path.join(docpath, 'SLIPPS Teacher Tool\\Output\\' + projectname);
-    shell.openItem(out_base);
-    thiswindow.close();
-});
-*/
 ///////////////////////////////////////////////////////////////////////////////
 
 // NEEDS MODIFICATION
@@ -129,24 +120,6 @@ function writeFile_csv(dataArray, targetFile) {// NEEDSTOBECHANGED
 
     // check where want to save...
 
-    ///////////////////////
-    /*
-    out_base = path.join(docpath, 'SLIPPS Teacher Tool\\Output\\' + proj_name);
-    console.log(out_base);
-    if (!fs.existsSync(out_base)){
-        logger.info("No project OUTPUT folder found! Creating one...");
-        fs.mkdirSync(out_base);
-    }
-    if (dataArray[1].length === 0) {
-        logger.error("No valid filename to be written to!");
-        return 1;
-    }
-    else {
-        //
-    }
-    var file = path.join(out_base, "out_"+dataArray[10]+".csv");
-    //writing... Array[0-1][0-x]
-    */
 
     // One item in array "dataArray"
     //[new Date(), currentEvent.country, currentEvent.lang, done_a, done_b, done_c, currentEvent.kw, currentEvent.timestamp]
@@ -160,25 +133,6 @@ function writeFile_csv(dataArray, targetFile) {// NEEDSTOBECHANGED
     var export_date = new Date().toISOString();
     //finArr[0].push(file_version, export_date); // version of survey, survey timestamp
     temp = temp + file_version + "," + export_date + "\r\n";
-
-    //////////////////////////////////////////////////////////////////////////////////////
-    //finArr[1].push(dataArray[2], dataArray[3], dataArray[5], dataArray[6]);
-
-    //for (var z = 0; z < dataArray[7].length; z++){
-    //    finArr[1].push(dataArray[7][z]);
-    //}
-    //for (var v = 0; v < finArr[1].length; v++) {
-    //    finArr[0].push(v + 1);
-    //}
-    /*
-    for (var x = 0; x < dataArray[4].length; x++){
-        finArr[2].push(dataArray[4][x][0]);
-    }
-    */
-    //console.log("FINAL PRODUCT (ALMOST)");
-    //console.log(finArr);
-    //////////////////////////////////////////////////////////////////////////////////////
-
 
     //parse arrays to be like .csv file's content
 
@@ -259,36 +213,6 @@ function writeFile_csv(dataArray, targetFile) {// NEEDSTOBECHANGED
     });
     
 }
-// status: 0=success 1=failure, file=name
-/* This function adds files into the EXPORT-window list based on their status */
-/*
-function addFile2List(file, status) {
-    logger.debug("addFile2List");
-    //
-    var statustext = ""
-    if (status === 0) {
-        statustext = i18n.__('app-success');
-    }
-    else {
-        statustext = i18n.__('app-failure');
-    }
-
-    var li_string = document.createTextNode(file+" - "+statustext);
-    var li_node = document.createElement("li");
-
-    li_node.appendChild(li_string);
-    var color = "green";
-    if (status === 1) { color = "red";}
-    
-    var classes = "w3-display-container w3-" + color;
-    $(li_node).attr({
-        class: classes
-    });
-
-    $('#exportlist').append(li_node);
-    // SORT LIST?
-}
-*/
 
 /* Make array from temp-files that will be then used to make new csv files */
 
@@ -473,63 +397,6 @@ function parseDoneFiles(proj_name, proj_json) {
     //console.log(finishedArr[0][7]);
     return finishedArr;
 }
-
-// NEEDS MODIFICATION
-/*
-function notesOutput(proj_name) {// NEEDSTOBECHANGED
-    logger.debug("notesOutput");
-    var docpath = app.getPath('documents');
-    var proj_prop = path.join(docpath, 'SLIPPS Teacher Tool\\Projects\\' + proj_name + '\\' + proj_name + '.json');
-    var proj_base = path.join(docpath, 'SLIPPS Teacher Tool\\Projects\\' + proj_name + '\\');
-    var out_base = path.join(docpath, 'SLIPPS Teacher Tool\\Output\\' + proj_name);
-
-    //var docpath = app.getPath('documents');
-    //var out_base = path.join(docpath, 'SLIPPS DECSV\\Output\\' + proj_name);
-    //console.log(out_base);
-    if (!fs.existsSync(out_base)) {
-        logger.info("No project OUTPUT folder found! Creating one...");
-        fs.mkdirSync(out_base);
-    }
-
-    if (fs.existsSync(proj_prop)) {
-        if (fs.existsSync(out_base)) {
-
-            var proj_options = {
-                name: proj_name,
-                cwd: proj_base
-            }
-            const proj_store = new Store(proj_options);//
-            var notes = proj_store.get("notes", []);
-            var basestring = "####### SLIPPS Teacher Tool (version " + remote.app.getVersion() + "), project '"+proj_name+"' notefile #######\r\n";
-            basestring = basestring +"############### START ###############\r\n";
-
-            for (var i = 0; i < notes.length; i++) {
-                basestring = basestring + "> "+notes[i] + "\r\n"
-            }
-
-            basestring = basestring + "################ END ################\r\n"
-            var file = path.join(out_base, "out_NOTES_" + proj_name + ".txt");
-
-            fs.writeFile(file, basestring, "utf8", function (msg) {
-                if (!msg) {
-                    logger.info("Project '" + proj_name + "' notes successfully exported!");
-                    addFile2List("Project NOTES", 0);
-                    return;
-                }
-
-                logger.error("Error while trying to save project notes!");
-                addFile2List("Project NOTES", 1);
-            });
-        }
-        else {
-            // no output-folder....
-        }
-    }
-    else {
-        // no properties file...
-    }
-}
-*/
 
 /* THIS IS SETTING UP UI TRANSLATION */
 function setupTranslations(applang = "en") {

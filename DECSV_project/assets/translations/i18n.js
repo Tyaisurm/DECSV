@@ -13,17 +13,6 @@ module.exports = i18n;
 function i18n(check = false) {
     logger.info("Created 'i18n' instance at app.js: " + check);
     var locale = "en";// default value
-     
-     /*
-    //const Store = require('electron-config');
-    const Store = require("electron-store");
-    var langstore_options = {
-        name: "app-configuration",
-        cwd: app.getPath('userData')
-    }
-    const langstore = new Store(langstore_options);
-    var lang = langstore.get('app-lang', null);
-    */
     var appSettings = getSettings();
     var lang = appSettings.app['app-lang']
     

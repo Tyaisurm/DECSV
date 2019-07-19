@@ -9,7 +9,6 @@ process.on('uncaughtException', function (err) {
     logger.error("Uncaught Exception!");
     logger.error(err);
     var uncaughtoptions = {};
-    if (mainWindow === null) {
         uncaughtoptions = {
             type: 'error',
             title: "Uncaught Exception",
@@ -17,29 +16,35 @@ process.on('uncaughtException', function (err) {
             detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\n#### ERROR #####\r\n" + err,
             buttons: ["Close application", "Open Wiki"]
         }
+    if (mainWindow === null) {
+        uncaugetdia.showMessageBox(uncaughtoptions, function (index) {
+            // no need to deal with anything.... just notifying user
+            if (index === 1) {
+                //open wiki
+                shell.openExternal("https://github.com/Tyaisurm/DECSV/wiki");
+                logger.error("Closing application because of error....");
+                app.exit();
+            } else {
+                // close, do nothing
+                logger.error("Closing application because of error....");
+                app.exit();
+            }
+        });
     } else {
-        uncaughtoptions = {
-            type: 'error',
-            title: "Uncaught Exception",
-            message: "Unknown error occurred!",
-            detail: "Something unexpected happened! Please check wiki-page if this is a known problem:\r\n#### ERROR #####\r\n" + err,
-            buttons: ["Close application", "Open Wiki"],
-            BrowserWindow: mainWindow
-        }
+        uncaugetdia.showMessageBox(mainWindow, uncaughtoptions, function (index) {
+            // no need to deal with anything.... just notifying user
+            if (index === 1) {
+                //open wiki
+                shell.openExternal("https://github.com/Tyaisurm/DECSV/wiki");
+                logger.error("Closing application because of error....");
+                app.exit();
+            } else {
+                // close, do nothing
+                logger.error("Closing application because of error....");
+                app.exit();
+            }
+        });
     }
-    uncaugetdia.showMessageBox(uncaughtoptions, function (index) {
-        // no need to deal with anything.... just notifying user
-        if (index === 1) {
-            //open wiki
-            shell.openExternal("https://github.com/Tyaisurm/DECSV/wiki");
-            logger.error("Closing application because of error....");
-            app.exit();
-        } else {
-            // close, do nothing
-            logger.error("Closing application because of error....");
-            app.exit();
-        }
-    });
 });
 ////////////////////////////////////
 
@@ -89,7 +94,6 @@ autoUpdater.logger = logger;
 //autoUpdater.allowPrerelease = true; // flag for beta....
 //autoUpdater.autoDownload = false; // flag for handling updating manually, instead of automatically testing...
 
-//logger.warn("AAAAAAAAAAAAAAAAAAAAAAAAAA   FIRST WARN    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa");
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -113,7 +117,6 @@ if (!gotTheLock) {
             //
             // otherwise, you need to listen event in MacOS 'open-file' with event.preventDefault()
             // in windows parse process.argv
-            //logger.error("AAAAAAAAAAAAAAAAAAAAAAAAAAA  THIRD ERROR  AAAAAAAAAAAAAAAAAAAAAAAAAAa");
             logger.info("Testing if we need to open a new project...");
             if (process.platform == 'win32' && commandLine.length >= 2) {
                 var openFilePath = commandLine[1];
@@ -149,7 +152,6 @@ if (!gotTheLock) {
                 logger.warn("Platform is not win32, or argv.length is not >=2!");
             }
         } else {
-            //logger.error("AAAAAAAAAAAAAAAAAAAAAAAAAAA  FOURTH ERROR  AAAAAAAAAAAAAAAAAAAAAAAAAAa");
             // no mainwindow! if we are opening project, we are settings this variable just in case
             logger.info("No main window exists! Setting variable just in case...");
             if (process.platform == 'win32' && commandLine.length >= 2) {
@@ -221,104 +223,6 @@ if (!gotTheLock) {
         //}, 0)
     });
 }
-
-/*
-const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
-    // Someone tried to run a second instance, we should focus our window
-    logger.info("Testing for second instance...");
-    
-    //logger.info("################## SECOND INSTANCE DATA ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤");
-    //logger.info("process.platform = " + process.platform);
-    //logger.info("process.argv = " + process.argv);
-    //logger.info("commandLine = " + commandLine);
-
-    //logger.debug(ipcMain.send("asdasd",""));
-    if (mainWindow !== null) {
-        logger.info("Main maindow was not null! Restoring and focusing...");
-        if (mainWindow.isMinimized()) {
-            mainWindow.restore();
-        }
-        mainWindow.focus();
-        
-        // here take [1] command line arg (calling location / opened file) and try to open
-        // HOWEVER, if there is a file open atm, show notification that current needs to be closed...
-        // if nothing is wrong, let's try 1) switch to "open project"-view, 2) try to open arg[1] file, 3) notify if worked or not
-        // THIS ABOVE NEEDS TO BE IN >win32< 
-        //
-        // otherwise, you need to listen event in MacOS 'open-file' with event.preventDefault()
-        // in windows parse process.argv
-        //logger.error("AAAAAAAAAAAAAAAAAAAAAAAAAAA  THIRD ERROR  AAAAAAAAAAAAAAAAAAAAAAAAAAa");
-        logger.info("Testing if we need to open a new project...");
-        if (process.platform == 'win32' && commandLine.length >= 2) {
-            var openFilePath = commandLine[1];
-            if (current_project !== null) {
-                // there is a project open
-                logger.warn("Tried to open new project, while old one still exits!");
-                logger.info("# Old: " + current_project);
-                logger.info("# New: " + openFilePath);
-                // create dialog and notify to exit current project before opening new projects...
-                var options = {
-                    type: 'info',
-                    title: "Project open",
-                    message: "Unable to open new project while there is one open!",
-                    detail: "Please close the current project, and try opening again.",
-                    buttons: [i18n_app.__('conf-ok', true)]
-                };
-                dialog.showMessageBox(mainWindow, options, function (index) {
-                    // no need to deal with anything.... just notifying user
-                    if (index === 1) {
-                        //
-                    } else {
-                        // close, do nothing
-                    }
-                });
-            } else {
-                //no project exist... need to force opening
-                logger.info("No project exists! Need to force open new project at mainWindow...");
-                mainWindow.webContents.send("force-open-project", openFilePath);
-            }
-                
-        } else {
-            // do nothing
-            logger.warn("Platform is not win32, or argv.length is not >=2!");
-        }
-    } else {
-        //logger.error("AAAAAAAAAAAAAAAAAAAAAAAAAAA  FOURTH ERROR  AAAAAAAAAAAAAAAAAAAAAAAAAAa");
-        // no mainwindow! if we are opening project, we are settings this variable just in case
-        logger.info("No main window exists! Setting variable just in case...");
-        if (process.platform == 'win32' && commandLine.length >= 2) {
-            pre_project = commandLine[1];
-            logger.info("[SECOND INSTANCE] Settings main process pre_project variable(win32): " + pre_project);
-        } else {
-            logger.warn("[SECOND INSTANCE] Platform is not win32, or argv.length is not >=2!");
-        }
-
-        //if (process.platform == 'darwin') {
-        //    logger.info("Platform was 'darwin'! Opening new mainWindow...");
-        //    createMainWindow();
-        //}
-
-    }
-});
-*/
-/*
-if (isSecondInstance) {
-    logger.info("Tried to create second instance!");
-    app.quit()
-} else {
-    logger.info("This instance is first one!");
-    
-    //logger.info("###################### FIRST INSTANCE DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-    //logger.info("process.platform = " + process.platform);
-    //logger.info("process.argv = " + process.argv);
-    
-    if (process.platform == 'win32' && process.argv.length >= 2) {
-        pre_project = process.argv[1];
-        logger.info("[FIRST INSTANCE] Settings main process pre_project variable(win32): " + pre_project);
-    } else {
-        logger.warn("[FIRST INSTANCE] Platform is not win32, or argv.length is not >=2!");
-    }
-}*/
 
 /* Handle opening files in program (while not open before; that is above in the makeSingleInstance callback) */
 app.on('will-finish-launching', function () {
@@ -438,24 +342,7 @@ global.setSettings = function (settings = {}) {
             "enabled-keywordlists": []
         };
     }
-    /*
-    if (parseUtils.validateSettings(json2, 2)) {
-        // settings valid; giving them out
-    } else {
-        // settings invalid; need to give out defaults
-        logger.warn("SetSettings() keyword settings invalid!");
-        json2 = {
 
-            "last-local-update": null,
-            "last-availability-check": null,
-            "available-keywordlists": {
-            },
-            "local-keywordlists": {
-            },
-            "enabled-keywordlists": []
-        };
-    }
-    */
     var apppath = app.getPath('userData');
     var config1 = {
         name: "app-configuration",
@@ -464,14 +351,6 @@ global.setSettings = function (settings = {}) {
     var store1 = new Store(config1);
     store1.store = json1;
     //
-    /*
-    var config2 = {
-        name: "keyword-config",
-        cwd: path.join(apppath, 'keywordlists')
-    }
-    const store2 = new Store(config2);
-    store2.store = json2;
-    */
 
     /* CALL FORCE UPDATE TO ALL WINDOWS HERE!!!!!!!! */
 
@@ -482,19 +361,13 @@ global.setSettings = function (settings = {}) {
 /* sends info to all webContents with proper  */
 function forceInterfaceUpdate(intset1 = {}) {//, intset2 = {}) {
     logger.debug("forceInterfaceUpdate (app.js)");
-    //logger.debug(intset1);
-    //logger.debug(intset2);
-    if (!parseUtils.validateSettings(intset1,1)) {
+
+    if (!parseUtils.validateSettings(intset1, 1)) {
         //
         //logger.debug("FAIL 1");
         return false;
     }
-    /*
-    else if (!parseUtils.validateSettings(intset2,2)) {
-        //logger.debug("FAIL 2");
-        return false;
-    }
-    */
+
     var webconts = electron.webContents.getAllWebContents();
 
     var tobesent = {
@@ -657,22 +530,7 @@ function createAppStructure(mode = 0) {
             name: "app-configuration",
             cwd: apppath
         }
-        /*
-        var settings_app_base = {
-            "app": {}, "kw": {}
-        }
-        setSettings(settings_app_base);*/
         const CA1_store = new Store(CA1_options);
-        /*
-        if (demostatus) {
-            // is true, meaning that demofiles have been created before
-            logger.info("Demofiles created before! Not remaking them again...");
-        } else {
-            CA1_store.set("demo-files", true)
-            logger.info("Demofiles not created before! Creating now...");
-            // is false, no demofiles have been done yet
-        }
-        */
     }
     else {
         logger.info("App configuration file found! Checking version...");
@@ -689,7 +547,6 @@ function createAppStructure(mode = 0) {
         var appzoom = CA1_store.get("zoom", 100);
 
         var appfirst = CA1_store.get("first-use", true);
-        //demostatus = CA1_store.get("demo-files", false);
         var appedits = CA1_store.get("edits", [false, null]);
         var enabledkwlists = CA1_store.get("enabled-keywordlists", ["en"]);
 
@@ -706,248 +563,14 @@ function createAppStructure(mode = 0) {
 
             CA1_store.set("first-use", appfirst);
             CA1_store.set("app-version", app.getVersion());
-            //CA1_store.set("demo-files", demostatus)
             CA1_store.set("edits", appedits)
             CA1_store.set("enabled-keywordlists", enabledkwlists);
         } else {
             logger.info("Application config major version same or newer as application version! Not updating...");
         }
-        /*
-        if (typeof (demostatus) !== typeof(true)) {
-            demostatus = false;
-        }
-        if (mode === 1) {
-            logger.info("Settings demostatus to 'false' to re-generate demokeywords...");
-            demostatus = false;
-        }
-        if (demostatus) {
-            // is true, meaning that demofiles have been created befor
-            logger.info("Assume demofiles created before! 'Demostatus' variable true!");
-        } else {
-            CA1_store.set("demo-files", true)
-            logger.info("Assume no demofiles created! 'Demostatus' variable is false!");
-            // is false, no demofiles have been done yet
-        }
-        */
         // check if consistent with this version, if not, remove and rebuild
     }
-    /*
-    var keyword_file_check = true;
-    // checking if keyword-config file exists, and if it is file or directory
-    if (fs.existsSync(path.join(apppath, 'keywordlists\\keyword-config.json'))) {
-        if (fs.statSync(path.join(apppath, 'keywordlists\\keyword-config.json')).isDirectory()) {
-            keyword_file_check = false;
-        }
-    }
-    else {
-        keyword_file_check = false;
-    }
-    logger.info("Keywordlist config file exists: " + keyword_file_check);
-    */
-    /*
-    try {
-        if (!fs.existsSync(path.join(apppath, 'keywordlists'))) {
-            fs.mkdirSync(path.join(apppath, 'keywordlists'));
-            logger.info("Keywordlist directory created!");
-        }
-        else if (!fs.statSync(path.join(apppath, 'keywordlists')).isDirectory()) {
-            fs.mkdirSync(path.join(apppath, 'keywordlists'));
-            logger.info("Keywordlist directory created!");
-        } else {
-            logger.info("Keywordlist directory exists already!");
-        }
-    } catch (err) {
-        logger.error("Unable to create keywordlist directory! Reason: " + err.message);
-    }
-    if (!keyword_file_check || !demostatus) {
-        logger.info("Keyword_file_check '" + keyword_file_check + "', demostatus '"+demostatus+"'... Creating keyword files with defaults...");
-        
-        // #################################################################
-        //      SETTING DEMO FILES - BELOW IS ORIGINAL, FURTHER BELOW CURRENT.....
-        /*
-        //var CA2_options = {
-            //defaults: {
-            //    "last-successful-update": "----",
-            //    "available-keywordlists": {},
-            //    "local-keywordlists": {},
-            //    "enabled-keywordlists": []
-          //  },
-           // name: "keyword-config",
-         //   cwd: path.join(apppath, 'keywordlists')
-        //}
-        
-        if (!demostatus) {
-            logger.info("Since 'demostatus' was false, creating demo keyword files, and proper settings for them...(copy and overwrite...)");
-            if (!keyword_file_check) {
-                logger.info("Generating kw demofiles, while 'keyword_file_check' was false!");
-                try {/*
-                    var CA2_options = {
-                        defaults: {
-                            "last-local-update": new Date().toISOString(),
-                            "last-availability-check": null,
-                            "available-keywordlists": {
-                                "en-basic": {
-                                    "date": new Date().toISOString(),
-                                    "name": "English - Basic"
-                                },
-                                "fi-basic": {
-                                    "date": new Date().toISOString(),
-                                    "name": "Suomi - Perus"
-                                }
-                            },
-                            "local-keywordlists": {
-                                "en-basic": {
-                                    "date": new Date().toISOString(),
-                                    "name": "English - Basic"
-                                },
-                                "fi-basic": {
-                                    "date": new Date().toISOString(),
-                                    "name": "Suomi - Perus"
-                                }
-                            },
-                            "enabled-keywordlists": ["en-basic"]
-                        },
-                        name: "keyword-config",
-                        cwd: path.join(apppath, 'keywordlists')
-                    }
-                    const CA2_store = new Store(CA2_options);
-                    */
-                    /*
-                    var source_demo_1 = path.join(__dirname, './demo_files/en-basic.json');
-                    var source_demo_2 = path.join(__dirname, './demo_files/en-people_roles.json');
-                    var source_demo_3 = path.join(__dirname, './demo_files/en-settings_specialities.json');
-                    var source_demo_4 = path.join(__dirname, './demo_files/en-topics.json');
-                    var source_demo_5 = path.join(__dirname, './demo_files/keyword-config.json');
-                    var destination_demo_1 = path.join(apppath, 'keywordlists/en-basic.json');
-                    var destination_demo_2 = path.join(apppath, 'keywordlists/en-people_roles.json');
-                    var destination_demo_3 = path.join(apppath, 'keywordlists/en-settings_specialities.json');
-                    var destination_demo_4 = path.join(apppath, 'keywordlists/en-topics.json');
-                    var destination_demo_5 = path.join(apppath, 'keywordlists/keyword-config.json');
-                    var content_1 = fs.readFileSync(source_demo_1, 'utf8');
-                    var content_2 = fs.readFileSync(source_demo_2, 'utf8');
-                    var content_3 = fs.readFileSync(source_demo_3, 'utf8');
-                    var content_4 = fs.readFileSync(source_demo_4, 'utf8');
-                    var content_5 = fs.readFileSync(source_demo_5, 'utf8');
-                    fs.writeFileSync(destination_demo_1, content_1, 'utf8');
-                    fs.writeFileSync(destination_demo_2, content_2, 'utf8');
-                    fs.writeFileSync(destination_demo_3, content_3, 'utf8');
-                    fs.writeFileSync(destination_demo_4, content_4, 'utf8');
-                    fs.writeFileSync(destination_demo_5, content_5, 'utf8');
-                }
-                catch (err) {
-                    logger.error("Failed to copy demo files! Reason: " + err.message);
-                }
-            } else {
-                logger.info("Generating kw demofiles, while 'keyword_file_check' was true!");
-
-                try {
-                    /*
-                    var CA5_options = {
-                        defaults: {
-                            "last-local-update": new Date().toISOString(),
-                            "last-availability-check": null,
-                            "available-keywordlists": {
-                                "en-basic": {
-                                    "date": new Date().toISOString(),
-                                    "name": "English - Basic"
-                                },
-                                "fi-basic": {
-                                    "date": new Date().toISOString(),
-                                    "name": "Suomi - Perus"
-                                }
-                            },
-                            "local-keywordlists": {
-                                "en-basic": {
-                                    "date": new Date().toISOString(),
-                                    "name": "English - Basic"
-                                },
-                                "fi-basic": {
-                                    "date": new Date().toISOString(),
-                                    "name": "Suomi - Perus"
-                                }
-                            },
-                            "enabled-keywordlists": ["en-basic"]
-                        },
-                        name: "keyword-config",
-                        cwd: path.join(apppath, 'keywordlists')
-                    }
-                    const CA5_store = new Store(CA5_options);
-                    var ca5avkw = CA5_store.get("available-keywordlists", {});
-                    ca5avkw["en-basic"] = {
-                        "date": new Date().toISOString(),
-                        "name": "English - Basic"
-                    };
-                    ca5avkw["fi-basic"] = {
-                        "date": new Date().toISOString(),
-                        "name": "Suomi - Perus"
-                    };
-                    var ca5lokw = CA5_store.get("local-keywordlists", {});
-                    ca5lokw["en-basic"] = {
-                        "date": new Date().toISOString(),
-                        "name": "English - Basic"
-                    };
-                    ca5lokw["fi-basic"] = {
-                        "date": new Date().toISOString(),
-                        "name": "Suomi - Perus"
-                    };
-                    var ca5ekw = CA5_store.get("enabled-keywordlists", []);
-                    if (!ca5ekw.includes("en-basic")) {
-                        ca5ekw.push("en-basic")
-                    }
-                    CA5_store.set("available-keywordlists", ca5avkw);
-                    CA5_store.set("local-keywordlists", ca5lokw);
-                    CA5_store.set("enabled-keywordlists", ca5ekw);
-                    */
-                    /*
-
-                    var source_demo_1 = path.join(__dirname, './demo_files/en-basic.json');
-                    var source_demo_2 = path.join(__dirname, './demo_files/en-people_roles.json');
-                    var source_demo_3 = path.join(__dirname, './demo_files/en-settings_specialities.json');
-                    var source_demo_4 = path.join(__dirname, './demo_files/en-topics.json');
-                    var source_demo_5 = path.join(__dirname, './demo_files/keyword-config.json');
-                    var destination_demo_1 = path.join(apppath, 'keywordlists/en-basic.json');
-                    var destination_demo_2 = path.join(apppath, 'keywordlists/en-people_roles.json');
-                    var destination_demo_3 = path.join(apppath, 'keywordlists/en-settings_specialities.json');
-                    var destination_demo_4 = path.join(apppath, 'keywordlists/en-topics.json');
-                    var destination_demo_5 = path.join(apppath, 'keywordlists/keyword-config.json');
-                    var content_1 = fs.readFileSync(source_demo_1, 'utf8');
-                    var content_2 = fs.readFileSync(source_demo_2, 'utf8');
-                    var content_3 = fs.readFileSync(source_demo_3, 'utf8');
-                    var content_4 = fs.readFileSync(source_demo_4, 'utf8');
-                    var content_5 = fs.readFileSync(source_demo_5, 'utf8');
-                    fs.writeFileSync(destination_demo_1, content_1, 'utf8');
-                    fs.writeFileSync(destination_demo_2, content_2, 'utf8');
-                    fs.writeFileSync(destination_demo_3, content_3, 'utf8');
-                    fs.writeFileSync(destination_demo_4, content_4, 'utf8');
-                    fs.writeFileSync(destination_demo_5, content_5, 'utf8');
-                }
-                catch (err) {
-                    logger.error("Failed to copy demo files! Reason: " + err.message);
-                }
-            }
-        } else if (!keyword_file_check) {
-            logger.info("Since 'keyword_file_check' was false (and 'demostatus' true), creating blank keyword settings...");
-            var CA4_options = {
-                defaults: {
-                    "last-local-update": null,
-                    "last-availability-check": null,
-                    "available-keywordlists": {
-                    },
-                    "local-keywordlists": {
-                    },
-                    "enabled-keywordlists": []
-                },
-                name: "keyword-config",
-                cwd: path.join(apppath, 'keywordlists')
-            }
-            const CA4_store = new Store(CA4_options);
-        } else {
-            logger.warn("Hmm... You shouldn't be here D: Demostatus true, keyword_file_check true!");
-        }
-    } else {
-        logger.info("Keyword configuration file found, and 'demostatus' variable was true! Assuming everything is ok!");
-    }
-    */
+    
 }
 
 /* Creates new project with a given name into Documents-folder */
@@ -1343,19 +966,6 @@ autoUpdater.on('checking-for-update', function () {
     var arr = [];
     arr.push(1, ver, relDat, relNote);
     event.sender.send("check-updates-reply", 1);
-    /*
-    var options = {
-        type: 'info',
-        title: "Update available",
-        message: "Update found to be available",
-        detail: "Update will be tried to be downloaded automatically",
-        buttons: ["ok"]
-    };
-
-    dialog.showMessageBox(options, function (index) {
-        //
-    });
-    */
 });
     autoUpdater.on('error', function (err) {
         logger.error("Failed to get updates!");
@@ -1364,19 +974,6 @@ autoUpdater.on('checking-for-update', function () {
     arr.push(3);
     event.sender.send("check-updates-reply", arr);
     clearUpdaterListeners();
-    /*
-    var options = {
-        type: 'info',
-        title: "Error",
-        message: "Error while updating",
-        detail: "Unable to check for updates!",
-        buttons: ["ok"]
-    };
-
-    dialog.showMessageBox(options, function (index) {
-        //
-    });
-    */
 });
 autoUpdater.on('update-not-available', function (info) {
     logger.info("Update not available!");
@@ -1385,19 +982,6 @@ autoUpdater.on('update-not-available', function (info) {
     arr.push(2);
     event.sender.send("check-updates-reply", arr);
     clearUpdaterListeners();
-    /*
-    var options = {
-        type: 'info',
-        title: "No update",
-        message: "Update not available",
-        detail: "You have the latest version",
-        buttons: ["ok"]
-    };
-
-    dialog.showMessageBox(options, function (index) {
-        //
-    });
-    */
 });
 
     autoUpdater.on('update-downloaded', function (info) {//ev, relNot, relNam, relDat, updUrl) {NEEDSTOBECHANGED
@@ -1702,9 +1286,6 @@ function readSourceFile(lert_tool = null, lert_delimiter = null, lert_encoding =
         result.push(parseResult[2]);
         logger.info("File '" + file_name + "' content successfully loaded and parsed!");
         return result;
-            //var keys = null;
-            //keys = showQuizData(output_data); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //setupKeywordSelect(output_data[1].length, keys); // ALERT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     }
     else {
         //what lies beyond this land... prob not right file for some reason :D

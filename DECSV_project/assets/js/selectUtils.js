@@ -217,11 +217,6 @@ function setupEditKW(settings = { "app": { "enabled-keywordlists": ["en"] }}) {
             // FRIENDSHIP IS MAGIC! var value = $(this).attr("data-value").substring(3, test.length - 1);
             var kw_testvalue = $(this).val().substring(3, $(this).val().length);
             logger.debug("TESTING SELECTED KEYWORD----");
-            //console.log("HUEHEUHEUEHUHEUEHEUHEUEUHUEHEUHEUEHUEHEUH");
-            //console.log(this);
-            //console.log($(this));
-            //console.log("selected identificator: " + kw_identificator);
-            //console.log("this VALUE: " + kw_testvalue);
             if (kw_testvalue === kw_identificator) {
                 // same and nice :3
                 $(this).attr("disabled", "disabled");
