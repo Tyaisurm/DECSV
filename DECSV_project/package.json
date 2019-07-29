@@ -1,6 +1,6 @@
 {
   "name": "slipps_teacher_tool",
-  "version": "4.0.1-beta",
+  "version": "4.1.0-beta",
   "description": "SLIPPS survey results review and edit application.",
   "main": "app.js",
   "scripts": {

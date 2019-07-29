@@ -128,7 +128,7 @@
     <Content Include="build\icon.png" />
     <Content Include="keywordfiles\lists\en\en-topics.json" />
     <Content Include="keywordfiles\lists\en\en-people_roles.json" />
-    <Content Include="keywordfiles\lists\en\en-settings_specialities.json" />
+    <Content Include="keywordfiles\lists\en\en-settings_specialties.json" />
     <Content Include="en - Copy.json" />
     <Content Include="assets\translations\fi.json" />
     <Content Include="assets\translations\en.json">
