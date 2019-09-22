@@ -1,4 +1,4 @@
-﻿# DECSV_project - Document Editor for CSV-files - LERT
+﻿# DECSV-project - Document Editor for CSV-files (SLIPPS Teacher Tool)
 
 This project is about making a CSV file editor, that
 allows its users to open CSV files in it, anonymize possible personal
@@ -11,27 +11,25 @@ it possible to relatively easily port the program to different platforms
 (Linux, Mac, Windows), thanks to the cross platform support of the
 Electron framework.
 
-This is made as a part of SLIPPS project, meaning it will be used by teachers/professors of medical
-students, in order to review data from SLIPPS surveys.
-
 **Used packages/libraries/frameworks:**
-- ajv (just a required update!)
+- ajv (just a required update!; MIT License)
 - electron (MIT License. Has node.js, chromium and v8)
 - electron-builder (MIT License)
 
-- charset-detector
-- electron-config (no longer needed... will be removed!)
+- chardet (MIT License)
+- charset-detector (MIT License)
+- electron-localshortcut (MIT License)
 - electron-log (MIT License)
-- electron-squirrel-startup (Apache License 2.0)
+- electron-squirrel-startup (Not used in code; Apache License 2.0)
 - electron-store (MIT License)
 - electron-updater (MIT License)
 - electron-window-state (MIT License)
 - html-parse-stringify2 (MIT License)
-- iconv-lite
+- iconv (ISC License)
 - jquery (MIT License)
-- rimraf (ISC License) (REMOVED!)
 - select2 (MIT License)
-- js-xlsx (xlsx) (Apache License 2.0)
+- js-xlsx (xlsx) (Not used in code; Apache License 2.0)
 
 - Windowsicons (CC BY-ND 3.0 License)
+- W3.CSS (No license needed; free to use)
 
